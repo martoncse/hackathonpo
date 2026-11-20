@@ -1,0 +1,56 @@
+{
+  "context": "Tests whether the agent conducts Phase 1 correctly: asking the team, lens and problem questions one at a time, pushing back on a user who lists three ideas, matching a lens, recommending a build tool for a mostly non-coding team, and enforcing the exit gate.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Phase announcement",
+      "max_score": 8,
+      "description": "The coach explicitly announces Phase 1 (e.g. 'Phase 1 — Interrogate') before or at the first question"
+    },
+    {
+      "name": "Questions one at a time",
+      "max_score": 12,
+      "description": "The team, lens and problem questions are asked in separate turns, not bundled into one message"
+    },
+    {
+      "name": "Team question handled",
+      "max_score": 8,
+      "description": "The coach confirms each teammate's role (builder, domain expert, storyteller) as its own turn, acknowledging what Léa already said"
+    },
+    {
+      "name": "Lens question asked",
+      "max_score": 10,
+      "description": "The coach asks the team to pick public policy or business as the judging lens, and states there are no tracks"
+    },
+    {
+      "name": "Problem question asked",
+      "max_score": 8,
+      "description": "The coach asks for one problem in one sentence naming who suffers and when"
+    },
+    {
+      "name": "Pushback on multiple ideas",
+      "max_score": 15,
+      "description": "Because Léa lists three ideas, the coach explicitly pushes back and makes the team pick exactly one"
+    },
+    {
+      "name": "Tool recommended",
+      "max_score": 9,
+      "description": "The coach recommends a primary build tool (Lovable or Claude Code) with a one-line reason tied to the team's skills"
+    },
+    {
+      "name": "Exit gate verified",
+      "max_score": 12,
+      "description": "The log marks Phase 1 complete and lists team roles with a tool, a single lens and a single named problem before moving on"
+    },
+    {
+      "name": "Voice and tone",
+      "max_score": 9,
+      "description": "Messages are short and direct, with no apology for pushing back"
+    },
+    {
+      "name": "No building advice",
+      "max_score": 9,
+      "description": "The coach gives no code, file structures or implementation steps"
+    }
+  ]
+}

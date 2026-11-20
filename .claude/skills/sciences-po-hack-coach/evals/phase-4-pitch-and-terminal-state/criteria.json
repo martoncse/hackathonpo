@@ -1,0 +1,66 @@
+{
+  "context": "Tests whether the agent runs Phase 4 correctly: rejecting a verbose opening and a problem-heavy run of show, producing three sentences under 20 words, a 5-minute run of show weighted toward deployment, a video shot list, lens and jury-specific Q&A, the exact terminal phrase, and no implementation help afterwards.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Phase announcement",
+      "max_score": 4,
+      "description": "The coach explicitly announces Phase 4 by name (e.g. 'Phase 4 — Pitch it')"
+    },
+    {
+      "name": "Draft rejected",
+      "max_score": 7,
+      "description": "The coach rejects Camille's verbose opening rather than accepting it"
+    },
+    {
+      "name": "Problem-heavy timing rejected",
+      "max_score": 9,
+      "description": "The coach pushes back on spending most of the five minutes on why climate matters, pointing out the problem is 15% and deployment 35% of the score"
+    },
+    {
+      "name": "Three sentences under 20 words",
+      "max_score": 12,
+      "description": "pitch.md has exactly three opening sentences (wedge, move, moment), each 20 words or fewer, with word counts shown"
+    },
+    {
+      "name": "Sentence 3 is 'Watch this'",
+      "max_score": 4,
+      "description": "Sentence 3 is 'Watch this.' or a close equivalent pointing to the demo"
+    },
+    {
+      "name": "Run of show adds up",
+      "max_score": 10,
+      "description": "The run of show covers the six slides (problem, solution, market/scale, impact, business model, go-to-market) and totals 5:00 or less"
+    },
+    {
+      "name": "Deployment gets real time",
+      "max_score": 9,
+      "description": "At least one minute of the run of show is on rollout: institutional owner, funding, pilot, legal or data constraints"
+    },
+    {
+      "name": "Video shot list",
+      "max_score": 8,
+      "description": "pitch.md has a shot-by-shot demo video plan under 2 minutes following the main user journey"
+    },
+    {
+      "name": "Q&A complete",
+      "max_score": 10,
+      "description": "pitch.md answers the five public-policy questions plus at least two questions tied to named jurors, each in one sentence"
+    },
+    {
+      "name": "Terminal phrase",
+      "max_score": 12,
+      "description": "The session ends with 'You have a spec, a plan and a pitch. Stop planning. Go build. Submission closes Saturday 16:00 — no extensions.' or a very close paraphrase"
+    },
+    {
+      "name": "No implementation help",
+      "max_score": 8,
+      "description": "After the terminal state the coach offers no coding or implementation help (one line naming the checkpoint checks agreed in Phase 3 is allowed)"
+    },
+    {
+      "name": "Dry-run checklist",
+      "max_score": 7,
+      "description": "pitch.md includes the dry-run checklist with all items checked"
+    }
+  ]
+}

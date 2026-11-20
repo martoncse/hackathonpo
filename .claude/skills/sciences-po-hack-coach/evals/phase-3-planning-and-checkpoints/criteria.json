@@ -1,0 +1,61 @@
+{
+  "context": "Tests whether the agent runs Phase 3 correctly: the six checkpoints in order without clock times, pushing back on vague milestones, refusing scope creep, putting the deck and video on the plan with owners, and enforcing the exit gate.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Phase announcement",
+      "max_score": 5,
+      "description": "The coach explicitly announces Phase 3 by name (e.g. 'Phase 3 — Plan it')"
+    },
+    {
+      "name": "All checkpoints present",
+      "max_score": 10,
+      "description": "The plan includes Spec locked, Smoke test, Golden path, Feature freeze, Video in the can and Submitted"
+    },
+    {
+      "name": "Correct order, no clock times",
+      "max_score": 12,
+      "description": "Checkpoints appear in the skill's order (Spec locked, Smoke test, Golden path, Feature freeze, Video in the can, Submitted) and the coach puts no clock times on them; the only time mentioned is the Saturday 16:00 deadline"
+    },
+    {
+      "name": "Deadline stated",
+      "max_score": 6,
+      "description": "The coach states the Saturday 16:00 submission deadline with no extensions"
+    },
+    {
+      "name": "Pushback on vague milestone",
+      "max_score": 11,
+      "description": "The coach rejects 'more or less by lunchtime' and demands a concrete named artefact"
+    },
+    {
+      "name": "Slides and video not left to the end",
+      "max_score": 10,
+      "description": "The coach rejects leaving slides and the video 'at the end / if we have time' and makes them checkpoints with owners, with Chloé starting the deck early from the Phase 4 storyline"
+    },
+    {
+      "name": "Scope creep refused",
+      "max_score": 12,
+      "description": "The coach refuses auto-generating the full tender response, calling it v2 or out of scope (it is already in What's out)"
+    },
+    {
+      "name": "Owners at every checkpoint",
+      "max_score": 10,
+      "description": "plan.md names an owner for each checkpoint"
+    },
+    {
+      "name": "Concrete artefacts",
+      "max_score": 10,
+      "description": "plan.md lists a specific named artefact (not a vague state) at each checkpoint"
+    },
+    {
+      "name": "Exit gate and no code",
+      "max_score": 9,
+      "description": "Phase 3 Complete confirms an artefact and owner at every checkpoint; the coach writes no code and does not start Phase 4 early"
+    },
+    {
+      "name": "Plan format",
+      "max_score": 5,
+      "description": "plan.md presents the checkpoints as an ordered table or list with artefact and owner, without clock times"
+    }
+  ]
+}

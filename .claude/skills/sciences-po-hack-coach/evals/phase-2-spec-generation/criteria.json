@@ -1,0 +1,66 @@
+{
+  "context": "Tests whether the agent runs Phase 2 correctly: refusing to skip ahead, proposing exactly three angles with description, stage-directions demo moment, AI move and feasibility note, cutting six features to three, refusing the chatbot and login, and producing a spec with every field filled including evidence and adoption.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Phase announcement",
+      "max_score": 4,
+      "description": "The coach explicitly announces Phase 2 by name (e.g. 'Phase 2 — Spec it')"
+    },
+    {
+      "name": "Skip-ahead refused",
+      "max_score": 7,
+      "description": "The coach does not jump to the timeline or building when Hugo asks to"
+    },
+    {
+      "name": "Exactly three angles",
+      "max_score": 9,
+      "description": "The coach proposes exactly three angles in Step A"
+    },
+    {
+      "name": "Angles complete",
+      "max_score": 10,
+      "description": "Each angle has a one-line description, a demo moment as stage directions (juror does / product does / juror sees), an AI move and a feasibility note"
+    },
+    {
+      "name": "Chatbot and login challenged",
+      "max_score": 9,
+      "description": "The coach pushes back on the citizen chatbot as a basic use of AI and says the login should be mocked or cut"
+    },
+    {
+      "name": "Feature cap enforced",
+      "max_score": 10,
+      "description": "spec.md lists at most 3 items under What's in"
+    },
+    {
+      "name": "All spec fields filled",
+      "max_score": 10,
+      "description": "spec.md fills Lens, Problem, User, Evidence, Demo moment, AI move, What's in, What's out, Adoption, Done by submission and Red flags, none blank"
+    },
+    {
+      "name": "Concrete demo on a real case",
+      "max_score": 11,
+      "description": "The demo moment is concrete stage directions and names the real (or anonymised/synthetic) consultation data it runs on"
+    },
+    {
+      "name": "Figure sourced or flagged",
+      "max_score": 7,
+      "description": "The Problem or Evidence field gives a source for its figure, or flags it to verify with a mentor"
+    },
+    {
+      "name": "Adoption answered for the lens",
+      "max_score": 8,
+      "description": "The Adoption field names an institutional owner, funding and a first pilot (public policy lens)"
+    },
+    {
+      "name": "What's out names temptations",
+      "max_score": 7,
+      "description": "What's out names specific cut features from Hugo's list (e.g. map, sentiment analysis, PDF export, login, chatbot)"
+    },
+    {
+      "name": "Exit gate and no code",
+      "max_score": 8,
+      "description": "The Phase 2 Complete section confirms all fields are filled, and the coach never suggests code or implementation steps"
+    }
+  ]
+}

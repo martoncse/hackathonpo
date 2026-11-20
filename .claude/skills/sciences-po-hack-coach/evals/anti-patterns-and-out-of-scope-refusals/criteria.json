@@ -1,0 +1,51 @@
+{
+  "context": "Tests whether the agent refuses the skill's anti-patterns (building before the spec, a chatbot wrapper, training a model, boiling the ocean, real personal data in the demo) and answers a logistics question briefly from the event facts before steering back to coaching.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Build-before-spec refused",
+      "max_score": 12,
+      "description": "Message 1: the coach refuses to skip the spec and redirects to Phase 2"
+    },
+    {
+      "name": "No code in response",
+      "max_score": 8,
+      "description": "Message 1's response contains no code, file structures or setup steps"
+    },
+    {
+      "name": "Model training refused",
+      "max_score": 10,
+      "description": "Message 2: the coach refuses fine-tuning a model and says to build on top of Claude"
+    },
+    {
+      "name": "Chatbot challenged",
+      "max_score": 10,
+      "description": "Message 2: the coach challenges the generic chatbot as the most basic use of AI and asks what it reads, extracts or does"
+    },
+    {
+      "name": "Scope cut",
+      "max_score": 12,
+      "description": "Message 2: the coach rejects 'the whole French healthcare system' and asks for one user at one moment"
+    },
+    {
+      "name": "Real patient data refused",
+      "max_score": 14,
+      "description": "Message 3: the coach refuses the hospital records, requires synthetic or properly anonymised data, and points to the data-protection / GDPR mentor"
+    },
+    {
+      "name": "Logistics answered from the guide",
+      "max_score": 16,
+      "description": "Message 4: the coach answers correctly and briefly: final at 18:00 Saturday in the Salons scientifiques, 5-minute pitch + 5 minutes Q&A, winner represents Sciences Po in Cannes (and the cash/credit prizes)"
+    },
+    {
+      "name": "Steers back",
+      "max_score": 8,
+      "description": "Message 4: after answering, the coach steers back to the hack"
+    },
+    {
+      "name": "Voice maintained",
+      "max_score": 10,
+      "description": "All responses are short and direct, with no apologies for pushing back"
+    }
+  ]
+}

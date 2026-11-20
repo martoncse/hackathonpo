@@ -1,0 +1,11 @@
+{
+  "name": "local/sciences-po-hack-coach",
+  "version": "0.2.0",
+  "private": true,
+  "summary": "Coaches a team through scoping, building and pitching a project at the Sciences Po AI Hackathon 2026 (Paris, 20–21 November; submission Saturday 16:00). Spec-first, jury-aware, demo-obsessed, for teams using Claude Code and Lovable. Adapted from paker-it/devcon-hack-coach.",
+  "skills": {
+    "sciences-po-hack-coach": {
+      "path": "SKILL.md"
+    }
+  }
+}
