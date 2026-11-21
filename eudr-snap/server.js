@@ -43,7 +43,7 @@ const HOSTED = Boolean(process.env.VERCEL);
 const DATA_DIR = process.env.EUDR_DATA_DIR ? path.resolve(process.env.EUDR_DATA_DIR) : HOSTED ? "/tmp/eudr-snap-data" : path.join(here, "data");
 // Country profile. No EUDR_PROFILE = the original Colombian demo, unchanged.
 // EUDR_PROFILE=cocoa-ci loads profiles/cocoa-ci/{profile.json, sample-farms.json, whisp-cache.json}.
-const DEFAULT_PROFILE = { id: "", name: "Colombia: coffee and cocoa", country_iso2: "CO", whisp_national_codes: ["co"], rules: {}, story: true };
+const DEFAULT_PROFILE = { id: "", name: "Colombia: coffee and cocoa", country_iso2: "CO", country_risk: "standard", whisp_national_codes: ["co"], rules: {}, story: true };
 const PROFILE_ID = process.env.EUDR_PROFILE || "";
 if (PROFILE_ID && !/^[a-z0-9-]+$/.test(PROFILE_ID)) throw new Error("EUDR_PROFILE may only contain a-z, 0-9 and -");
 const PROFILE_DIR = PROFILE_ID ? path.join(here, "profiles", PROFILE_ID) : null;
@@ -250,7 +250,7 @@ async function writeLots(lots) {
 }
 
 function lotSummary(l) {
-  return { id: l.id, buyer: l.buyer, plot_ids: l.plot_ids, receipts: l.receipts, kg: l.kg, kg_unit: l.kg_unit, created_at: l.created_at, status: l.status, filing: l.filing, left_out: l.left_out, passport: l.passport || null, share_path: `/buyer.html#${l.token}` };
+  return { id: l.id, buyer: l.buyer, plot_ids: l.plot_ids, receipts: l.receipts, kg: l.kg, kg_unit: l.kg_unit, created_at: l.created_at, status: l.status, filing: l.filing, left_out: l.left_out, passport: l.passport || null, importer_decisions: l.importer_decisions || [], share_path: `/buyer.html#${l.token}` };
 }
 
 // Picks the receipts of the season each plot was checked on, minus receipts already in a lot.
@@ -341,7 +341,7 @@ async function handleShare(req, res, pathname) {
     return sendJson(res, 200, {
       lot: lotSummary(lot),
       supplier: doc.cooperative,
-      profile: { name: profile.name, country_iso2: profile.country_iso2 },
+      profile: { name: profile.name, country_iso2: profile.country_iso2, country_risk: profile.country_risk || "standard" },
       documents: lot.documents,
       handoff: lot.filing ? downstreamHandoff(lot, doc.cooperative) : null,
     });
@@ -361,6 +361,26 @@ async function handleShare(req, res, pathname) {
       await writeLots(all);
       const doc = await farmsDoc();
       return sendJson(res, 200, { lot: lotSummary(l), handoff: downstreamHandoff(l, doc.cooperative) });
+    });
+  }
+  if (req.method === "POST" && action === "decision") {
+    const b = await readJsonBody(req);
+    if (!["accept_evidence", "request_info"].includes(b.decision)) return sendJson(res, 400, { error: "Choose: accept the evidence for your risk assessment, or request more information." });
+    const name = String(b.name || "").trim().slice(0, 100);
+    const reason = String(b.reason || "").trim().slice(0, 1000);
+    if (!name) return sendJson(res, 400, { error: "Your name is required: the decision is yours, as the operator." });
+    if (!reason) return sendJson(res, 400, { error: "Write a reason: it goes into your Art 10 record." });
+    return serial(async () => {
+      const all = await readLots();
+      const l = all.find((x) => x.token === token);
+      // Appended, never edited: each entry carries the hash of the one before it.
+      const list = (l.importer_decisions ||= []);
+      const prev = list.at(-1)?.hash || "0".repeat(64);
+      const passportDoc = (l.documents || []).find((d) => d.id === "passport");
+      const entry = { decision: b.decision, name, reason, at: new Date().toISOString(), passport_id: l.passport?.id || null, passport_sha256: passportDoc?.sha256 || null };
+      list.push({ ...entry, prev, hash: await sha256Hex(prev + canonicalize(entry)) });
+      await writeLots(all);
+      return sendJson(res, 200, { lot: lotSummary(l) });
     });
   }
   return sendJson(res, 405, { error: "Method not allowed" });

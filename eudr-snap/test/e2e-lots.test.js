@@ -72,6 +72,18 @@ test("a lot goes to a named buyer, each receipt only once, and the filing flows 
   assert.equal(view.body.handoff, null);
   assert.equal((await api("GET", "/api/share/not-a-real-token")).status, 404);
 
+  // The importer's own decision: name and reason required, appended with a hash linked to the passport.
+  assert.equal(view.body.profile.country_risk, "standard");
+  assert.equal((await api("POST", `/api/share/${token}/decision`, { decision: "accept_evidence", name: "", reason: "x" })).status, 400);
+  assert.equal((await api("POST", `/api/share/${token}/decision`, { decision: "certify", name: "M. Dupont", reason: "x" })).status, 400);
+  await api("POST", `/api/share/${token}/decision`, { decision: "request_info", name: "M. Dupont", reason: "Legality questionnaire missing" });
+  const dec = await api("POST", `/api/share/${token}/decision`, { decision: "accept_evidence", name: "M. Dupont", reason: "Questionnaire received <b>ok</b>" });
+  assert.equal(dec.status, 200);
+  const [d1, d2] = dec.body.lot.importer_decisions;
+  assert.equal(d2.prev, d1.hash);
+  assert.equal(d2.passport_sha256, view.body.documents.find((d) => d.id === "passport").sha256);
+  assert.equal((await api("GET", `/api/share/${token}`)).body.lot.importer_decisions.length, 2);
+
   // The importer records its filing; the cooperative's register shows it.
   assert.equal((await api("POST", `/api/share/${token}/filing`, { reference: "x", verification: "y" })).status, 400);
   const filed = await api("POST", `/api/share/${token}/filing`, { reference: "26FRABC123456", verification: "VX12AB34" });

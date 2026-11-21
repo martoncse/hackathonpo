@@ -4,6 +4,16 @@ The red pin is a real FAO Whisp result, not a hard-coded one. Five cooperative f
 
 **Live demo:** https://eudr-snap.vercel.app (Colombian profile; 3D story at `/`, record → review → pack at `/classic.html`). No API keys are set there: "Read photo" says so, and typing a receipt in still works. Recorded purchases and decisions live in the function's `/tmp`: temporary, and each running copy has its own. Press **Reset demo** before a pitch. A Whisp key pasted there sits in server memory, so other visitors could use it until the instance restarts. Redeploy: `vercel deploy --prod` in `eudr-snap/`.
 
+## Who it's for: small EU importers
+
+**The customer is the micro or small EU importer** of standard-risk cocoa: full due diligence from 30 Jun 2027. Cooperatives issue passports free, and our hypothesis is that importers pay per verified shipment. Research: `../reports/COMPETITORS-SME-PIVOT.md`. Pitch: `PITCH.md`.
+
+The importer's page (`/buyer.html#<private token>`) opens on:
+- **Origin-risk banner**, from the profile's `country_risk`. Standard risk means full Art 9–11. Low risk means Art 13 simplified, and the Art 10/11 rows drop out.
+- **"Can I file this shipment?"** (`shared/readiness.js`): every row is computed from the pack files and the passport check. **Ready** means the supplier's evidence covers it. **You complete** covers what's the importer's by law: net mass, EORI, the Art 10 conclusion, and requesting legality evidence. **Ask supplier** means something is missing or the passport failed. It's a filing checklist, not legal sign-off.
+- **The importer's own decision**: "accept the evidence for my risk assessment" or "request more information", with a name and reason. `POST /api/share/:token/decision` appends it to the lot, hash-chained and linked to the passport by its SHA-256. It doesn't block filing.
+- **"Invite a supplier"** (mailto): the growth loop, where importers pull cooperatives in.
+
 ## The product: a Shipment Evidence Passport
 
 **Each EU shipment gets one signed passport that the cooperative owns, and any buyer, bank or inspector can check it in a browser.** The passport (`passport-<id>.json`) pins every file of the importer pack by SHA-256: the GeoJSON, DDS data, Art 9/10/11 files, the report and the retention index. It also carries the receipts, the Whisp result, the volume check for each plot and the named reviewer decisions. The cooperative signs it with its own key (ECDSA P-256), and a short fingerprint like `92B7-8729-5091-F452` identifies that key. Why that's the moat, and the sources behind it: `../reports/MOAT-ANALYSIS.md` §9. The pitch: `PITCH.md`.

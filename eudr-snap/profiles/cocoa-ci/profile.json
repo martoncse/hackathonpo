@@ -1,6 +1,7 @@
 {
   "name": "Côte d'Ivoire: cocoa (verification layer on the national system)",
   "country_iso2": "CI",
+  "country_risk": "standard",
   "whisp_national_codes": [
     "ci"
   ],

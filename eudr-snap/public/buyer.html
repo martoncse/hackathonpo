@@ -19,20 +19,32 @@
     #docs a, #handoff a { display: block; padding: 8px 10px; margin: 6px 0; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
     #docs a small, #handoff a small { display: block; color: var(--muted); }
     #docs a.report, #handoff a.report { border-color: var(--accent); background: #eef6f0; }
-    .form input { font: inherit; }
+    .form input, .form select { font: inherit; }
+    .risk { padding: 10px 14px; border-radius: 8px; background: #eef3fb; border: 1px solid #c4d4ee; margin: 0; }
+    .ready { list-style: none; padding: 0; margin: 8px 0; }
+    .ready li { display: grid; grid-template-columns: 8.5em 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .tag { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-align: center; align-self: start; }
+    .tag.ok { background: #dcf3e4; color: var(--green); }
+    .tag.you { background: #fff1cc; color: #7a5600; }
+    .tag.supplier { background: #fde4e4; color: var(--red); }
+    .ready small { display: block; color: var(--muted); }
+    .summary { font-size: 17px; font-weight: 600; margin: 6px 0; }
+    .decisions { padding-left: 18px; }
+    .decisions li { margin: 4px 0; }
   </style>
 </head>
 <body>
   <header>
     <div>
-      <h1>EUDR-Snap</h1>
-      <p class="sub">Lot prepared for you by your supplier · you file the due diligence statement</p>
+      <h1 id="title">Incoming shipment</h1>
+      <p class="sub">EUDR-Snap for EU importers · your supplier sent the evidence · you check it, decide and file the due diligence statement · demo data is synthetic</p>
     </div>
     <div class="countdown" id="lot-id">–</div>
   </header>
 
   <div class="wrap">
     <p id="err" class="banner hidden"></p>
+    <p id="risk" class="risk hidden"></p>
 
     <section class="step">
       <h2>What you're receiving</h2>
@@ -45,19 +57,39 @@
     </section>
 
     <section class="step">
-      <h2>1 · Check the evidence</h2>
+      <h2>1 · Can I file this shipment?</h2>
+      <p id="ready-summary" class="summary">Checking…</p>
+      <ul class="ready" id="ready"></ul>
+      <p class="hint" id="ready-note"></p>
+    </section>
+
+    <section class="step">
+      <h2>2 · Your decision on this evidence</h2>
+      <p class="hint">You're the operator: you decide whether this evidence supports your risk assessment (Art 10). Your decision is added to this lot's record with your name and time, linked to the supplier's passport by its hash, and chained so it can't be changed afterwards. Your supplier sees it. Recording a decision is optional for filing here.</p>
+      <div class="form">
+        <label>Decision<select id="dec"><option value="accept_evidence">Accept the evidence for my risk assessment</option><option value="request_info">Request more information from the supplier</option></select></label>
+        <label>Your name<input id="dec-name" autocomplete="name" /></label>
+        <label>Reason<input id="dec-reason" placeholder="e.g. Volume flag explained by a field visit" /></label>
+      </div>
+      <button id="decide">Record my decision</button>
+      <p id="dec-msg" class="msg"></p>
+      <ul class="decisions hint" id="decisions"></ul>
+    </section>
+
+    <section class="step">
+      <h2>3 · The evidence behind it</h2>
       <ul class="checks" id="checks"></ul>
       <p class="hint">These are the supplier's drafts. You remain responsible for the due diligence (Reg. (EU) 2023/1115 as amended by 2025/2650) and complete the criteria still open.</p>
     </section>
 
     <section class="step">
-      <h2>2 · Download the files</h2>
+      <h2>4 · Download the files</h2>
       <p class="hint">Fingerprints (SHA-256) are recomputed in your browser and compared with the ones recorded when the lot was sent.</p>
       <div id="docs"></div>
     </section>
 
     <section class="step">
-      <h2>3 · After you file in the EU Information System</h2>
+      <h2>5 · After you file in the EU Information System</h2>
       <p class="hint">Enter the numbers the system gives you. Your supplier sees the lot as filed, and you get the note that processors and traders after you keep (since Reg. 2025/2650 they keep your reference number instead of filing their own).</p>
       <div class="form">
         <label>DDS reference number<input id="ref" autocomplete="off" /></label>
@@ -67,13 +99,38 @@
       <p id="file-msg" class="msg"></p>
       <div id="handoff"></div>
     </section>
+
+    <section class="step">
+      <h2>Buy from other cooperatives too?</h2>
+      <p class="hint">Invite them. Issuing passports is free for the cooperative, the history stays theirs, and they can send the same passport to every buyer.</p>
+      <a id="invite-mail" href="#">Email an invitation to a supplier →</a>
+    </section>
   </div>
 
-  <script>
+  <script type="module">
+    import { verifyPassport } from "/shared/passport.js";
+    import { readiness, RISK_TEXT } from "/shared/readiness.js";
     const $ = (id) => document.getElementById(id);
     const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
     const token = location.hash.slice(1);
-    const COUNTRY = { CO: "Colombia", CI: "Côte d'Ivoire" };
+    const COUNTRY = { CO: "Colombia", CI: "Côte d'Ivoire", GH: "Ghana" };
+    let current = null; // { lot, documents, profile, passportValid }
+
+    function renderDecisions(lot) {
+      $("decisions").innerHTML = (lot.importer_decisions || [])
+        .map((e) => `<li><b>${e.decision === "accept_evidence" ? "Accepted for the risk assessment" : "More information requested"}</b> by ${esc(e.name)}, ${esc(new Date(e.at).toLocaleString("en-GB"))}: ${esc(e.reason)} <small>· linked to passport ${esc(e.passport_id || "–")} by hash · entry ${esc(e.hash.slice(0, 12))}…</small></li>`)
+        .join("");
+    }
+
+    function renderReadiness() {
+      const { lot, documents, profile, passportValid } = current;
+      const doc = (id) => JSON.parse(documents.find((x) => x.id === id)?.content || "null");
+      const r = readiness({ art9: doc("art9"), dds: doc("dds"), art10: doc("art10"), art11Entries: doc("art11")?.entries || [], passportValid, importerDecision: (lot.importer_decisions || []).at(-1) || null, countryRisk: profile.country_risk || "standard" });
+      const label = { ok: "Ready", you: "You complete", supplier: "Ask supplier" };
+      $("ready-summary").textContent = r.summary;
+      $("ready").innerHTML = r.items.map((i) => `<li><span class="tag ${i.status}">${label[i.status]}</span><span>${esc(i.label)}${i.detail ? `<small>${esc(i.detail)}</small>` : ""}</span></li>`).join("");
+      $("ready-note").textContent = r.note;
+    }
 
     async function sha256(text) {
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -109,6 +166,14 @@
       if (!r.ok) throw new Error(d.error || "This lot couldn't be loaded.");
       const { lot, supplier, documents } = d;
       $("lot-id").innerHTML = `Lot <strong>${esc(lot.id)}</strong><br>for ${esc(lot.buyer.name)}`;
+      $("title").textContent = `Incoming shipment for ${lot.buyer.name}`;
+      const risk = d.profile.country_risk || "standard";
+      $("risk").innerHTML = `<b>Origin: ${esc(COUNTRY[d.profile.country_iso2] || d.profile.country_iso2)}.</b> ${esc(RISK_TEXT[risk] || "")}`;
+      $("risk").classList.remove("hidden");
+      const invite = `${location.origin}/classic.html`;
+      const body = `Hello,\n\nWe import your produce into the EU and need the EUDR evidence for each shipment. You can issue a free, signed evidence passport per shipment here: ${invite}\nThe passport and its history stay yours, and you can send it to every buyer.\n\n${lot.buyer.name}`;
+      $("invite-mail").href = `mailto:?subject=${encodeURIComponent("EUDR evidence passports for our shipments")}&body=${encodeURIComponent(body)}`;
+      renderDecisions(lot);
       $("supplier").textContent = supplier?.name || "–";
       $("origin").textContent = `${supplier?.municipality || ""} · ${COUNTRY[d.profile.country_iso2] || d.profile.country_iso2}`;
       $("kg").textContent = `${Number(lot.kg).toLocaleString("en")} ${lot.kg_unit}`;
@@ -137,7 +202,30 @@
       }
       $("docs").innerHTML = links.join("");
       showHandoff(d.handoff);
+
+      // Check the supplier's passport against the files received, then fill the checklist.
+      const pdoc = documents.find((x) => x.id === "passport");
+      let passportValid = null;
+      if (pdoc) {
+        const others = documents.filter((x) => x.id !== "passport").map((x) => ({ name: x.filename, bytes: new TextEncoder().encode(x.content) }));
+        const v = await verifyPassport(JSON.parse(pdoc.content), others);
+        passportValid = v.valid && v.files.every((f) => f.status === "match");
+      }
+      current = { lot, documents, profile: d.profile, passportValid };
+      renderReadiness();
     }
+
+    $("decide").onclick = async () => {
+      const r = await fetch(`/api/share/${encodeURIComponent(token)}/decision`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ decision: $("dec").value, name: $("dec-name").value, reason: $("dec-reason").value }) });
+      const d = await r.json();
+      $("dec-msg").textContent = r.ok ? "Recorded in this lot's record. Your supplier sees it." : d.error;
+      $("dec-msg").className = "msg " + (r.ok ? "ok" : "err");
+      if (r.ok && current) {
+        current.lot = { ...current.lot, importer_decisions: d.lot.importer_decisions };
+        renderDecisions(current.lot);
+        renderReadiness();
+      }
+    };
 
     $("file").onclick = async () => {
       const r = await fetch(`/api/share/${encodeURIComponent(token)}/filing`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reference: $("ref").value, verification: $("ver").value }) });
