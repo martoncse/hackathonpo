@@ -7,7 +7,7 @@ export const DISCLAIMER =
 
 const HS = {
   coffee: { hsHeading: "090111", description: "Green coffee, not roasted, not decaffeinated" },
-  cocoa: { hsHeading: "180100", description: "Cocoa beans, whole, raw" },
+  cocoa: { hsHeading: "180100", description: "Cocoa beans, whole or broken, raw or roasted" },
 };
 
 // ---------- GeoJSON with exactly 6 decimals ----------
@@ -127,6 +127,13 @@ export function conclusionText(rows) {
   return `No conclusion drawn: ${open.length} of ${rows.length} criteria are still open (${open.map((r) => r.criterion.replace("10(2)", "")).join(" ")}: rated gap, manual or fail). The operator completes them and draws the conclusion (Art 10(1)).`;
 }
 
+// Art 9(1)(d) asks for the date or time range of production. Proxy: first to last purchase date
+// in the season checked (the harvest precedes the sale; the operator can widen it).
+export function productionPeriod(plot, season) {
+  const dates = (plot.deliveries || []).filter((d) => !season || d.season === season).map((d) => d.date).filter(Boolean).sort();
+  return dates.length ? { from: dates[0], to: dates.at(-1), basis: "first to last purchase date in the season" } : null;
+}
+
 // ---------- human-readable report ----------
 
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -139,7 +146,7 @@ export function buildReportHtml({ lotCheck, lotPlots, res, dds, rows, log, coope
   const plotRows = lotPlots.map((p) => {
     const r = res.get(p.id);
     const kg = (p.deliveries || []).filter((d) => !r?.yield?.season || d.season === r.yield.season).reduce((a, d) => a + Number(d.kg || 0), 0);
-    return `<tr><td>${esc(p.id)}</td><td>${esc(p.farmer_name)}${p.producer_card ? `<br><small>card ${esc(p.producer_card)}</small>` : ""}</td><td>${esc(p.farm)}<br><small>${esc(p.municipality || p.region)}</small></td><td>${esc(p.hectares)}</td><td>${esc(p.geometry?.type)}</td><td>${esc(kg.toLocaleString("en"))} ${esc(p.deliveries?.[0]?.unit || "kg")}<br><small>season ${esc(r?.yield?.season)}</small></td><td>${esc(r?.whisp_risk || "not checked")}</td><td>${esc(STATUS_LABELS[r?.status] || r?.status)}</td></tr>`;
+    return `<tr><td>${esc(p.id)}</td><td>${esc(p.farmer_name)}${p.producer_card ? `<br><small>card ${esc(p.producer_card)}</small>` : ""}</td><td>${esc(p.farm)}<br><small>${esc(p.municipality || p.region)}</small></td><td>${esc(p.hectares)}</td><td>${esc(p.geometry?.type)}</td><td>${esc(kg.toLocaleString("en"))} ${esc(p.deliveries?.[0]?.unit || "kg")}<br><small>season ${esc(r?.yield?.season)}${(() => { const pp = productionPeriod(p, r?.yield?.season); return pp ? `<br>produced ${esc(pp.from)} to ${esc(pp.to)}` : ""; })()}</small></td><td>${esc(r?.whisp_risk || "not checked")}</td><td>${esc(STATUS_LABELS[r?.status] || r?.status)}</td></tr>`;
   });
   const receipts = lotPlots.flatMap((p) => (p.deliveries || []).map((d) => `<tr><td>${esc(d.receipt)}</td><td>${esc(d.date)}</td><td>${esc(p.id)}</td><td>${esc(Number(d.kg).toLocaleString("en"))} ${esc(d.unit || "kg")}</td><td>${esc(d.source || "cooperative record")}</td></tr>`));
   const art10 = rows.map((r) => `<tr><td>${esc(r.criterion)}</td><td>${esc(r.text)}</td><td>${esc(r.finding)}</td><td class="rating ${esc(r.rating)}">${esc(r.rating)}</td></tr>`);
@@ -159,9 +166,10 @@ code{font-size:11px;word-break:break-all}@media print{body{margin:0}}
 <p>Regulation (EU) 2023/1115 as amended by 2025/2650 · prepared ${esc(now.slice(0, 10))} · country of production: ${esc(COUNTRY_NAMES[country] || country)} (${esc(country)})</p>
 <div class="draft">${esc(DISCLAIMER)}</div>
 
-<h2>1. Operator and supplier (Art 9(1)(e)-(f))</h2>
+<h2>1. Operator, supplier and customer (Annex II; Art 9(1)(e)-(f))</h2>
 ${table(["", "Details"], [
   `<tr><td>Operator (EU importer)</td><td>[Operator fills: name, address, EORI]</td></tr>`,
+  `<tr><td>Customer (Art 9(1)(f))</td><td>[Operator fills: name, postal address, email of the business it supplies]</td></tr>`,
   `<tr><td>Activity</td><td>${esc(dds.activityType)} into ${esc(dds.countryOfActivity)}</td></tr>`,
   `<tr><td>Supplier</td><td>${esc(cooperative?.name)}${cooperative?.municipality ? ", " + esc(cooperative.municipality) : ""}${cooperative?.nit ? " · NIT " + esc(cooperative.nit) : ""}${cooperative?.registration ? " · " + esc(cooperative.registration) : ""}</td></tr>`,
 ])}
@@ -171,7 +179,7 @@ ${table(["HS heading", "Description", "Estimated from deliveries", "Net mass"], 
 
 <h2>3. Plots of land and geolocation (Art 9(1)(d))</h2>
 <p>${esc(lotPlots.length)} plot(s). Coordinates are in <code>traces-geolocation.geojson</code> (WGS84, 6 decimals) for upload to the EU Information System. Plots over 4 ha are polygons (Art 2(28)).</p>
-${table(["Plot", "Producer", "Farm", "ha", "Geolocation", "Season volume", "Whisp risk", "Status"], plotRows)}
+${table(["Plot", "Producer", "Farm", "ha", "Geolocation", "Season volume and production period", "Whisp risk", "Status"], plotRows)}
 <p>Lot check: ${esc(lotCheck.message)}.</p>
 
 <h2>4. Purchase records</h2>
@@ -190,8 +198,8 @@ ${table(["Plot", "Trigger", "Action", "Reason", "Reviewer", "When"], art11)}
 <h2>8. Files in this pack (keep 5 years: Art 4(3), Art 9(1))</h2>
 ${table(["File", "SHA-256"], files.map((f) => `<tr><td>${esc(f.filename)}</td><td><code>${esc(f.sha256)}</code></td></tr>`))}
 
-<h2>9. Statement and signature (Annex II points 5-6)</h2>
-<p>To be completed by the operator in the EU Information System: "By submitting this due diligence statement the operator confirms that due diligence in accordance with Regulation (EU) 2023/1115 was carried out and that no or only a negligible risk was found that the relevant products do not comply with Article 3, point (a) or (b), of that Regulation."</p>
+<h2>9. Statement and signature (Annex II)</h2>
+<p>To be completed by the operator in the EU Information System: "By submitting this due diligence statement the operator confirms that due diligence in accordance with Regulation (EU) 2023/1115 was carried out and that no or only a negligible risk was found that the relevant products do not comply with Article 3, point (a) or (b), of that Regulation." <small>(Annex II of Reg. 2023/1115. Reg. 2025/2650 may have renumbered the annexes: check before filing.)</small></p>
 <div class="sign"><div>Signed for and on behalf of: [operator]</div><div>Date</div><div>Name and function</div><div>Signature</div></div>
 </body></html>
 `;
@@ -234,7 +242,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
       producers: ps.map((p) => ({ country, name: p.farmer_name })),
       geolocation: { file: "traces-geolocation.geojson", geometryGeojsonBase64: utf8ToBase64(stringifyGeoJSON(buildTracesGeoJSON(ps, country), 0)) },
     })),
-    declaration: "Point 5 (Annex II) statement and point 6 signature are completed by the operator in the EU Information System.",
+    declaration: "The Annex II statement and signature are completed by the operator in the EU Information System.",
     afterFiling: { referenceNumber: null, verificationNumber: null, customsCode: "C716" },
   };
   const ddsText = JSON.stringify(dds, null, 2);
@@ -256,6 +264,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
         hectares: p.hectares,
         geometryType: p.geometry.type,
         season: r?.yield?.season,
+        productionPeriod: productionPeriod(p, r?.yield?.season),
         deliveries: (p.deliveries || []).map((d) => ({ date: d.date, kg: d.kg, receipt: d.receipt })),
         deforestationFree: { whispRisk: r?.whisp_risk, indicators: r?.indicators, whispVersion: whisp?.version, checkedAt: whisp?.checked_at },
         legality: p.legality || { status: "questionnaire pending" },
@@ -283,7 +292,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
   const reportText = buildReportHtml({ lotCheck, lotPlots, res, dds, rows, log, cooperative, country, whisp, files: docs, now });
   docs.push({ id: "report", title: "Due diligence report (readable, printable)", subtitle: "Arts 9-11 in one document · print to PDF · operator signs", filename: `due-diligence-report-${String(lot.id).replace(/[^A-Za-z0-9_-]/g, "_")}.html`, mime: "text/html", content: reportText, sha256: await sha256(reportText) });
 
-  const keepUntil = new Date(Date.now() + 5 * 365.25 * 86400000).toISOString().slice(0, 10);
+  const keepUntil = "5 years from the date the products are placed on the market or exported (operator records that date)";
   const retention = {
     _status: DISCLAIMER,
     createdAt: now,
@@ -294,7 +303,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
     rules: { config: CONFIG },
   };
   const retentionText = JSON.stringify(retention, null, 2);
-  docs.push({ id: "retention", title: "Retention index", subtitle: `SHA-256 per file · keep until ${keepUntil}`, filename: "retention-index.json", mime: "application/json", content: retentionText, sha256: await sha256(retentionText) });
+  docs.push({ id: "retention", title: "Retention index", subtitle: `SHA-256 per file · keep 5 years from placing on the market`, filename: "retention-index.json", mime: "application/json", content: retentionText, sha256: await sha256(retentionText) });
 
   return { blocking: [], lot: lotCheck, documents: docs, art10: rows, art11: log, statusLabels: STATUS_LABELS };
 }

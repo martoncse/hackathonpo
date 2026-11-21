@@ -163,6 +163,21 @@ export function checkYield(plot, season = seasonOf(plot)) {
 // sold under one card for one crop in one season with the area of ALL that producer's plots of
 // that crop. One card can cover coffee and cocoa, so groups are card + crop.
 // Returns Map("card|crop" -> result shaped like checkYield's). Use producerKey() to look up.
+const seasonsOf = (plots) => [...new Set(plots.flatMap((p) => (p.deliveries || []).map((d) => d.season)).filter(Boolean))].sort();
+
+// Picks the flagged season with the highest kg/ha; with no flag, the latest season.
+function worstSeason(results) {
+  const flagged = results.filter((r) => r.flag).sort((a, b) => (b.kg_per_ha ?? Infinity) - (a.kg_per_ha ?? Infinity));
+  return flagged[0] || results.at(-1) || null;
+}
+
+// Single-plot volume check across all its seasons.
+export function checkYieldAllSeasons(plot) {
+  const seasons = seasonsOf([plot]);
+  if (seasons.length < 2) return checkYield(plot);
+  return worstSeason(seasons.map((season) => checkYield(plot, season)));
+}
+
 export const producerKey = (p) => `${p.producer_card}|${String(p.crop || "").toLowerCase()}`;
 
 export function checkProducerVolumes(plots) {
@@ -175,9 +190,16 @@ export function checkProducerVolumes(plots) {
   }
   const out = new Map();
   for (const [k, ps] of groups) {
+    const seasons = seasonsOf(ps);
+    const perSeason = (seasons.length ? seasons : [null]).map((season) => cardSeason(ps, season));
+    out.set(k, worstSeason(perSeason));
+  }
+  return out;
+}
+
+// One card, one crop, one season: all the card's plots pooled.
+function cardSeason(ps, season) {
     const card = ps[0].producer_card;
-    // One season for the whole card: the latest any of its plots sold in.
-    const season = ps.map(seasonOf).filter(Boolean).sort().at(-1) || null;
     const ys = ps.map((p) => checkYield(p, season));
     const ha = Math.round(ys.reduce((s, y) => s + (y.ha_used > 0 ? y.ha_used : 0), 0) * 100) / 100;
     const kg = ys.reduce((s, y) => s + (y.kg_comparable || 0), 0);
@@ -192,9 +214,7 @@ export function checkProducerVolumes(plots) {
     } else if (limit && ha > 0 && r.kg_per_ha > limit) {
       r.flag = `Needs review: producer card ${card} sold ${delivered.toLocaleString("en")} kg in ${season} across ${ps.length} plot(s) totalling ${ha} ha (${basis}) = ${r.kg_per_ha.toLocaleString("en")} ${unit}, above the review threshold of ${limit.toLocaleString("en")}. Could be produce from unregistered plots, stock carried over from an earlier season, or a very productive farm: ask before accepting`;
     }
-    out.set(k, r);
-  }
-  return out;
+    return r;
 }
 
 // ---------- classification ----------
@@ -213,12 +233,33 @@ export function whispPropsById(fc) {
 // plots: farm records; fc: Whisp result FeatureCollection (or null);
 // decisions: { [plotId]: { decision: "accept"|"mitigate"|"exclude", reason, reviewer, at } }
 export function classify(plots, fc, decisions = {}) {
+  const results = classifyPlots(plots, fc, decisions);
+  const byKey = new Map();
+  plots.forEach((p, i) => {
+    if (!p.producer_card) return;
+    const k = producerKey(p);
+    if (!byKey.has(k)) byKey.set(k, []);
+    byKey.get(k).push(results[i]);
+  });
+  plots.forEach((p, i) => {
+    const r = results[i];
+    if (!p.producer_card || !r.eligible) return;
+    const blockers = byKey.get(producerKey(p)).filter((x) => x.id !== r.id && !x.eligible);
+    if (!blockers.length) return;
+    r.eligible = false;
+    r.card_blocked_by = blockers.map((x) => x.id);
+    r.reasons.push(`Can't ship: producer card ${p.producer_card} also covers ${blockers.map((x) => `${x.id} (${STATUS_LABELS[x.status] || x.status})`).join(", ")}, and sales on one card can't be split between plots`);
+  });
+  return results;
+}
+
+function classifyPlots(plots, fc, decisions) {
   const byId = whispPropsById(fc);
   const producerVolumes = checkProducerVolumes(plots);
   return plots.map((plot) => {
     const w = fc ? byId.get(String(plot.id)) || null : null;
     const geometry = checkGeometry(plot);
-    let yieldCheck = checkYield(plot);
+    let yieldCheck = checkYieldAllSeasons(plot);
     // Card-based sales: the plausibility flag comes from the producer's total, not the single plot.
     const producer = plot.producer_card ? producerVolumes.get(producerKey(plot)) : null;
     // Same season as the card group, so per-plot figures and labels match the pooled check.

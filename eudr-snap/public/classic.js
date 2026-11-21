@@ -1,7 +1,11 @@
 const $ = (id) => document.getElementById(id);
 const COLOURS = { green: "#1f8a4c", accepted: "#1f8a4c", review: "#c98a00", mitigating: "#c98a00", blocked: "#c98a00", excluded: "#c62828", unchecked: "#8a948d" };
 const LABELS = { green: "Compliant", accepted: "Accepted after review", review: "Needs review", mitigating: "Mitigation open", blocked: "Fix geolocation", excluded: "Excluded", unchecked: "Not checked" };
+// Everything from the data (names, reasons, reviewer text) is escaped before it goes into HTML.
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
 const kgOf = (f) => (f.deliveries || []).reduce((s, d) => s + d.kg, 0);
+// The season the rules checked (the same figure the pack reports), else all deliveries.
+const seasonKg = (f) => results.get(f.id)?.yield?.kg_delivered ?? kgOf(f);
 
 let farms = [];
 let results = new Map();
@@ -44,7 +48,7 @@ function render() {
     const c = centreOf(f.geometry);
     bounds.push(c);
     const marker = L.circleMarker(c, { radius: 11, color: "#fff", weight: 2, fillColor: COLOURS[st], fillOpacity: 1 });
-    marker.bindPopup(`<b>${f.farm}</b><br>${f.farmer_name}<br>${f.crop} · ${f.hectares} ha · ${f.region}<br><b>${LABELS[st]}</b>${r ? "<br>" + r.reasons.join("<br>") : ""}`);
+    marker.bindPopup(`<b>${esc(f.farm)}</b><br>${esc(f.farmer_name)}<br>${esc(f.crop)} · ${esc(f.hectares)} ha · ${esc(f.region)}<br><b>${LABELS[st]}</b>${r ? "<br>" + r.reasons.map(esc).join("<br>") : ""}`);
     layer.addLayer(marker);
     if (f.geometry.type === "Polygon") {
       layer.addLayer(L.geoJSON(f.geometry, { style: { color: COLOURS[st], weight: 2, fillOpacity: 0.25 } }));
@@ -53,14 +57,14 @@ function render() {
     const isExcluded = exclude && st === "excluded";
     if (isExcluded) excluded++;
     else if (st === "blocked") blocking++;
-    if (!isExcluded && r?.eligible) okKg += kgOf(f);
+    if (!isExcluded && r?.eligible) okKg += seasonKg(f);
 
-    const reasons = r ? r.reasons.map((x) => `<span class="reason">${x}</span>`).join("") : "";
-    rows.push(`<tr class="${isExcluded ? "excluded" : ""}" data-id="${f.id}">
-      <td><b>${f.farmer_name}</b><span class="reason">${f.farm} · ${f.region}${f.producer_card ? " · card " + f.producer_card : ""}</span></td>
-      <td>${f.crop}</td><td>${f.hectares}</td>
-      <td>${kgOf(f).toLocaleString("en")}<span class="reason ${r?.yield?.flag ? "yield-bad" : ""}">${(r?.yield?.producer?.kg_per_ha ?? r?.yield?.kg_per_ha ?? Math.round(kgOf(f) / f.hectares)).toLocaleString("en")}/ha${r?.yield?.producer ? " (card total)" : ""}</span></td>
-      <td><span class="status ${st}">${LABELS[st]}</span>${reasons}${["review", "mitigating"].includes(st) ? `<div class="decide"><button data-decide="accept" data-plot="${f.id}">Accept…</button><button class="secondary" data-decide="exclude" data-plot="${f.id}">Exclude</button></div>` : ""}${r?.decision ? `<div class="decide"><button class="secondary" data-decide="clear" data-plot="${f.id}">Undo decision</button></div>` : ""}</td></tr>`);
+    const reasons = r ? r.reasons.map((x) => `<span class="reason">${esc(x)}</span>`).join("") : "";
+    rows.push(`<tr class="${isExcluded ? "excluded" : ""}" data-id="${esc(f.id)}">
+      <td><b>${esc(f.farmer_name)}</b><span class="reason">${esc(f.farm)} · ${esc(f.region)}${f.producer_card ? " · card " + esc(f.producer_card) : ""}</span></td>
+      <td>${esc(f.crop)}</td><td>${esc(f.hectares)}</td>
+      <td>${seasonKg(f).toLocaleString("en")}<span class="reason ${r?.yield?.flag ? "yield-bad" : ""}">${(r?.yield?.producer?.kg_per_ha ?? r?.yield?.kg_per_ha ?? Math.round(kgOf(f) / f.hectares)).toLocaleString("en")}/ha${r?.yield?.producer ? " (card total)" : ""}</span></td>
+      <td><span class="status ${st}">${LABELS[st]}</span>${reasons}${["review", "mitigating"].includes(st) ? `<div class="decide"><button data-decide="accept" data-plot="${esc(f.id)}">Accept…</button><button class="secondary" data-decide="exclude" data-plot="${esc(f.id)}">Exclude</button></div>` : ""}${r?.decision ? `<div class="decide"><button class="secondary" data-decide="clear" data-plot="${esc(f.id)}">Undo decision</button></div>` : ""}</td></tr>`);
   }
   $("rows").innerHTML = rows.join("");
   $("ok-kg").textContent = okKg.toLocaleString("en");
@@ -200,7 +204,6 @@ loadFarms().then(async () => {
 
 // ---------- 1. record a purchase ----------
 
-const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
 const postJson = async (url, body, method = "POST") => {
   const res = await fetch(url, { method, headers: { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
   return { ok: res.ok, status: res.status, body: await res.json().catch(() => ({})) };
@@ -262,7 +265,7 @@ $("read-photo").onclick = async () => {
       "<b>Read from the photo. Check each value against the paper:</b><br>" +
       body.fields
         .filter((f) => f.field !== "coordinates")
-        .map((f) => `${esc(f.field)}: <b>${esc(f.value ?? "—")}</b> <small>(“${esc(f.source)}”, confidence ${f.confidence ?? "—"}${f.note ? "; " + esc(f.note) : ""})</small>`)
+        .map((f) => `${esc(f.field)}: <b>${esc(f.value ?? "—")}</b> <small>(“${esc(f.source)}”, confidence ${esc(f.confidence ?? "—")}${f.note ? "; " + esc(f.note) : ""})</small>`)
         .join("<br>") +
       (card && !opt ? `<br><b>Card ${esc(card)} is not in the cooperative register: pick the producer by hand.</b>` : "") +
       (body.warnings?.length ? "<br>Warnings: " + body.warnings.map(esc).join("; ") : "");
@@ -284,7 +287,7 @@ $("record").onclick = async () => {
   if (!res.ok) return msg("d-msg", res.body.error || "Not recorded.", false);
   const r = res.body.result;
   const y = r?.yield?.producer || r?.yield;
-  msg("d-msg", `Recorded ${body.kg.toLocaleString("en")} kg on receipt ${body.receipt}. Now ${y?.kg_per_ha?.toLocaleString("en") ?? "—"} ${y?.unit || "kg/ha"} for ${y?.season || "the season"}${r?.yield?.flag ? ": needs review" : ""}.`, !r?.yield?.flag);
+  msg("d-msg", `${res.body.reopened?.length ? `Review reopened for ${res.body.reopened.join(", ")} (new volume since the decision). ` : ""}Recorded ${body.kg.toLocaleString("en")} kg on receipt ${body.receipt}. Now ${y?.kg_per_ha?.toLocaleString("en") ?? "—"} ${y?.unit || "kg/ha"} for ${y?.season || "the season"}${r?.yield?.flag ? ": needs review" : ""}.`, !r?.yield?.flag);
   fromPhoto = false;
   $("d-checked-wrap").classList.add("hidden");
   $("extracted").innerHTML = "";
@@ -294,9 +297,9 @@ $("record").onclick = async () => {
 };
 
 $("reset-deliveries").onclick = async () => {
-  if (!confirm("Remove every purchase recorded in the app? The sample data stays.")) return;
+  if (!confirm("Reset the demo: remove every purchase recorded in the app AND every review decision? The sample data stays.")) return;
   await postJson("/api/deliveries", undefined, "DELETE");
-  msg("d-msg", "Recorded purchases removed.");
+  msg("d-msg", "Demo reset: recorded purchases and review decisions removed.");
   await refreshResults();
 };
 
@@ -327,12 +330,13 @@ document.addEventListener("click", async (e) => {
 $("make-pack").onclick = async () => {
   const cleared = farms.filter((f) => results.get(f.id)?.eligible);
   const left = farms.filter((f) => !results.get(f.id)?.eligible);
+  for (const a of document.querySelectorAll("#docs a")) URL.revokeObjectURL(a.href);
   $("docs").innerHTML = "";
   if (!cleared.length) return msg("pack-msg", "No plot is cleared yet. Check with Whisp and review the flagged plots first.", false);
   const lotId = `EU-${profile.country_iso2 || "CO"}-${new Date().toISOString().slice(0, 10)}`;
   const res = await postJson("/api/export", { lot: { id: lotId, market: "EU", plot_ids: cleared.map((f) => f.id) } });
   if (!res.ok) return msg("pack-msg", (res.body.blocking || [res.body.error]).join(" · "), false);
-  msg("pack-msg", `Lot ${lotId}: ${cleared.length} plot(s).${left.length ? ` Left out: ${left.map((f) => f.farm + " (" + (LABELS[statusOf(f.id)] || "not cleared") + ")").join(", ")}.` : ""}`, true);
+  msg("pack-msg", `Lot ${lotId}: ${cleared.length} plot(s).${left.length ? ` Left out: ${left.map((f) => f.farm + " (" + (results.get(f.id)?.card_blocked_by ? "shares a card with " + results.get(f.id).card_blocked_by.join(", ") : LABELS[statusOf(f.id)] || "not cleared") + ")").join(", ")}.` : ""}`, true);
   $("docs").innerHTML =
     res.body.documents
       .map((d) => {

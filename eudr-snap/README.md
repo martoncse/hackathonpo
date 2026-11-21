@@ -2,6 +2,8 @@
 
 The red pin is a real FAO Whisp result, not a hard-coded one. Five cooperative farms are sent to [Whisp](https://whisp.openforis.org) (FAO's free EUDR deforestation-risk API). Each farm gets a traffic light, and high-risk plots can be dropped from the shipment.
 
+**Live demo:** https://eudr-snap.vercel.app (Colombian profile; 3D story at `/`, record → review → pack at `/classic.html`). No API keys are set there: "Read photo" says so, and typing a receipt in still works. Recorded purchases and decisions live in the function's `/tmp`: temporary, and each running copy has its own. Press **Reset demo** before a pitch. A Whisp key pasted there sits in server memory, so other visitors could use it until the instance restarts. Redeploy: `vercel deploy --prod` in `eudr-snap/`.
+
 ## Run it
 
 ```powershell

@@ -46,5 +46,9 @@
       "documented"
     ]
   },
-  "story": false
+  "story": false,
+  "season_rule": {
+    "campaign_start_month": 10,
+    "_note": "Ivorian cocoa campaign runs 1 October to 30 September (main crop from October, mid crop from April)."
+  }
 }

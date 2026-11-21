@@ -65,15 +65,24 @@ test("Côte d'Ivoire: a recorded purchase flows into the rules, the review and t
   assert.equal((await api("POST", "/api/review", { plot_id: "C1", decision: "accept" })).status, 400);
   await api("POST", "/api/review", { plot_id: "C1", decision: "accept", reason: "Field visit: second plot found, mapping booked", reviewer: "A. Koné" });
   await api("POST", "/api/review", { plot_id: "C3", decision: "accept", reason: "Card holder's sons farm a third plot, mapping booked", reviewer: "A. Koné" });
-  await api("POST", "/api/review", { plot_id: "C4", decision: "exclude", reason: "", reviewer: "A. Koné" });
+  await api("POST", "/api/review", { plot_id: "C4", decision: "exclude", reason: "High-risk plot", reviewer: "A. Koné" });
 
-  const pack = await api("POST", "/api/export", { lot: { id: "EU-CI-1", market: "EU", plot_ids: ["C1", "C2", "C3"] } });
+  // C3 shares a card with excluded C4: the card's sales can't be split, so C3 can't ship either.
+  const mixed = await api("POST", "/api/export", { lot: { id: "EU-CI-M", market: "EU", plot_ids: ["C1", "C2", "C3"] } });
+  assert.equal(mixed.status, 422);
+  const c3 = (await api("GET", "/api/risk/saved")).body.results.find((r) => r.id === "C3");
+  assert.equal(c3.eligible, false);
+  assert.deepEqual(c3.card_blocked_by, ["C4"]);
+
+  // Accepting the whole card (both plots) clears it.
+  await api("POST", "/api/review", { plot_id: "C4", decision: "accept", reason: "Card holder's sons farm a third plot, mapping booked", reviewer: "A. Koné" });
+  const pack = await api("POST", "/api/export", { lot: { id: "EU-CI-1", market: "EU", plot_ids: ["C1", "C2", "C3", "C4"] } });
   assert.equal(pack.status, 200);
   const docs = Object.fromEntries(pack.body.documents.map((d) => [d.id, d]));
   assert.deepEqual(Object.keys(docs).sort(), ["art10", "art11", "art9", "dds", "geojson", "report", "retention"]);
 
   const geo = JSON.parse(docs.geojson.content);
-  assert.equal(geo.features.length, 3);
+  assert.equal(geo.features.length, 4);
   assert.ok(geo.features.every((f) => f.properties.ProducerCountry === "CI" && typeof f.properties.Area === "number"));
   const dds = JSON.parse(docs.dds.content);
   assert.equal(dds.commodities[0].hsHeading, "180100");
@@ -82,6 +91,8 @@ test("Côte d'Ivoire: a recorded purchase flows into the rules, the review and t
   assert.ok(art9.plots.find((p) => p.id === "C1").deliveries.some((d) => d.receipt === "BA-900"));
   const art11 = JSON.parse(docs.art11.content).entries;
   assert.equal(art11.length, 3);
+  const pp = art9.plots.find((p) => p.id === "C1").productionPeriod;
+  assert.deepEqual([pp.from, pp.to], ["2025-10-14", "2026-03-02"]);
   assert.ok(art11.some((e) => e.reviewer === "A. Koné" && /Field visit/.test(e.reason)));
 
   const report = docs.report.content;
@@ -95,11 +106,29 @@ test("Côte d'Ivoire: a recorded purchase flows into the rules, the review and t
   for (const id of ["geojson", "dds", "art9", "art10", "art11"]) assert.ok(report.includes(docs[id].sha256), id);
   assert.ok(docs.retention.content.includes(docs.report.sha256));
 
-  // Removing the recorded purchases puts Kouassi back to clear.
-  await api("POST", "/api/review", { plot_id: "C1", decision: "clear" });
+  // A new receipt is new evidence: the earlier accept on that card reopens.
+  const more = await api("POST", "/api/deliveries", { plot_id: "C3", date: "2026-03-05", season: "2025-26", kg: 500, receipt: "BA-902" });
+  assert.deepEqual(more.body.reopened.sort(), ["C3", "C4"]);
+  assert.equal(more.body.result.status, "review");
+
+  // Demo reset removes recorded purchases AND decisions.
   await api("DELETE", "/api/deliveries");
   status = Object.fromEntries((await api("GET", "/api/risk/saved")).body.results.map((r) => [r.id, r.status]));
-  assert.equal(status.C1, "green");
+  assert.deepEqual(status, { C1: "green", C2: "green", C3: "review", C4: "review", C5: "blocked" });
+});
+
+test("Côte d'Ivoire: a flagged producer can't be cleared with a tiny, mislabelled or future receipt", async () => {
+  const api = await start("cocoa-ci");
+  // Future date, and a season that doesn't contain the date, are refused.
+  assert.equal((await api("POST", "/api/deliveries", { plot_id: "C3", date: "2031-01-01", season: "2030-31", kg: 1, receipt: "X-1" })).status, 400);
+  const wrong = await api("POST", "/api/deliveries", { plot_id: "C3", date: "2026-03-02", season: "2099", kg: 1, receipt: "X-2" });
+  assert.equal(wrong.status, 400);
+  assert.match(wrong.body.error, /belongs to season 2025-26/);
+  // A real but tiny receipt in a newer campaign doesn't hide the flagged 2025-26 campaign.
+  const tiny = await api("POST", "/api/deliveries", { plot_id: "C3", date: "2026-10-05", season: "2026-27", kg: 1, receipt: "X-3" });
+  assert.equal(tiny.status, 201);
+  assert.equal(tiny.body.result.status, "review");
+  assert.equal(tiny.body.result.yield.season, "2025-26");
 });
 
 test("Colombia (default profile): the same path still produces the pack and report", async () => {

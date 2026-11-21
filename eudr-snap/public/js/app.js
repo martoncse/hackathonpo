@@ -719,6 +719,10 @@ function renderPack(pack) {
 
 function download(doc) {
   const url = URL.createObjectURL(new Blob([doc.content], { type: doc.mime }));
+  if (doc.mime === "text/html") {
+    window.open(url, "_blank", "noopener");
+    return setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
   const a = Object.assign(document.createElement("a"), { href: url, download: doc.filename });
   document.body.appendChild(a);
   a.click();

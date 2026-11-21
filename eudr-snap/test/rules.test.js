@@ -135,3 +135,10 @@ test("pack is blocked by the point, then built after walking the boundary", asyn
   assert.equal(dds.commodities[0].estimatedKgUnit, "kg green");
   assert.equal(pack.art10.length, 14);
 });
+
+test("every season is checked: a later small season can't hide a flagged one", () => {
+  const plot = { id: "S", crop: "Cocoa", hectares: 1, geometry: { type: "Point", coordinates: [-75, 2] }, deliveries: [{ season: "2025-B", kg: 3000 }, { season: "2026-A", kg: 1 }] };
+  const r = classify([plot], null)[0];
+  assert.equal(r.yield.season, "2025-B");
+  assert.ok(r.yield.flag);
+});

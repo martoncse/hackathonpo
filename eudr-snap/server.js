@@ -29,7 +29,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(here, "public");
 const SHARED_DIR = path.join(here, "shared");
 // EUDR_DATA_DIR / EUDR_WHISP_CACHE: used by the end-to-end test to keep its files out of the repo.
-const DATA_DIR = process.env.EUDR_DATA_DIR ? path.resolve(process.env.EUDR_DATA_DIR) : path.join(here, "data");
+// On Vercel only /tmp is writable (temporary, per instance): recorded purchases and decisions live there.
+const HOSTED = Boolean(process.env.VERCEL);
+const DATA_DIR = process.env.EUDR_DATA_DIR ? path.resolve(process.env.EUDR_DATA_DIR) : HOSTED ? "/tmp/eudr-snap-data" : path.join(here, "data");
 // Country profile. No EUDR_PROFILE = the original Colombian demo, unchanged.
 // EUDR_PROFILE=cocoa-ci loads profiles/cocoa-ci/{profile.json, sample-farms.json, whisp-cache.json}.
 const DEFAULT_PROFILE = { id: "", name: "Colombia: coffee and cocoa", country_iso2: "CO", whisp_national_codes: ["co"], rules: {}, story: true };
@@ -125,8 +127,25 @@ async function demoFarms() {
 
 const SEASON_RE = /^[0-9]{4}(-[0-9A-Za-z]{1,4})?$/;
 
+// The season a purchase date falls in, when the profile defines campaigns (Côte d'Ivoire:
+// October to September, "2025-26"). Without a rule, the season must already exist in the data.
+export function seasonForDate(date, rule) {
+  if (!rule?.campaign_start_month) return null;
+  const [y, m] = date.split("-").map(Number);
+  const start = m >= rule.campaign_start_month ? y : y - 1;
+  return `${start}-${String((start + 1) % 100).padStart(2, "0")}`;
+}
+
+// Writes to the JSON files go one at a time, so two requests can't both pass the duplicate check.
+let writeChain = Promise.resolve();
+const serial = (fn) => (writeChain = writeChain.then(fn, fn));
+
 async function handleAddDelivery(req, res) {
   const b = await readJsonBody(req);
+  return serial(() => addDelivery(b, res));
+}
+
+async function addDelivery(b, res) {
   const farms = await demoFarms();
   const plot = farms.find((f) => f.id === b.plot_id);
   if (!plot) return sendJson(res, 400, { error: "Pick the plot (or producer) this purchase came from." });
@@ -134,6 +153,12 @@ async function handleAddDelivery(req, res) {
   if (!(kg > 0 && kg <= 100000)) return sendJson(res, 400, { error: "Weight must be a number of kg between 0 and 100,000." });
   if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(b.date || "")) || Number.isNaN(Date.parse(b.date))) return sendJson(res, 400, { error: "Date must be yyyy-mm-dd." });
   if (!SEASON_RE.test(String(b.season || ""))) return sendJson(res, 400, { error: "Season must look like 2025-26 or 2026-A." });
+  if (b.date > new Date().toISOString().slice(0, 10)) return sendJson(res, 400, { error: "The purchase date is in the future." });
+  const expected = seasonForDate(b.date, profile.season_rule);
+  if (expected && b.season !== expected) return sendJson(res, 400, { error: `A purchase on ${b.date} belongs to season ${expected}, not ${b.season}.` });
+  if (!expected && !farms.some((f) => (f.deliveries || []).some((d) => d.season === b.season))) {
+    return sendJson(res, 400, { error: `Season ${b.season} isn't in the cooperative's records. Use one of: ${[...new Set(farms.flatMap((f) => (f.deliveries || []).map((d) => d.season)))].sort().join(", ")}.` });
+  }
   const receipt = String(b.receipt || "").trim().slice(0, 40);
   if (!receipt) return sendJson(res, 400, { error: "The receipt number is required: it links the purchase to the paper record." });
   if (farms.some((f) => (f.deliveries || []).some((d) => d.receipt === receipt))) return sendJson(res, 409, { error: `Receipt ${receipt} is already recorded.` });
@@ -143,8 +168,13 @@ async function handleAddDelivery(req, res) {
   recorded.push(entry);
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(DELIVERIES_FILE, JSON.stringify(recorded, null, 2));
+  // New volume = new evidence: an earlier accept on this plot (or any plot on the same card)
+  // no longer covers it, so the review reopens.
+  const reopened = farms.filter((f) => f.id === plot.id || (plot.producer_card && f.producer_card === plot.producer_card)).map((f) => f.id).filter((id) => decisions[id]);
+  for (const id of reopened) delete decisions[id];
+  if (reopened.length) await saveDecisions();
   const plots = await demoFarms();
-  return sendJson(res, 201, { delivery: entry, result: (await currentResults(plots)).find((r) => r.id === plot.id) });
+  return sendJson(res, 201, { delivery: entry, reopened, result: (await currentResults(plots)).find((r) => r.id === plot.id) });
 }
 
 function whispMeta(fc, checkedAt) {
@@ -167,7 +197,7 @@ async function handleRisk(req, res) {
     const checkedAt = new Date().toISOString();
     const result = { source: "live", checked_at: checkedAt, whisp: whispMeta(fc, checkedAt), results: classify(plots, fc, decisions), raw: fc };
     // Only the default demo batch refreshes the stage backup.
-    if (!body.plots) await fs.writeFile(CACHE_FILE, JSON.stringify({ source: "cached", checked_at: checkedAt, raw: fc }, null, 2));
+    if (!body.plots) await fs.writeFile(CACHE_FILE, JSON.stringify({ source: "cached", checked_at: checkedAt, raw: fc }, null, 2)).catch(() => {});
     return sendJson(res, 200, result);
   } catch (error) {
     const reason = friendly(error);
@@ -183,7 +213,11 @@ async function currentResults(plots) {
 }
 
 async function handleReview(req, res) {
-  const { plot_id, decision, reason = "", reviewer = "" } = await readJsonBody(req);
+  const body = await readJsonBody(req);
+  return serial(() => review(body, res));
+}
+
+async function review({ plot_id, decision, reason = "", reviewer = "" }, res) {
   if (!plot_id) return sendJson(res, 400, { error: "plot_id is required" });
   if (decision === null || decision === "clear") {
     delete decisions[plot_id];
@@ -309,8 +343,13 @@ async function route(req, res) {
   if (pathname === "/api/deliveries" && req.method === "GET") return sendJson(res, 200, { deliveries: (await readJsonFile(DELIVERIES_FILE)) || [] });
   if (pathname === "/api/deliveries" && req.method === "POST") return handleAddDelivery(req, res);
   if (pathname === "/api/deliveries" && req.method === "DELETE") {
-    await fs.rm(DELIVERIES_FILE, { force: true });
-    return sendJson(res, 200, { deliveries: [] });
+    // Demo reset: recorded purchases AND review decisions, so rehearsals don't carry onto the stage.
+    await serial(async () => {
+      await fs.rm(DELIVERIES_FILE, { force: true });
+      decisions = {};
+      await saveDecisions();
+    });
+    return sendJson(res, 200, { deliveries: [], decisions: {} });
   }
   if (pathname === "/api/risk" && req.method === "POST") return handleRisk(req, res);
   if (pathname === "/api/risk/saved" && req.method === "GET") {
@@ -323,6 +362,7 @@ async function route(req, res) {
   if (pathname === "/api/export" && req.method === "POST") return handleExport(req, res);
   if (pathname === "/api/extract" && req.method === "POST") return handleExtract(req, res);
   if (pathname === "/api/find-plots" && req.method === "POST") {
+    if (HOSTED) return sendJson(res, 400, { error: "The plot finder rewrites the demo files, so it only runs locally." });
     if (PROFILE_ID) return sendJson(res, 400, { error: "The plot finder only exists for the Colombian demo." });
     if (!whispKey) return sendJson(res, 400, { error: friendly({ code: "auth_missing_api_key" }) });
     startFindJob();
@@ -333,15 +373,21 @@ async function route(req, res) {
   res.writeHead(405).end("Method not allowed");
 }
 
-const server = http.createServer((req, res) => {
-  route(req, res).catch((error) => {
+// One handler for both: the local server below, and Vercel's function (api/index.js).
+export function handler(req, res) {
+  return route(req, res).catch((error) => {
     console.error(error.message);
     if (!res.headersSent) sendJson(res, 400, { error: friendly(error) });
   });
-});
+}
+
+// Vercel detects server.js as the entry point and calls its default export per request.
+export default handler;
 
 await loadDecisions();
-server.listen(PORT, () => {
-  console.log(`EUDR-Snap running at http://localhost:${PORT} (profile: ${profile.name})`);
-  console.log(whispKey ? "Whisp key loaded from WHISP_API_KEY." : "No Whisp key yet: paste one in the page.");
-});
+if (!HOSTED) {
+  http.createServer(handler).listen(PORT, () => {
+    console.log(`EUDR-Snap running at http://localhost:${PORT} (profile: ${profile.name})`);
+    console.log(whispKey ? "Whisp key loaded from WHISP_API_KEY." : "No Whisp key yet: paste one in the page.");
+  });
+}
