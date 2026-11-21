@@ -1,0 +1,236 @@
+<title>Presko Scoring Rule v1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a top-to-bottom pipeline. Each stage pairs the rule (left) with the same stage worked through for one real school (right). */
+:root {
+  --bg: #f3f6f5; --surface: #ffffff; --sunk: #e9efed; --ink: #13201c; --muted: #5e6e68; --line: #d5dfdb;
+  --accent: #0e6c64; --accent-ink: #ffffff; --accent-soft: #dcefeb;
+  --green: #2e8b57; --amber: #b87a08; --red: #b3261e; --violet: #6a55b8; --orange: #c9561f;
+  --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1412; --surface: #151f1c; --sunk: #1c2925; --ink: #e4ede9; --muted: #98aaa4; --line: #2a3833;
+  --accent: #4fb3a7; --accent-ink: #062320; --accent-soft: #143530;
+  --green: #4fbf86; --amber: #efb547; --red: #ef6a60; --violet: #a493ea; --orange: #f08a55; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1412; --surface: #151f1c; --sunk: #1c2925; --ink: #e4ede9; --muted: #98aaa4; --line: #2a3833;
+  --accent: #4fb3a7; --accent-ink: #062320; --accent-soft: #143530;
+  --green: #4fbf86; --amber: #efb547; --red: #ef6a60; --violet: #a493ea; --orange: #f08a55; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body) }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0 }
+h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15 }
+h2 { font-size: 20px }
+h3 { font-size: 15px }
+p { margin: 0 }
+.lede { max-width: 68ch; color: var(--muted) }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.eyebrow { font: 600 12px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent) }
+
+/* overview strip */
+.flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px }
+.flow .node { flex: 1 1 150px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0 }
+.flow .node b { font-family: var(--display); font-size: 14px }
+.flow .node span { font-size: 12px; color: var(--muted) }
+.flow .arrow { align-self: center; color: var(--muted); font-size: 18px }
+.flow .node.out { background: var(--accent-soft); border-color: var(--accent) }
+
+/* stages */
+.stage { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 0 18px; position: relative }
+.stage .num { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 700 14px var(--display); display: grid; place-items: center; z-index: 1 }
+.stage::before { content: ""; position: absolute; left: 15px; top: 34px; bottom: -28px; width: 2px; background: var(--line) }
+.stage:last-of-type::before { display: none }
+.rule, .ex { display: grid; gap: 10px; align-content: start; min-width: 0 }
+.rule { padding-top: 4px }
+.ex { background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 12px 14px }
+.ex .tag { font: 600 11px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+.colhead { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 18px; font: 600 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+@media (max-width: 760px) {
+  .stage { grid-template-columns: 36px minmax(0, 1fr) } .ex { grid-column: 2; margin-top: 10px }
+  .stage::before { left: 15px } .colhead { display: none }
+}
+
+table { border-collapse: collapse; width: 100%; font-size: 14px }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: 12px; color: var(--muted); font-weight: 600 }
+td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap }
+.tbl { overflow-x: auto }
+.pos { color: var(--red); font-weight: 600 } .neg { color: var(--green); font-weight: 600 }
+.chip { display: inline-block; font-weight: 600; font-size: 12px; padding: 2px 9px; border-radius: 99px; color: #fff; white-space: nowrap }
+.g { background: var(--green) } .a { background: var(--amber) } .r { background: var(--red) }
+:root .a { color: #1d1400 }
+.sum { font-family: var(--mono); font-size: 14px; background: var(--sunk); border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre }
+
+/* number line for bands */
+.scale { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); border-radius: 8px; overflow: hidden; font: 600 12px var(--mono) }
+.scale div { padding: 6px 0; text-align: center; color: #fff }
+.scale .a { color: #1d1400 }
+.scale-l { display: grid; grid-template-columns: 3fr 2fr 5fr; font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px }
+
+/* decision tree */
+.tree { display: grid; gap: 8px }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px }
+.q .ans { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px }
+.q .yes::before { content: "Yes → "; color: var(--muted) } .q .no::before { content: "No → "; color: var(--muted) }
+.mode { font-weight: 600 }
+
+.say { background: var(--accent-soft); border-radius: 14px; padding: 18px 20px; display: grid; gap: 10px }
+.say ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 75ch }
+.caveats ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80ch }
+.foot { font-size: 12px; color: var(--muted) }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <span class="eyebrow">Presko · internal explainer · not shown in the app</span>
+    <h1>How Decision Rule v1 turns a forecast into a school plan</h1>
+    <p class="lede">Each classroom building gets a heat score for tomorrow's morning and afternoon. The score sets a colour band, the bands decide which classrooms can be used in each half of the day, and the number of usable classrooms decides the school's plan. Left column: the rule. Right column: the same step worked through for Pandac Elementary School on the demo closure day.</p>
+  </header>
+
+  <nav class="flow" aria-label="Pipeline overview">
+    <div class="node"><b>Hourly forecast</b><span>temperature + humidity</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="node"><b>Forecast points</b><span>per half-day</span></div><span class="arrow" aria-hidden="true">+</span>
+    <div class="node"><b>Building points</b><span>NSBI + checklist</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="node"><b>Band</b><span>green · amber · red</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="node"><b>Usable classrooms</b><span>morning / afternoon</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="node out"><b>School plan</b><span>principal confirms</span></div>
+  </nav>
+
+  <div class="colhead"><span></span><span>The rule</span><span>Pandac ES, demo closure day</span></div>
+
+  <!-- 1 -->
+  <section class="stage">
+    <span class="num">1</span>
+    <div class="rule"><h2>Forecast → heat index per half-day</h2>
+      <p>Hourly temperature and humidity for 06:00–17:00 are converted to a heat index (the "feels-like" temperature PAGASA uses). The hours are then averaged into two class windows.</p>
+      <table><tbody><tr><td>Morning window</td><td>average of 06:00–10:59</td></tr><tr><td>Afternoon window</td><td>average of 12:00–16:59</td></tr></tbody></table></div>
+    <div class="ex"><span class="tag">Worked example</span>
+      <table><thead><tr><th>Window</th><th class="n">Heat index</th><th>PAGASA</th></tr></thead><tbody><tr><td>Morning</td><td class="n">38.5°C</td><td>Extreme caution</td></tr><tr><td>Afternoon</td><td class="n">44.6°C</td><td>Danger</td></tr></tbody></table>
+      <p class="foot">Hottest single hour: about 45°C at 14:00. The average hides it; see the caveats.</p></div>
+  </section>
+
+  <!-- 2 -->
+  <section class="stage">
+    <span class="num">2</span>
+    <div class="rule"><h2>Heat index → forecast points</h2>
+      <p>Each window earns points from its average heat index. The division coordinator can change these values, and any change creates a new rule version that must be approved again.</p>
+      <div class="tbl"><table><thead><tr><th>Half-day average</th><th class="n">Points</th></tr></thead><tbody>
+        <tr><td>below 38°C</td><td class="n neg">−2</td></tr><tr><td>38–41°C</td><td class="n">0</td></tr><tr><td>42–45°C</td><td class="n pos">+1</td></tr><tr><td>46–51°C</td><td class="n pos">+2</td></tr><tr><td>52°C and above</td><td class="n pos">+3</td></tr></tbody></table></div></div>
+    <div class="ex"><span class="tag">Worked example</span>
+      <table><tbody><tr><td>Morning 38.5°C</td><td class="n">0</td></tr><tr><td>Afternoon 44.6°C</td><td class="n pos">+1</td></tr></tbody></table>
+      <p class="foot">The same forecast points apply to every building in the school (one forecast covers the city).</p></div>
+  </section>
+
+  <!-- 3 -->
+  <section class="stage">
+    <span class="num">3</span>
+    <div class="rule"><h2>Building → building points</h2>
+      <p>Fixed for each building, so they only change when the records change. Features that trap heat add points and features that cool remove them. Two come from the National School Building Inventory (NSBI); the rest come from a five-question heat checklist the principal answers once.</p>
+      <div class="tbl"><table><thead><tr><th>Feature</th><th class="n">Points</th><th>Source</th></tr></thead><tbody>
+        <tr><td>Metal roof, no ceiling</td><td class="n pos">+2</td><td>Checklist</td></tr>
+        <tr><td>Makeshift / temporary (semi-permanent)</td><td class="n pos">+2</td><td>NSBI</td></tr>
+        <tr><td>Upper floor directly under the roof</td><td class="n pos">+1</td><td>NSBI + checklist</td></tr>
+        <tr><td>Windows on one side / poor airflow</td><td class="n pos">+1</td><td>Checklist</td></tr>
+        <tr><td>Faces west</td><td class="n pos">+1</td><td>Checklist</td></tr>
+        <tr><td>Ceiling or insulation</td><td class="n neg">−1</td><td>Checklist</td></tr>
+        <tr><td>Shade trees</td><td class="n neg">−1</td><td>Checklist</td></tr>
+        <tr><td>Windows on both sides</td><td class="n neg">−1</td><td>Checklist</td></tr>
+        <tr><td>Air-conditioned</td><td class="n neg">−3</td><td>Checklist</td></tr></tbody></table></div></div>
+    <div class="ex"><span class="tag">Worked example · 3 buildings</span>
+      <div class="tbl"><table><thead><tr><th>Building</th><th>Features</th><th class="n">Points</th></tr></thead><tbody>
+        <tr><td><b>A</b> · 7 rooms, 3 storeys</td><td>no ceiling +2, upper floor +1, faces west +1</td><td class="n pos">+4</td></tr>
+        <tr><td><b>B</b> · 1 room, tent</td><td>makeshift +2, poor airflow +1</td><td class="n pos">+3</td></tr>
+        <tr><td><b>C</b> · 4 rooms, 2 storeys</td><td>no ceiling +2, upper floor +1, both-side windows −1</td><td class="n pos">+2</td></tr></tbody></table></div></div>
+  </section>
+
+  <!-- 4 -->
+  <section class="stage">
+    <span class="num">4</span>
+    <div class="rule"><h2>Add them up → colour band</h2>
+      <p>For each building and each half-day: <b>score = forecast points + building points</b>.</p>
+      <div><div class="scale" aria-label="Score scale from 0 to 9"><div class="g">0</div><div class="g">1</div><div class="g">2</div><div class="a">3</div><div class="a">4</div><div class="r">5</div><div class="r">6</div><div class="r">7</div><div class="r">8</div><div class="r">9+</div></div>
+        <div class="scale-l"><span>Green: comfortable</span><span>Amber: warm</span><span>Red: too hot</span></div></div>
+      <p class="foot">Scores below 0 are green too.</p></div>
+    <div class="ex"><span class="tag">Worked example</span>
+      <div class="tbl"><table><thead><tr><th>Building</th><th class="n">Morning</th><th class="n">Afternoon</th></tr></thead><tbody>
+        <tr><td>A</td><td class="n">0 + 4 = 4 <span class="chip a">amber</span></td><td class="n">1 + 4 = 5 <span class="chip r">red</span></td></tr>
+        <tr><td>B</td><td class="n">0 + 3 = 3 <span class="chip a">amber</span></td><td class="n">1 + 3 = 4 <span class="chip a">amber</span></td></tr>
+        <tr><td>C</td><td class="n">0 + 2 = 2 <span class="chip g">green</span></td><td class="n">1 + 2 = 3 <span class="chip a">amber</span></td></tr></tbody></table></div></div>
+  </section>
+
+  <!-- 5 -->
+  <section class="stage">
+    <span class="num">5</span>
+    <div class="rule"><h2>Band → can the classroom be used?</h2>
+      <p>The rule is stricter for the hotter half of the day, because heat builds up over the session.</p>
+      <table><thead><tr><th>Window</th><th>Allowed bands</th></tr></thead><tbody>
+        <tr><td>Cooler half-day</td><td><span class="chip g">green</span> <span class="chip a">amber</span> (with precautions)</td></tr>
+        <tr><td>Hotter half-day</td><td><span class="chip g">green</span> only</td></tr>
+        <tr><td>Any window</td><td><span class="chip r">red</span> is never used</td></tr></tbody></table>
+      <p class="foot">A classroom usable in both windows is an "all-day room".</p></div>
+    <div class="ex"><span class="tag">Worked example · morning is cooler</span>
+      <table><thead><tr><th>Building</th><th>Morning</th><th>Afternoon</th></tr></thead><tbody>
+        <tr><td>A (7 rooms)</td><td>✓ amber ok</td><td>✗ red</td></tr>
+        <tr><td>B (1 room)</td><td>✓ amber ok</td><td>✗ amber not ok</td></tr>
+        <tr><td>C (4 rooms)</td><td>✓ green</td><td>✗ amber not ok</td></tr></tbody></table>
+      <div class="sum">Usable in the morning:   12 classrooms
+Usable in the afternoon:  0 classrooms
+All-day rooms:            0</div></div>
+  </section>
+
+  <!-- 6 -->
+  <section class="stage">
+    <span class="num">6</span>
+    <div class="rule"><h2>Usable classrooms → school plan</h2>
+      <p>A "section" is one class of pupils (for example Grade 3-A). Each section needs one classroom for one time slot.</p>
+      <div class="tree">
+        <div class="q"><b>Do all sections fit in all-day rooms?</b><span class="foot">Capacity = all-day rooms × shifts (1, or 2 for double-shift schools)</span><div class="ans"><span class="yes"><span class="mode" style="color:var(--green)">Full-day classes</span></span><span class="no">next question</span></div></div>
+        <div class="q"><b>Which half-day holds more sections?</b><span class="foot">Capacity = usable rooms in that half × slots. If there are more sections than rooms, the half-day is split into two 2.5-hour shifts (06:00–08:30 and 08:30–11:00, or 12:00–14:30 and 14:30–17:00).</span><div class="ans"><span>Pick the larger one</span></div></div>
+        <div class="q"><b>How many sections fit in that half-day?</b><div class="ans"><span>All → <span class="mode" style="color:var(--amber)">Morning only</span> or <span class="mode" style="color:var(--violet)">Afternoon only</span></span><span>Some → <span class="mode" style="color:var(--orange)">Partial in-person + ADM</span> (the rest learn at home)</span><span>None → <span class="mode" style="color:var(--red)">Alternative Delivery Mode</span></span></div></div>
+      </div></div>
+    <div class="ex"><span class="tag">Worked example · 22 sections, double shift</span>
+      <div class="sum">Full day?   22 sections > 0 all-day rooms × 2 shifts = 0     ✗
+Morning:    12 rooms; 22 > 12, so split into 2 shifts
+            capacity 12 × 2 = 24 ≥ 22                    ✓ all fit
+Afternoon:  0 rooms → capacity 0</div>
+      <p><b>Result: Morning session only</b>, in two shifts (06:00–08:30 and 08:30–11:00). This is what the app used to describe as "22 sections fit in 12 rooms across two shifts": 22 classes share 12 classrooms by taking turns in the morning.</p></div>
+  </section>
+
+  <!-- 7 -->
+  <section class="stage">
+    <span class="num">7</span>
+    <div class="rule"><h2>Check, then the principal decides</h2>
+      <p>An independent checker re-reads the plan and confirms that no section is left out, no room is double-booked and no class is in a room unsafe for its time slot. The principal then confirms or picks a different plan with a reason, as DepEd Order No. 37, s. 2022 requires.</p></div>
+    <div class="ex"><span class="tag">Worked example</span><p>0 conflicts. Pandac's principal receives the SMS at 16:00 and confirms or overrides before the 17:00 cut-off.</p></div>
+  </section>
+
+  <section class="say">
+    <h2>Saying it in 30 seconds</h2>
+    <ol>
+      <li>We take tomorrow's hourly forecast and work out how hot the morning and the afternoon will feel.</li>
+      <li>Every classroom building has a heat score from how it's built: a tin roof with no ceiling or a west-facing wall makes it hotter, while ceilings, shade and cross-ventilation make it cooler.</li>
+      <li>Forecast plus building gives each building a colour for each half-day: green, amber or red.</li>
+      <li>Classes go only where it's safe: amber is fine in the cooler half of the day, the hotter half needs green, and red is never used.</li>
+      <li>If every class fits safely all day, the school stays open. If not, it runs the half-day that fits the most classes, and only the classes that still don't fit learn from home.</li>
+    </ol>
+  </section>
+
+  <section class="caveats" style="display:grid;gap:10px">
+    <h2>What to be ready for in Q&amp;A</h2>
+    <ul>
+      <li><b>The points are judgement, not measurement.</b> No indoor temperature data backs them yet. A few classroom thermometers in one pilot division would let us calibrate them.</li>
+      <li><b>Averages hide peaks.</b> The afternoon averages 44.6°C but reaches about 45°C at 14:00. A peak-based rule would be stricter.</li>
+      <li><b>One forecast for the whole city.</b> Every school gets the same forecast points. Only the buildings differ.</li>
+      <li><b>Whole-building features.</b> "Upper floor" adds +1 to every room in the building, including ground-floor rooms.</li>
+      <li><b>Thresholds have hard edges.</b> 41.9°C scores 0 and 42.0°C scores +1, so a 0.1°C change in the forecast can flip a school's plan.</li>
+      <li><b>Split shifts halve learning time.</b> Two 2.5-hour shifts keep pupils in school but give each section well under half a normal day.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Source: PRESKO 2.0/engine.js (HI_POINTS, FEATURES, BAND_RULE, planSchool). Pandac's building data is illustrative; the closure-day forecast is a modelled hot-season profile.</p>
+</div>

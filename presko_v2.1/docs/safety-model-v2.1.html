@@ -1,0 +1,283 @@
+<title>Presko Safety Model v2.1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a top-to-bottom pipeline. Each stage pairs the rule (left) with the same stage worked through for Pandac ES on 3 Nov 2026 (right). */
+:root {
+  --bg: #f3f6f5; --surface: #ffffff; --sunk: #e9efed; --ink: #13201c; --muted: #5e6e68; --line: #d5dfdb;
+  --accent: #0e6c64; --accent-ink: #ffffff; --accent-soft: #dcefeb;
+  --green: #2e8b57; --amber: #b87a08; --red: #b3261e; --violet: #6a55b8; --orange: #c9561f;
+  --hayo: #2e8b57; --hinay: #b87a08; --hinga: #c9561f; --hinto: #b3261e;
+  --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1412; --surface: #151f1c; --sunk: #1c2925; --ink: #e4ede9; --muted: #98aaa4; --line: #2a3833;
+  --accent: #4fb3a7; --accent-ink: #062320; --accent-soft: #143530;
+  --green: #4fbf86; --amber: #efb547; --red: #ef6a60; --violet: #a493ea; --orange: #f08a55;
+  --hayo: #4fbf86; --hinay: #efb547; --hinga: #f08a55; --hinto: #ef6a60; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1412; --surface: #151f1c; --sunk: #1c2925; --ink: #e4ede9; --muted: #98aaa4; --line: #2a3833;
+  --accent: #4fb3a7; --accent-ink: #062320; --accent-soft: #143530;
+  --green: #4fbf86; --amber: #efb547; --red: #ef6a60; --violet: #a493ea; --orange: #f08a55;
+  --hayo: #4fbf86; --hinay: #efb547; --hinga: #f08a55; --hinto: #ef6a60; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body) }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0 }
+h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15 }
+h2 { font-size: 20px }
+h3 { font-size: 15px }
+p { margin: 0 }
+.lede { max-width: 70ch; color: var(--muted) }
+.eyebrow { font: 600 12px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent) }
+
+.flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px }
+.flow .node { flex: 1 1 120px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0 }
+.flow .node b { font-family: var(--display); font-size: 14px }
+.flow .node span { font-size: 12px; color: var(--muted) }
+.flow .node.veto { border-color: var(--red) }
+.flow .node.learn { border-style: dashed; border-color: var(--accent) }
+.flow .node.out { background: var(--accent-soft); border-color: var(--accent) }
+.flow .arrow { align-self: center; color: var(--muted); font-size: 18px }
+
+.stage { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 0 18px; position: relative }
+.stage .num { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 700 14px var(--display); display: grid; place-items: center; z-index: 1 }
+.stage.veto .num { background: var(--red); color: #fff }
+.stage.learn .num { background: var(--surface); color: var(--accent); border: 2px dashed var(--accent) }
+.stage::before { content: ""; position: absolute; left: 15px; top: 34px; bottom: -28px; width: 2px; background: var(--line) }
+.stage.last::before { display: none }
+.rule, .ex { display: grid; gap: 10px; align-content: start; min-width: 0 }
+.rule { padding-top: 4px }
+.ex { background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 12px 14px }
+.ex .tag { font: 600 11px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+.colhead { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 18px; font: 600 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+@media (max-width: 760px) {
+  .stage { grid-template-columns: 36px minmax(0, 1fr) } .ex { grid-column: 2; margin-top: 10px }
+  .colhead { display: none }
+}
+table { border-collapse: collapse; width: 100%; font-size: 14px }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: 12px; color: var(--muted); font-weight: 600 }
+td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap }
+.tbl { overflow-x: auto }
+.pos { color: var(--red); font-weight: 600 } .neg { color: var(--green); font-weight: 600 }
+.bad { color: var(--red); font-weight: 600 } .warn { color: var(--amber); font-weight: 600 } .good { color: var(--green); font-weight: 600 }
+.chip { display: inline-block; font-weight: 600; font-size: 12px; padding: 2px 9px; border-radius: 99px; color: #fff; white-space: nowrap }
+.sum { font-family: var(--mono); font-size: 13.5px; background: var(--sunk); border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre }
+.formula { font-family: var(--mono); font-size: 13.5px; background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre }
+.foot { font-size: 12px; color: var(--muted) }
+
+/* 4H bar */
+.tiers { display: grid; grid-template-columns: 27fr 6fr 9fr 12fr; border-radius: 8px; overflow: hidden; font-size: 12px; font-weight: 600 }
+.tiers div { padding: 8px 6px; color: #fff; text-align: center; display: grid; gap: 1px }
+.tiers small { font: 500 11px var(--mono); opacity: .9 }
+.t-hayo { background: var(--hayo) } .t-hinay { background: var(--hinay); color: #1d1400 !important } .t-hinga { background: var(--hinga) } .t-hinto { background: var(--hinto) }
+
+/* WBGT scale */
+.scale { display: grid; grid-template-columns: 28fr 3fr 4fr; border-radius: 8px; overflow: hidden; font: 600 12px var(--mono) }
+.scale div { padding: 6px 4px; text-align: center; color: #fff }
+.s-ok { background: var(--green) } .s-c { background: var(--amber); color: #1d1400 !important } .s-u { background: var(--red) }
+
+/* learning curve */
+.curve svg { width: 100%; height: auto; display: block }
+
+.compare td:first-child { font-weight: 600; white-space: nowrap }
+.say { background: var(--accent-soft); border-radius: 14px; padding: 18px 20px; display: grid; gap: 10px }
+.say ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 78ch }
+.caveats ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 82ch }
+.evidence { border-left: 3px solid var(--red); padding: 6px 10px; background: var(--sunk); border-radius: 0 8px 8px 0; font-size: 13px; display: grid; gap: 2px }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <span class="eyebrow">Presko · internal explainer · not shown in the app</span>
+    <h1>How Safety Model v2.1 decides if children can be in school</h1>
+    <p class="lede">Rule v1 added up points. v2.1 estimates the actual heat inside each classroom, hour by hour, and checks it against limits set for children. It speaks DepEd's 4H language, refuses to send children out into extreme heat, learns from the indoor readings schools already take, and writes down the reason for every closure as EO 130 asks. Left column: the rule. Right column: Pandac Elementary School on 3 November 2026, the day 65 Iloilo City schools closed for heat.</p>
+  </header>
+
+  <nav class="flow" aria-label="Pipeline overview">
+    <div class="node"><b>Forecast</b><span>hourly heat index</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="node"><b>4H tier</b><span>DepEd Memo 064</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="node veto"><b>Vetoes</b><span>day · commute</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="node"><b>Indoor estimate</b><span>per building, per hour</span></div><span class="arrow" aria-hidden="true">⇄</span>
+    <div class="node learn"><b>Readings</b><span>08:00 · 12:00 · 14:00</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="node"><b>Room check</b><span>WBGT limits</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="node out"><b>Decision + reason</b><span>principal confirms</span></div>
+  </nav>
+
+  <div class="colhead"><span></span><span>The rule</span><span>Pandac ES · 3 Nov 2026</span></div>
+
+  <!-- 1 -->
+  <section class="stage">
+    <span class="num">1</span>
+    <div class="rule"><h2>Forecast → DepEd 4H tier</h2>
+      <p>The PAGASA forecast heat index for the day sets the tier from DepEd Memorandum 064, s. 2026. The tier is what principals and the division already talk in. The model also keeps the hour-by-hour curve, because heat inside a classroom follows the hours, not the daily peak.</p>
+      <div class="tiers" aria-label="DepEd 4H tiers"><div class="t-hayo">Hayo<small>&lt; 27</small></div><div class="t-hinay">Hinay<small>27–32</small></div><div class="t-hinga">Hinga<small>33–41</small></div><div class="t-hinto">Hinto<small>≥ 42</small></div></div>
+      <table><tbody>
+        <tr><td>Hayo</td><td>Regular face-to-face classes, with precautions</td></tr>
+        <tr><td>Hinay</td><td>Shortened day only: 06:00–10:00 and 14:00–18:00, hybrid or home-based</td></tr>
+        <tr><td>Hinga</td><td>No face-to-face (also when the school has no water); light home-based work. <b>The model can give grounds to ask the SDO for classes in rooms that stay cool.</b></td></tr>
+        <tr><td>Hinto</td><td>All academic activity suspended, including home-based</td></tr></tbody></table>
+      <p class="foot">As reported by astig.ph, DepEd Tambayan and PNA (the memo PDF returned 403). The principal chooses with the SDO and informs the SDS; DO 22 s. 2024 replaced DO 37 s. 2022.</p></div>
+    <div class="ex"><span class="tag">Worked example</span>
+      <p>PAGASA forecast: <b>43 °C → <span class="chip t-hinto">Hinto</span></b></p>
+      <div class="tbl"><table><thead><tr><th>Hour</th><th class="n">Outdoor °C</th><th class="n">Humidity</th><th class="n">Heat index</th></tr></thead><tbody>
+        <tr><td>08:00</td><td class="n">31.9</td><td class="n">66 %</td><td class="n">39.0</td></tr>
+        <tr><td>10:00</td><td class="n">35.2</td><td class="n">52 %</td><td class="n">42.0</td></tr>
+        <tr><td>12:00</td><td class="n">36.2</td><td class="n">48 %</td><td class="n">42.7</td></tr>
+        <tr><td>14:00</td><td class="n">36.3</td><td class="n">46 %</td><td class="n">41.9</td></tr></tbody></table></div>
+      <p class="foot">Real Open-Meteo hours for Iloilo City, corrected up to PAGASA's 43 °C peak (Open-Meteo alone read 36.7 °C).</p></div>
+  </section>
+
+  <!-- 2 -->
+  <section class="stage veto">
+    <span class="num">2</span>
+    <div class="rule"><h2>Day veto: no school at all</h2>
+      <p>If the forecast heat index reaches <b>52 °C</b> (PAGASA "extreme danger: heat stroke imminent"), no classroom estimate can make the day safe. This is not hypothetical: the heat index has reached 53 °C (2024) and 60 °C (2023).</p></div>
+    <div class="ex"><span class="tag">Worked example</span><div class="sum">43 °C &lt; 52 °C   → no day veto, continue</div></div>
+  </section>
+
+  <!-- 3 -->
+  <section class="stage veto">
+    <span class="num">3</span>
+    <div class="rule"><h2>Commute veto: per session</h2>
+      <p>Children walk to and from school in the sun, often at midday. The model takes the heat index at arrival and dismissal hours and adds up to 4 °C for sun (full sun can add 8 °C; it assumes half the walk is in sun). If that reaches <b>50 °C</b>, the session is cancelled whatever the building.</p>
+      <table><thead><tr><th>Session</th><th>Commute hours checked</th></tr></thead><tbody>
+        <tr><td>Morning</td><td>06:00, 07:00, 11:00</td></tr><tr><td>Afternoon</td><td>11:00, 12:00, 17:00</td></tr><tr><td>Full day</td><td>07:00, 15:00</td></tr></tbody></table></div>
+    <div class="ex"><span class="tag">Worked example</span>
+      <div class="sum">Worst commute: 46.9 °C at 11:00 (midday changeover)
+46.9 &lt; 50   → no commute veto</div>
+      <p class="foot">In real Iloilo weather for 2023–2025 this veto never fired; the worst day reached about 49 °C. It is a safety net, not the usual reason for closing.</p></div>
+  </section>
+
+  <!-- 4 -->
+  <section class="stage">
+    <span class="num">4</span>
+    <div class="rule"><h2>Estimate the heat inside each classroom</h2>
+      <p>For every building and every class hour, the model starts from the outdoor temperature and adds what the building and the class do to it.</p>
+      <div class="formula">indoor °C = outdoor °C
+          + building effects   (roof, floor, walls, airflow, shade)
+          + learners' body heat (0.025 °C × learners; 40 ≈ +1.0)
+          + learned correction  (step 5)
+          + 1 °C margin         (Hinto day, no readings yet)</div>
+      <div class="tbl"><table><thead><tr><th>Building feature</th><th class="n">At full sun</th><th>Basis</th></tr></thead><tbody>
+        <tr><td>Metal roof, no ceiling</td><td class="n pos">+2.6</td><td>Measured (Accra classrooms)</td></tr>
+        <tr><td>Ceiling under metal roof</td><td class="n neg">−0.1</td><td>Measured (Accra classrooms)</td></tr>
+        <tr><td>Makeshift / tent</td><td class="n pos">+3.6</td><td>Assumption</td></tr>
+        <tr><td>Top floor under the roof</td><td class="n pos">+0.8</td><td>Assumption</td></tr>
+        <tr><td>Faces west (after 13:00)</td><td class="n pos">+1.6</td><td>Assumption</td></tr>
+        <tr><td>Poor / cross ventilation</td><td class="n">+0.8 / −0.6</td><td>Assumption</td></tr>
+        <tr><td>Shade trees</td><td class="n neg">−0.8</td><td>Assumption</td></tr>
+        <tr><td>Air-conditioned</td><td class="n">27 °C</td><td>Assumption</td></tr></tbody></table></div>
+      <p class="foot">Humidity inside comes from outdoor moisture plus learners' breath and sweat. Fans help (WBGT −0.6 for one, −0.9 for two or more) only while the room is below 35 °C.</p></div>
+    <div class="ex"><span class="tag">Worked example · Building A at 10:00</span>
+      <div class="sum">outdoor                     35.2 °C
+metal roof, no ceiling      +2.4
+top floor under the roof    +0.7
+faces west                   0   (only after 13:00)
+40 learners                 +1.0
+Hinto, no readings yet      +1.0
+indoor                      40.3 °C   → WBGT 32.8</div>
+      <p class="foot">Pandac's three buildings: A (7 rooms, 3 storeys, metal roof, faces west), B (tent), C (2 storeys, metal roof, windows on both sides). Building data is illustrative.</p></div>
+  </section>
+
+  <!-- 5 -->
+  <section class="stage learn">
+    <span class="num">5</span>
+    <div class="rule"><h2>Learn from the school's own readings</h2>
+      <p>Memo 064 already asks schools to read indoor temperature at <b>08:00, 12:00 and 14:00</b>. Each reading is compared with the model's estimate for that hour. The average gap becomes the building's correction. It's held near zero while readings are few, so one odd reading can't swing a decision. Once a building has readings, the 1 °C "unknown" margin is dropped.</p>
+      <div class="formula">correction = Σ (measured − estimated) / (readings + 3)</div>
+      <p>This is the part of the model that trains: every school day, each building's estimate gets closer to how that building actually behaves. Wrong or outdated building records (a new ceiling, new fans, a blocked window) fix themselves.</p></div>
+    <div class="ex"><span class="tag">Worked example · simulated readings, real weather</span>
+      <p>Records say Building A has a bare metal roof, but suppose a ceiling was fitted after the survey, so the room really runs about 3 °C cooler.</p>
+      <div class="curve"><svg viewBox="0 0 320 150" role="img" aria-label="Learned correction moves from 0 to −2.8 °C over 30 readings">
+        <line x1="40" y1="20" x2="310" y2="20" stroke="var(--line)"/><line x1="40" y1="120" x2="310" y2="120" stroke="var(--line)"/>
+        <line x1="40" y1="20" x2="40" y2="120" stroke="var(--line)"/>
+        <line x1="40" y1="105.7" x2="310" y2="105.7" stroke="var(--green)" stroke-dasharray="4 3"/>
+        <text x="200" y="117" text-anchor="end" font-size="10" fill="var(--green)" font-family="var(--mono)">true −3.0</text>
+        <text x="34" y="24" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">0</text>
+        <text x="34" y="124" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">−3.5</text>
+        <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="40,20 67,64.6 94,78 121,85.4 148,90 175,92.6 202,94.9 229,96.3 256,97.4 283,98.6 310,99.1"/>
+        <circle cx="310" cy="99.1" r="4" fill="var(--accent)"/>
+        <text x="300" y="88" text-anchor="end" font-size="11" fill="var(--ink)" font-family="var(--mono)">−2.8 °C</text>
+        <text x="40" y="140" font-size="10" fill="var(--muted)" font-family="var(--mono)">0</text><text x="175" y="140" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="var(--mono)">15</text><text x="310" y="140" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">30 readings</text>
+      </svg></div>
+      <div class="sum">3 readings  → −1.6 °C
+9 readings  → −2.3 °C
+30 readings → −2.8 °C   (10 school days)
+3 Nov, morning peak WBGT: 32.8 → 30.9  ✓ safe</div></div>
+  </section>
+
+  <!-- 6 -->
+  <section class="stage">
+    <span class="num">6</span>
+    <div class="rule"><h2>Check each room against limits for children</h2>
+      <p>The estimate is turned into WBGT (wet-bulb globe temperature), the heat-stress measure health guidance uses because it accounts for humidity: sweat can't cool a child when the air is wet. Classes are sedentary, but children are less able to shed heat and do not always drink.</p>
+      <div><div class="scale" aria-label="WBGT scale"><div class="s-ok">below 28: normal</div><div class="s-c">28–31</div><div class="s-u">≥ 31</div></div>
+        <div class="foot" style="margin-top:4px">28–31: class runs with water and rest breaks. ≥ 31 in any hour: the room is out for that session (Japan's Ministry of the Environment stops children's activity at 31; ISO 7243 puts light work at about 30).</div></div></div>
+    <div class="ex"><span class="tag">Worked example · WBGT, no readings yet</span>
+      <div class="tbl"><table><thead><tr><th>Building</th><th class="n">08:00</th><th class="n">10:00</th><th class="n">12:00</th><th class="n">14:00</th></tr></thead><tbody>
+        <tr><td>A · metal roof, top floor</td><td class="n warn">30.7</td><td class="n bad">32.8</td><td class="n bad">33.3</td><td class="n bad">33.5</td></tr>
+        <tr><td>B · tent</td><td class="n bad">31.3</td><td class="n bad">33.3</td><td class="n bad">33.8</td><td class="n bad">33.3</td></tr>
+        <tr><td>C · metal roof, cross-ventilated</td><td class="n warn">30.4</td><td class="n bad">32.5</td><td class="n bad">33.0</td><td class="n bad">32.5</td></tr></tbody></table></div>
+      <p class="foot">Every building crosses 31 by 10:00, so no session (morning, afternoon or full day) has a usable room.</p></div>
+  </section>
+
+  <!-- 7 -->
+  <section class="stage last">
+    <span class="num">7</span>
+    <div class="rule"><h2>Decide, and write down why</h2>
+      <p>Full day if the full-day session is safe; otherwise morning, then afternoon; otherwise closed. The planner then fits sections into the usable rooms as in Rule v1. Every closure carries the <b>documented, site-specific reason</b> EO 130 asks for: which building, which hour, what estimate. The principal confirms or overrides with a reason.</p></div>
+    <div class="ex"><span class="tag">Worked example</span>
+      <p><b>Without readings: closed.</b></p>
+      <div class="evidence"><span>Building A: estimated indoor WBGT 32.8 at 10:00 (limit 31)</span><span>Building B: estimated indoor WBGT 33.3 at 10:00 (limit 31)</span><span>Building C: estimated indoor WBGT 32.5 at 10:00 (limit 31)</span></div>
+      <p><b>With 10 days of readings from Building A:</b> its morning is safe (WBGT 30.9), so Pandac can run a morning session there, subject to room capacity.</p></div>
+  </section>
+
+  <section style="display:grid;gap:12px">
+    <h2>Across the division on 3 Nov 2026</h2>
+    <div class="tbl"><table><thead><tr><th></th><th class="n">Full day</th><th class="n">One session</th><th class="n">Closed</th></tr></thead><tbody>
+      <tr><td>Model, no readings yet (+1 °C margin)</td><td class="n">29</td><td class="n">9</td><td class="n">32</td></tr>
+      <tr><td>Model, readings confirm its estimates</td><td class="n">29</td><td class="n">23</td><td class="n">18</td></tr></tbody></table></div>
+    <p class="foot">This is the safety model on its own (70 demo schools, real locations, illustrative buildings). <b>Under DM 064 the day is Hinto, so the rule closes every school, as 65 Iloilo City schools did.</b> In the app the model works under the rule: it chooses rooms on Hayo and Hinay days, and on Hinga days it finds schools whose rooms stay cool enough to ask the Division for a short face-to-face day (25 of 70 at a 41 °C forecast).</p>
+  </section>
+
+  <section style="display:grid;gap:12px">
+    <h2>What changed from Rule v1</h2>
+    <div class="tbl"><table class="compare"><thead><tr><th></th><th>Rule v1</th><th>Model v2.1</th></tr></thead><tbody>
+      <tr><td>Weather</td><td>Half-day average heat index → points</td><td>Hourly temperature and humidity, PAGASA forecast → DepEd 4H tier</td></tr>
+      <tr><td>Buildings</td><td>Feature points added up</td><td>Estimated indoor °C and WBGT per hour, with learners and fans</td></tr>
+      <tr><td>Limits</td><td>Green 0–2 / amber 3–4 / red 5+ points</td><td>WBGT 28 caution, 31 unsafe for children</td></tr>
+      <tr><td>Hard stops</td><td>None</td><td>Day veto 52 °C, commute veto 50 °C</td></tr>
+      <tr><td>Learning</td><td>None</td><td>Corrects each building from its 08:00 / 12:00 / 14:00 readings</td></tr>
+      <tr><td>Output</td><td>Plan</td><td>Plan plus a documented reason for every closure (EO 130)</td></tr></tbody></table></div>
+  </section>
+
+  <section class="say">
+    <h2>Saying it in 30 seconds</h2>
+    <ol>
+      <li>We read PAGASA's forecast hour by hour and put the day in DepEd's 4H tier.</li>
+      <li>If it's extreme danger, or too hot for children to walk home, there's no school. That's not negotiable.</li>
+      <li>Otherwise, for every classroom building we estimate how hot it will be inside, hour by hour, from its roof, walls, airflow and how many children are in it.</li>
+      <li>A room is used only while it stays under the heat-stress limit for children. The day runs in whichever session has safe rooms.</li>
+      <li>The 08:00, 12:00 and 14:00 readings schools already take teach the model how each building really behaves, so it gets more accurate every day. Every closure comes with the reason, building by building.</li>
+    </ol>
+  </section>
+
+  <section class="caveats" style="display:grid;gap:10px">
+    <h2>What to be ready for in Q&amp;A</h2>
+    <ul>
+      <li><b>Why not train on past closures?</b> Because they don't follow the heat: in 2024, Iloilo's suspended days were no hotter than its open days. What we can learn from is each building's readings.</li>
+      <li><b>Most building effects are assumptions.</b> Only the metal-roof and ceiling effects are measured, and in Ghana. Readings replace the assumptions building by building.</li>
+      <li><b>The limit is the policy choice.</b> Moving the unsafe line from WBGT 31 to 30 roughly doubles closures in the 2024 replay; 32 halves them. DepEd and health officials should set it.</li>
+      <li><b>Correcting to a forecast inherits its error.</b> On 3 Nov, matching PAGASA's 43 °C needs an outdoor peak of 36.3 °C, high for November.</li>
+      <li><b>The 3 Nov comparison uses illustrative buildings.</b> It shows what the model would do, not what was right.</li>
+      <li><b>Health is not modelled directly.</b> Hydration, illness, uniforms and acclimatisation all shift a child's real risk.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Source: presko_v2.1/model/safety-model.js and backtest.mjs; full evidence and sources in presko_v2.1/model/MODEL-CARD.md. Policy: DepEd Memorandum 064, s. 2026; Executive Order 130 (28 Oct 2026), as reported by the Daily Guardian and GMA.</p>
+</div>
