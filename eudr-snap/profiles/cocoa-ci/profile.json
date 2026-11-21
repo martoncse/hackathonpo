@@ -34,7 +34,7 @@
       "gap"
     ],
     "h": [
-      "Requires narrative assessment. Note the EFI 2026 finding: excluding a farm on paper does not keep its cocoa out of the physical chain. EUDR-Snap's producer-card volume check is the mitigation offered; operator to sign off.",
+      "Requires narrative assessment of country concerns (corruption, document falsification, law enforcement, human rights, armed conflict, sanctions). Not drafted yet; operator to assess and sign off.",
       "manual"
     ],
     "g": [
@@ -42,7 +42,7 @@
       "documented"
     ],
     "i": [
-      "Sales are recorded per producer card, not per plot. Volumes are pooled per card, crop and season over all the card's plots before the plausibility check.",
+      "Sales are recorded per producer card, not per plot. Volumes are pooled per card, crop and season over all the card's plots before the plausibility check. EFI (2026): excluding a farm on paper does not keep its cocoa out of the physical chain, which is why the volume check runs per card.",
       "documented"
     ]
   },

@@ -310,6 +310,11 @@ document.addEventListener("click", async (e) => {
   if (decision === "accept") {
     reason = prompt("Why is this plot acceptable? This goes into the Art 10 file (e.g. 'Field visit 20 Nov: two extra plots found, to be mapped').") || "";
     if (!reason.trim()) return;
+  } else if (decision === "exclude") {
+    // Optional, but it goes into the Art 11 log.
+    const r = prompt("Why exclude this plot? (optional, goes into the Art 11 log)");
+    if (r === null) return;
+    reason = r;
   }
   const reviewer = decision === "clear" ? "" : prompt("Your name (logged with the decision):") || "";
   const res = await postJson("/api/review", { plot_id: b.dataset.plot, decision, reason, reviewer });

@@ -119,6 +119,14 @@ function art11Log(lotPlots, results) {
     }));
 }
 
+// The operator draws the Art 10 conclusion. EUDR-Snap never pre-writes "negligible risk" while
+// criteria are open: it states how many are open and which.
+export function conclusionText(rows) {
+  const open = rows.filter((r) => ["gap", "manual", "fail"].includes(r.rating));
+  if (!open.length) return "All criteria have a finding. The operator draws the conclusion (Art 10(1)).";
+  return `No conclusion drawn: ${open.length} of ${rows.length} criteria are still open (${open.map((r) => r.criterion.replace("10(2)", "")).join(" ")}: rated gap, manual or fail). The operator completes them and draws the conclusion (Art 10(1)).`;
+}
+
 // ---------- human-readable report ----------
 
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -174,17 +182,17 @@ ${table(["Receipt", "Date", "Plot", "Quantity", "Source"], receipts)}
 
 <h2>6. Risk assessment (Art 10)</h2>
 ${table(["Criterion", "Art 10(2)", "Finding", "Rating"], art10)}
-<p><b>Draft conclusion:</b> negligible risk, subject to the operator's review of every criterion rated <i>gap</i> or <i>manual</i>.</p>
+<p><b>Conclusion:</b> ${esc(conclusionText(rows))}</p>
 
 <h2>7. Risk mitigation (Art 11)</h2>
 ${table(["Plot", "Trigger", "Action", "Reason", "Reviewer", "When"], art11)}
 
-<h2>8. Files in this pack (keep 5 years, Art 12(5))</h2>
+<h2>8. Files in this pack (keep 5 years: Art 4(3), Art 9(1))</h2>
 ${table(["File", "SHA-256"], files.map((f) => `<tr><td>${esc(f.filename)}</td><td><code>${esc(f.sha256)}</code></td></tr>`))}
 
-<h2>9. Statement and signature (Annex II)</h2>
-<p>To be completed by the operator in the EU Information System: "By submitting this due diligence statement the operator confirms that due diligence in accordance with Regulation (EU) 2023/1115 was carried out and that no or only a negligible risk was found that the relevant products do not comply with Article 3, point (a) or (b), of that Regulation." <small>(Annex II wording: check against EUR-Lex before filing.)</small></p>
-<div class="sign"><div>Name and function of the operator's signatory</div><div>Date and place</div></div>
+<h2>9. Statement and signature (Annex II points 5-6)</h2>
+<p>To be completed by the operator in the EU Information System: "By submitting this due diligence statement the operator confirms that due diligence in accordance with Regulation (EU) 2023/1115 was carried out and that no or only a negligible risk was found that the relevant products do not comply with Article 3, point (a) or (b), of that Regulation."</p>
+<div class="sign"><div>Signed for and on behalf of: [operator]</div><div>Date</div><div>Name and function</div><div>Signature</div></div>
 </body></html>
 `;
 }
@@ -261,7 +269,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
 
   const rows = art10Rows(lotPlots, results, lotCheck, profile?.art10, country);
   const log = art11Log(plots, results);
-  const art10Text = JSON.stringify({ _status: DISCLAIMER, conclusion: "Draft: negligible risk subject to operator review of criteria marked manual/gap", criteria: rows }, null, 2);
+  const art10Text = JSON.stringify({ _status: DISCLAIMER, conclusion: conclusionText(rows), criteria: rows }, null, 2);
   const art11Text = JSON.stringify({ _status: DISCLAIMER, entries: log }, null, 2);
 
   const docs = [
@@ -280,7 +288,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
     _status: DISCLAIMER,
     createdAt: now,
     keepUntil,
-    basis: "Arts 9, 12(5): keep 5 years",
+    basis: "Art 4(3), Art 9(1): keep 5 years",
     documents: docs.map((d) => ({ file: d.filename, sha256: d.sha256 })),
     whisp: whisp ? { version: whisp.version, checkedAt: whisp.checked_at } : null,
     rules: { config: CONFIG },

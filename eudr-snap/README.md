@@ -57,6 +57,14 @@ Without `EUDR_PROFILE` the app is the Colombian demo above, unchanged. With it, 
 - **Demo data is fully synthetic**, coordinates included (near Soubré, Nawa). It has **not** been checked with Whisp, and the page says so. The profile asks Whisp for its Ivorian national layers (`nationalCodes: ["ci"]`: BNETD 2020 forest, BNETD cocoa; [Whisp layer list](https://github.com/forestdatapartnership/whisp/blob/main/layers_description.md)).
 - **Not built:** reading producer cards or SNT records (no data access for importers was found), Ivorian document extraction, and the indigenous-peoples overlay (Art 10 rows c–e are marked as gaps).
 
+## Input to the importer's due diligence file (draft; classic view, both profiles)
+
+1. **Record a purchase** from the paper receipt: type it in, or press **Read photo (live)** to have Claude fill the form. In Côte d'Ivoire mode the prompt reads French receipts and the producer card, French thousands separators are handled, and bags (*sacs*) are never converted to kg. A photo-filled purchase can't be saved until someone ticks "I checked every field against the paper receipt". Purchases are saved in `data/deliveries[-<profile>].json`, kept apart from the sample file, and the volume check re-runs straight away. **Remove recorded purchases** resets them.
+2. **Review:** flagged plots get **Accept…** (a written reason and a name are required) and **Exclude** buttons. Every decision goes into the Art 10 and Art 11 files.
+3. **Generate importer pack:** the EU lot takes every cleared plot and lists the ones left out. Seven files come back, each with its SHA-256: the GeoJSON for the EU Information System, the DDS data, Art 9, Art 10, Art 11, a retention index and a **due diligence report**. The report is a readable HTML document covering the operator and supplier, the goods with their HS code, the plots, the purchase receipts, the evidence, the Art 10 criteria, the Art 11 log, the file hashes and the operator's signature block. Print it to PDF. It's a draft: the operator fills in its own details, checks the Annex II wording and signs.
+
+`test/e2e-server.test.js` runs this whole path over HTTP against the real server for both profiles, using a temporary data folder and a recorded Whisp result. No live calls are made.
+
 ## Stage fallback
 
 Every successful live check of the demo batch overwrites `whisp-cache.json`. If the live call fails (no internet, Whisp slow, bad key), the page shows the saved result. The badge says **"Saved Whisp result from …"**, so it's never passed off as live.

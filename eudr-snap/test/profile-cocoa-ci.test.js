@@ -111,3 +111,14 @@ test("each plot on a card reports the card's season", () => {
   const r = classify([pt("A", "CP-T", "Cocoa", 1, [{ season: "2025-26", kg: 500 }]), pt("B", "CP-T", "Cocoa", 1, [{ season: "2024-25", kg: 900 }])], null);
   assert.deepEqual(r.map((x) => x.yield.season), ["2025-26", "2025-26"]);
 });
+
+test("the pack never pre-writes a negligible-risk conclusion while criteria are open", async () => {
+  const lot = { id: "EU-CI-1", market: "EU", plot_ids: ["C1", "C2"] };
+  const pack = await buildPack({ plots: farms, results: classify(farms, fc), lot, cooperative: doc.cooperative, profile });
+  const art10 = JSON.parse(pack.documents.find((d) => d.id === "art10").content);
+  assert.match(art10.conclusion, /^No conclusion drawn: \d+ of 14 criteria are still open/);
+  const report = pack.documents.find((d) => d.id === "report").content;
+  assert.doesNotMatch(report, /Draft conclusion:<\/b> negligible risk/);
+  assert.match(report, /Signed for and on behalf of/);
+  assert.match(report, /Art 4\(3\), Art 9\(1\)/);
+});
