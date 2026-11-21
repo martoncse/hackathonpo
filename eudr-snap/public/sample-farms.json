@@ -1,0 +1,497 @@
+{
+  "verified_with_whisp": true,
+  "found_at": "2026-11-21T05:39:26.900Z",
+  "farms": [
+    {
+      "id": "F1",
+      "farmer_name": "Rosa Elena Muñoz",
+      "farm": "Finca El Paraíso",
+      "crop": "Coffee",
+      "hectares": 2.79,
+      "region": "Huila",
+      "search_cell": "huila_pitalito-00",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.06075,
+              1.83925
+            ],
+            [
+              -76.05925,
+              1.83925
+            ],
+            [
+              -76.05925,
+              1.84075
+            ],
+            [
+              -76.06075,
+              1.84075
+            ],
+            [
+              -76.06075,
+              1.83925
+            ]
+          ]
+        ]
+      },
+      "municipality": "Pitalito",
+      "vereda": "Charguayaco",
+      "deliveries": [
+        {
+          "date": "2026-05-08",
+          "season": "2026-A",
+          "kg": 1200,
+          "unit": "kg pergamino seco",
+          "receipt": "R-101"
+        },
+        {
+          "date": "2026-06-12",
+          "season": "2026-A",
+          "kg": 1000,
+          "unit": "kg pergamino seco",
+          "receipt": "R-102"
+        },
+        {
+          "date": "2026-07-17",
+          "season": "2026-A",
+          "kg": 800,
+          "unit": "kg pergamino seco",
+          "receipt": "R-103"
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "farmer_name": "Luis Alberto Cuéllar",
+      "farm": "Finca La Esperanza",
+      "crop": "Coffee",
+      "hectares": 2.79,
+      "region": "Huila",
+      "search_cell": "huila_acevedo-00",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -75.89075,
+              1.78925
+            ],
+            [
+              -75.88925,
+              1.78925
+            ],
+            [
+              -75.88925,
+              1.79075
+            ],
+            [
+              -75.89075,
+              1.79075
+            ],
+            [
+              -75.89075,
+              1.78925
+            ]
+          ]
+        ]
+      },
+      "municipality": "Acevedo",
+      "vereda": "San Adolfo",
+      "deliveries": [
+        {
+          "date": "2026-05-08",
+          "season": "2026-A",
+          "kg": 2800,
+          "unit": "kg pergamino seco",
+          "receipt": "R-201"
+        },
+        {
+          "date": "2026-06-12",
+          "season": "2026-A",
+          "kg": 3100,
+          "unit": "kg pergamino seco",
+          "receipt": "R-202"
+        },
+        {
+          "date": "2026-07-17",
+          "season": "2026-A",
+          "kg": 3400,
+          "unit": "kg pergamino seco",
+          "receipt": "R-203"
+        }
+      ]
+    },
+    {
+      "id": "F3",
+      "farmer_name": "María Fernanda Losada",
+      "farm": "Finca Los Naranjos",
+      "crop": "Coffee",
+      "hectares": 2.79,
+      "region": "Huila",
+      "search_cell": "huila_laplata-00",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -75.89075,
+              2.37925
+            ],
+            [
+              -75.88925,
+              2.37925
+            ],
+            [
+              -75.88925,
+              2.38075
+            ],
+            [
+              -75.89075,
+              2.38075
+            ],
+            [
+              -75.89075,
+              2.37925
+            ]
+          ]
+        ]
+      },
+      "municipality": "La Plata",
+      "vereda": "Belén",
+      "deliveries": [
+        {
+          "date": "2026-05-08",
+          "season": "2026-A",
+          "kg": 1500,
+          "unit": "kg pergamino seco",
+          "receipt": "R-301"
+        },
+        {
+          "date": "2026-06-12",
+          "season": "2026-A",
+          "kg": 1300,
+          "unit": "kg pergamino seco",
+          "receipt": "R-302"
+        },
+        {
+          "date": "2026-07-17",
+          "season": "2026-A",
+          "kg": 900,
+          "unit": "kg pergamino seco",
+          "receipt": "R-303"
+        }
+      ]
+    },
+    {
+      "id": "F4",
+      "farmer_name": "Jorge Iván Perdomo",
+      "farm": "Finca Buenavista",
+      "crop": "Coffee",
+      "hectares": 6.2,
+      "region": "Huila",
+      "search_cell": "huila_garzon-00",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.64,
+          2.19
+        ]
+      },
+      "municipality": "Garzón",
+      "vereda": "Zuluaga",
+      "deliveries": [
+        {
+          "date": "2026-05-08",
+          "season": "2026-A",
+          "kg": 2600,
+          "unit": "kg pergamino seco",
+          "receipt": "R-401"
+        },
+        {
+          "date": "2026-06-12",
+          "season": "2026-A",
+          "kg": 2800,
+          "unit": "kg pergamino seco",
+          "receipt": "R-402"
+        },
+        {
+          "date": "2026-07-17",
+          "season": "2026-A",
+          "kg": 2000,
+          "unit": "kg pergamino seco",
+          "receipt": "R-403"
+        }
+      ]
+    },
+    {
+      "id": "F5",
+      "farmer_name": "Wilson Andrés Trujillo",
+      "farm": "Finca Caño Negro",
+      "crop": "Cocoa",
+      "hectares": 2.79,
+      "region": "Caquetá",
+      "search_cell": "frontier_chaira-10",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -74.63075,
+              0.98925
+            ],
+            [
+              -74.62925,
+              0.98925
+            ],
+            [
+              -74.62925,
+              0.99075
+            ],
+            [
+              -74.63075,
+              0.99075
+            ],
+            [
+              -74.63075,
+              0.98925
+            ]
+          ]
+        ]
+      },
+      "municipality": "Cartagena del Chairá",
+      "vereda": "Remolinos del Caguán",
+      "deliveries": [
+        {
+          "date": "2026-05-08",
+          "season": "2026-A",
+          "kg": 700,
+          "unit": "kg cacao seco",
+          "receipt": "R-501"
+        },
+        {
+          "date": "2026-06-12",
+          "season": "2026-A",
+          "kg": 650,
+          "unit": "kg cacao seco",
+          "receipt": "R-502"
+        },
+        {
+          "date": "2026-07-17",
+          "season": "2026-A",
+          "kg": 550,
+          "unit": "kg cacao seco",
+          "receipt": "R-503"
+        }
+      ]
+    }
+  ],
+  "walked_boundaries": {
+    "F4": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            -75.641275,
+            2.189108
+          ],
+          [
+            -75.639745,
+            2.188725
+          ],
+          [
+            -75.638661,
+            2.189426
+          ],
+          [
+            -75.638853,
+            2.190765
+          ],
+          [
+            -75.640127,
+            2.191275
+          ],
+          [
+            -75.641211,
+            2.190637
+          ],
+          [
+            -75.641275,
+            2.189108
+          ]
+        ]
+      ]
+    }
+  },
+  "cooperative": {
+    "name": "Cooperativa Agraria del Sur (demo)",
+    "nit": "900.000.000-0 (demo)",
+    "municipality": "Pitalito, Huila",
+    "country": "CO",
+    "warehouse": [
+      -76.0514,
+      1.8536
+    ]
+  },
+  "receipts": [
+    {
+      "plot": "F1",
+      "title": "Recibo de compra Nº R-101",
+      "lines": [
+        "COOPERATIVA AGRARIA DEL SUR",
+        "Recibo de compra Nº R-101",
+        "Vendedor: Rosa Elena Muñoz",
+        "Finca El Paraiso - vda Charguayaco",
+        "8 mayo 2026",
+        "Café pergamino seco",
+        "1.200 kg p.s."
+      ],
+      "fields": [
+        {
+          "field": "farmer_name",
+          "value": "Rosa Elena Muñoz",
+          "source": "Vendedor: Rosa Elena Muñoz",
+          "confidence": 0.97
+        },
+        {
+          "field": "farm",
+          "value": "Finca El Paraíso",
+          "source": "Finca El Paraiso - vda Charguayaco",
+          "confidence": 0.93
+        },
+        {
+          "field": "date",
+          "value": "2026-05-08",
+          "source": "8 mayo 2026",
+          "confidence": 0.95
+        },
+        {
+          "field": "kg",
+          "value": 1200,
+          "source": "1.200 kg p.s.",
+          "confidence": 0.91
+        },
+        {
+          "field": "product",
+          "value": "Café pergamino seco",
+          "source": "Café pergamino seco",
+          "confidence": 0.96
+        },
+        {
+          "field": "coordinates",
+          "value": null,
+          "source": "—",
+          "confidence": null,
+          "note": "Never taken from the AI: comes from GPS capture"
+        }
+      ]
+    },
+    {
+      "plot": "F2",
+      "title": "Recibo de compra Nº R-203",
+      "lines": [
+        "COOPERATIVA AGRARIA DEL SUR",
+        "Recibo Nº R-203",
+        "Luis A. Cuellar",
+        "La Esperanza",
+        "17/07/26",
+        "c.p.s.",
+        "3.400 kg"
+      ],
+      "fields": [
+        {
+          "field": "farmer_name",
+          "value": "Luis Alberto Cuéllar",
+          "source": "Luis A. Cuellar",
+          "confidence": 0.88
+        },
+        {
+          "field": "farm",
+          "value": "Finca La Esperanza",
+          "source": "La Esperanza",
+          "confidence": 0.9
+        },
+        {
+          "field": "date",
+          "value": "2026-07-17",
+          "source": "17/07/26",
+          "confidence": 0.94
+        },
+        {
+          "field": "kg",
+          "value": 3400,
+          "source": "3.400 kg",
+          "confidence": 0.86
+        },
+        {
+          "field": "product",
+          "value": "Café pergamino seco",
+          "source": "c.p.s.",
+          "confidence": 0.72
+        },
+        {
+          "field": "coordinates",
+          "value": null,
+          "source": "—",
+          "confidence": null,
+          "note": "Never taken from the AI: comes from GPS capture"
+        }
+      ]
+    },
+    {
+      "plot": "F4",
+      "title": "Certificado de tradición (extracto)",
+      "lines": [
+        "SUPERINTENDENCIA DE NOTARIADO Y REGISTRO",
+        "Certificado de tradición",
+        "Folio 202-XXXXX",
+        "Predio rural BUENAVISTA",
+        "Mpio. Garzon (H)",
+        "Area: 6 Ha 2.000 m2",
+        "Propietario: JORGE IVAN PERDOMO"
+      ],
+      "fields": [
+        {
+          "field": "farmer_name",
+          "value": "Jorge Iván Perdomo",
+          "source": "Propietario: JORGE IVAN PERDOMO",
+          "confidence": 0.95
+        },
+        {
+          "field": "farm",
+          "value": "Finca Buenavista",
+          "source": "Predio rural BUENAVISTA",
+          "confidence": 0.94
+        },
+        {
+          "field": "hectares",
+          "value": 6.2,
+          "source": "Area: 6 Ha 2.000 m2",
+          "confidence": 0.89
+        },
+        {
+          "field": "tenure",
+          "value": "Formal title (folio de matrícula)",
+          "source": "Folio 202-XXXXX",
+          "confidence": 0.83
+        },
+        {
+          "field": "municipality",
+          "value": "Garzón",
+          "source": "Mpio. Garzon (H)",
+          "confidence": 0.97
+        },
+        {
+          "field": "coordinates",
+          "value": null,
+          "source": "—",
+          "confidence": null,
+          "note": "Never taken from the AI: comes from GPS capture"
+        }
+      ]
+    }
+  ],
+  "note": "Synthetic farmers, volumes and receipts. Coordinates and Whisp risk are real (found with 'Find real plots with Whisp')."
+}

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EUDR-Snap · Lot for the EU importer</title>
+  <link rel="stylesheet" href="classic.css" />
+  <style>
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px 40px; display: grid; gap: 16px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .cards div { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+    .cards b { display: block; font-size: 20px; }
+    .cards small { color: var(--muted); }
+    .checks li { margin: 4px 0; }
+    .ok { color: var(--green); font-weight: 600; }
+    .warn { color: var(--amber); font-weight: 600; }
+    .bad { color: var(--red); font-weight: 600; }
+    .step h2 { margin-top: 2px; }
+    #docs a, #handoff a { display: block; padding: 8px 10px; margin: 6px 0; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
+    #docs a small, #handoff a small { display: block; color: var(--muted); }
+    #docs a.report, #handoff a.report { border-color: var(--accent); background: #eef6f0; }
+    .form input, .form select { font: inherit; }
+    .risk { padding: 10px 14px; border-radius: 8px; background: #eef3fb; border: 1px solid #c4d4ee; margin: 0; }
+    .ready { list-style: none; padding: 0; margin: 8px 0; }
+    .ready li { display: grid; grid-template-columns: 8.5em 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .tag { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-align: center; align-self: start; }
+    .tag.ok { background: #dcf3e4; color: var(--green); }
+    .tag.you { background: #fff1cc; color: #7a5600; }
+    .tag.supplier { background: #fde4e4; color: var(--red); }
+    .ready small { display: block; color: var(--muted); }
+    .summary { font-size: 17px; font-weight: 600; margin: 6px 0; }
+    .decisions { padding-left: 18px; }
+    .decisions li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1 id="title">Incoming shipment</h1>
+      <p class="sub">EUDR-Snap for EU importers · your supplier sent the evidence · you check it, decide and file the due diligence statement · demo data is synthetic</p>
+    </div>
+    <div class="countdown" id="lot-id">–</div>
+  </header>
+
+  <div class="wrap">
+    <p id="err" class="banner hidden"></p>
+    <p id="risk" class="risk hidden"></p>
+
+    <section class="step">
+      <h2>What you're receiving</h2>
+      <div class="cards">
+        <div><small>Supplier</small><b id="supplier">–</b><small id="origin"></small></div>
+        <div><small>Volume from the receipts in this lot</small><b id="kg">–</b><small id="receipts"></small></div>
+        <div><small>Plots, geolocated</small><b id="plots">–</b><small>WGS84, 6 decimals; over 4 ha as polygons</small></div>
+        <div><small>Status</small><b id="status">–</b><small id="status-sub"></small></div>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2>1 · Can I file this shipment?</h2>
+      <p id="ready-summary" class="summary">Checking…</p>
+      <ul class="ready" id="ready"></ul>
+      <p class="hint" id="ready-note"></p>
+    </section>
+
+    <section class="step">
+      <h2>2 · Your decision on this evidence</h2>
+      <p class="hint">You're the operator: you decide whether this evidence supports your risk assessment (Art 10). Your decision is added to this lot's record with your name and time, linked to the supplier's passport by its hash, and chained so it can't be changed afterwards. Your supplier sees it. Recording a decision is optional for filing here.</p>
+      <div class="form">
+        <label>Decision<select id="dec"><option value="accept_evidence">Accept the evidence for my risk assessment</option><option value="request_info">Request more information from the supplier</option></select></label>
+        <label>Your name<input id="dec-name" autocomplete="name" /></label>
+        <label>Reason<input id="dec-reason" placeholder="e.g. Volume flag explained by a field visit" /></label>
+      </div>
+      <button id="decide">Record my decision</button>
+      <p id="dec-msg" class="msg"></p>
+      <ul class="decisions hint" id="decisions"></ul>
+    </section>
+
+    <section class="step">
+      <h2>3 · The evidence behind it</h2>
+      <ul class="checks" id="checks"></ul>
+      <p class="hint">These are the supplier's drafts. You remain responsible for the due diligence (Reg. (EU) 2023/1115 as amended by 2025/2650) and complete the criteria still open.</p>
+    </section>
+
+    <section class="step">
+      <h2>4 · Download the files</h2>
+      <p class="hint">Fingerprints (SHA-256) are recomputed in your browser and compared with the ones recorded when the lot was sent.</p>
+      <div id="docs"></div>
+    </section>
+
+    <section class="step">
+      <h2>5 · After you file in the EU Information System</h2>
+      <p class="hint">Enter the numbers the system gives you. Your supplier sees the lot as filed, and you get the note that processors and traders after you keep (since Reg. 2025/2650 they keep your reference number instead of filing their own).</p>
+      <div class="form">
+        <label>DDS reference number<input id="ref" autocomplete="off" /></label>
+        <label>Verification number<input id="ver" autocomplete="off" /></label>
+      </div>
+      <button id="file" class="primary">Record the filing</button>
+      <p id="file-msg" class="msg"></p>
+      <div id="handoff"></div>
+    </section>
+
+    <section class="step">
+      <h2>Buy from other cooperatives too?</h2>
+      <p class="hint">Invite them. Issuing passports is free for the cooperative, the history stays theirs, and they can send the same passport to every buyer.</p>
+      <a id="invite-mail" href="#">Email an invitation to a supplier →</a>
+    </section>
+  </div>
+
+  <script type="module">
+    import { verifyPassport } from "/shared/passport.js";
+    import { readiness, RISK_TEXT } from "/shared/readiness.js";
+    const $ = (id) => document.getElementById(id);
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    const token = location.hash.slice(1);
+    const COUNTRY = { CO: "Colombia", CI: "Côte d'Ivoire", GH: "Ghana" };
+    let current = null; // { lot, documents, profile, passportValid }
+
+    function renderDecisions(lot) {
+      $("decisions").innerHTML = (lot.importer_decisions || [])
+        .map((e) => `<li><b>${e.decision === "accept_evidence" ? "Accepted for the risk assessment" : "More information requested"}</b> by ${esc(e.name)}, ${esc(new Date(e.at).toLocaleString("en-GB"))}: ${esc(e.reason)} <small>· linked to passport ${esc(e.passport_id || "–")} by hash · entry ${esc(e.hash.slice(0, 12))}…</small></li>`)
+        .join("");
+    }
+
+    function renderReadiness() {
+      const { lot, documents, profile, passportValid } = current;
+      const doc = (id) => JSON.parse(documents.find((x) => x.id === id)?.content || "null");
+      const r = readiness({ art9: doc("art9"), dds: doc("dds"), art10: doc("art10"), art11Entries: doc("art11")?.entries || [], passportValid, importerDecision: (lot.importer_decisions || []).at(-1) || null, countryRisk: profile.country_risk || "standard" });
+      const label = { ok: "Ready", you: "You complete", supplier: "Ask supplier" };
+      $("ready-summary").textContent = r.summary;
+      $("ready").innerHTML = r.items.map((i) => `<li><span class="tag ${i.status}">${label[i.status]}</span><span>${esc(i.label)}${i.detail ? `<small>${esc(i.detail)}</small>` : ""}</span></li>`).join("");
+      $("ready-note").textContent = r.note;
+    }
+
+    async function sha256(text) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function blobLink(content, mime, filename, cls, title, sub) {
+      const url = URL.createObjectURL(new Blob([content], { type: mime }));
+      const open = mime === "text/html" ? ' target="_blank" rel="noopener"' : ` download="${esc(filename)}"`;
+      return `<a class="${cls}" href="${url}"${open}><b>${esc(title)}</b><small>${sub}</small></a>`;
+    }
+
+    function showHandoff(h) {
+      if (!h) return;
+      $("handoff").innerHTML = blobLink(JSON.stringify(h, null, 2), "application/json", `downstream-handoff-${h.lot}.json`, "report", "Downstream handoff note", `DDS ref. ${esc(h.referenceNumber)} · for processors and traders after you`);
+    }
+
+    function renderStatus(lot) {
+      const filed = lot.status === "filed";
+      $("status").textContent = filed ? "Filed" : "Awaiting your filing";
+      $("status").className = filed ? "ok" : "warn";
+      $("status-sub").textContent = filed ? `DDS ref. ${lot.filing.reference}` : "Sent by the supplier " + new Date(lot.created_at).toLocaleDateString("en-GB");
+      if (filed) {
+        $("ref").value = lot.filing.reference;
+        $("ver").value = lot.filing.verification;
+      }
+    }
+
+    async function load() {
+      if (!token) throw new Error("This page needs the private link your supplier sent you.");
+      const r = await fetch("/api/share/" + encodeURIComponent(token));
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "This lot couldn't be loaded.");
+      const { lot, supplier, documents } = d;
+      $("lot-id").innerHTML = `Lot <strong>${esc(lot.id)}</strong><br>for ${esc(lot.buyer.name)}`;
+      $("title").textContent = `Incoming shipment for ${lot.buyer.name}`;
+      const risk = d.profile.country_risk || "standard";
+      $("risk").innerHTML = `<b>Origin: ${esc(COUNTRY[d.profile.country_iso2] || d.profile.country_iso2)}.</b> ${esc(RISK_TEXT[risk] || "")}`;
+      $("risk").classList.remove("hidden");
+      const invite = `${location.origin}/classic.html`;
+      const body = `Hello,\n\nWe import your produce into the EU and need the EUDR evidence for each shipment. You can issue a free, signed evidence passport per shipment here: ${invite}\nThe passport and its history stay yours, and you can send it to every buyer.\n\n${lot.buyer.name}`;
+      $("invite-mail").href = `mailto:?subject=${encodeURIComponent("EUDR evidence passports for our shipments")}&body=${encodeURIComponent(body)}`;
+      renderDecisions(lot);
+      $("supplier").textContent = supplier?.name || "–";
+      $("origin").textContent = `${supplier?.municipality || ""} · ${COUNTRY[d.profile.country_iso2] || d.profile.country_iso2}`;
+      $("kg").textContent = `${Number(lot.kg).toLocaleString("en")} ${lot.kg_unit}`;
+      $("receipts").textContent = `${lot.receipts.length} purchase receipt(s), each in this lot only`;
+      $("plots").textContent = lot.plot_ids.length;
+      renderStatus(lot);
+
+      const art10 = JSON.parse(documents.find((x) => x.id === "art10").content);
+      const art11 = JSON.parse(documents.find((x) => x.id === "art11").content).entries;
+      const art9 = JSON.parse(documents.find((x) => x.id === "art9").content);
+      const open = art10.criteria.filter((c) => ["gap", "manual", "fail"].includes(c.rating));
+      const risks = art9.plots.map((p) => p.deforestationFree?.whispRisk);
+      const checked = risks.filter(Boolean).length;
+      $("checks").innerHTML = [
+        `<li><span class="${checked === risks.length ? "ok" : "warn"}">${checked}/${risks.length} plots</span> checked with FAO Whisp${art9.plots[0]?.deforestationFree?.checkedAt ? " (" + esc(art9.plots[0].deforestationFree.checkedAt.slice(0, 10)) + ")" : ""}: ${esc([...new Set(risks.map((x) => x || "not checked"))].join(", "))} risk</li>`,
+        ...(lot.passport ? [`<li><span class="ok">Signed by your supplier</span>: Shipment Evidence Passport ${esc(lot.passport.id)} (#${esc(lot.passport.sequence)} in their history), key <code>${esc(lot.passport.key_fingerprint)}</code>. <a href="${esc(lot.passport.verify_url)}#lot=${encodeURIComponent(token)}" target="_blank" rel="noopener">Verify it →</a></li>`] : []),
+        `<li><span class="ok">Segregated lot</span>: every input comes from a cleared plot; no mass balance</li>`,
+        `<li><span class="ok">Volume checked</span>: kg sold compared with the plots' measured area; any flag needs a written reviewer decision (${art11.length} logged in the Art 11 file with name and time)</li>`,
+        `<li><span class="${open.length ? "warn" : "ok"}">${open.length} of ${art10.criteria.length} Art 10 criteria open</span>${open.length ? ": " + esc(open.map((c) => c.criterion.replace("10(2)", "")).join(" ")) + ". You complete these and draw the conclusion." : ""}</li>`,
+      ].join("");
+
+      const links = [];
+      for (const doc of documents) {
+        const ok = (await sha256(doc.content)) === doc.sha256;
+        links.push(blobLink(doc.content, doc.mime, doc.filename, doc.id === "report" || doc.id === "passport" ? "report" : "", doc.title, `${esc(doc.filename)} · <span class="${ok ? "ok" : "bad"}">${ok ? "fingerprint matches" : "FINGERPRINT MISMATCH"}</span> · ${esc(doc.sha256.slice(0, 16))}…`));
+      }
+      $("docs").innerHTML = links.join("");
+      showHandoff(d.handoff);
+
+      // Check the supplier's passport against the files received, then fill the checklist.
+      const pdoc = documents.find((x) => x.id === "passport");
+      let passportValid = null;
+      if (pdoc) {
+        const others = documents.filter((x) => x.id !== "passport").map((x) => ({ name: x.filename, bytes: new TextEncoder().encode(x.content) }));
+        const v = await verifyPassport(JSON.parse(pdoc.content), others);
+        passportValid = v.valid && v.files.every((f) => f.status === "match");
+      }
+      current = { lot, documents, profile: d.profile, passportValid };
+      renderReadiness();
+    }
+
+    $("decide").onclick = async () => {
+      const r = await fetch(`/api/share/${encodeURIComponent(token)}/decision`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ decision: $("dec").value, name: $("dec-name").value, reason: $("dec-reason").value }) });
+      const d = await r.json();
+      $("dec-msg").textContent = r.ok ? "Recorded in this lot's record. Your supplier sees it." : d.error;
+      $("dec-msg").className = "msg " + (r.ok ? "ok" : "err");
+      if (r.ok && current) {
+        current.lot = { ...current.lot, importer_decisions: d.lot.importer_decisions };
+        renderDecisions(current.lot);
+        renderReadiness();
+      }
+    };
+
+    $("file").onclick = async () => {
+      const r = await fetch(`/api/share/${encodeURIComponent(token)}/filing`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reference: $("ref").value, verification: $("ver").value }) });
+      const d = await r.json();
+      $("file-msg").textContent = r.ok ? "Recorded. Your supplier now sees this lot as filed." : d.error;
+      $("file-msg").className = "msg " + (r.ok ? "ok" : "err");
+      if (r.ok) {
+        renderStatus(d.lot);
+        showHandoff(d.handoff);
+      }
+    };
+
+    load().catch((e) => {
+      $("err").textContent = e.message;
+      $("err").classList.remove("hidden");
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "medalert",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hackathon prototype: check a received medicine batch against official alerts and the register; sweep stock when a new alert lands.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "zod": "^4.6.7"
+  }
+}

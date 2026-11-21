@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MedAlert</title>
+  <meta name="description" content="Is this batch on anyone's alert list? Check a received medicine batch against official alerts and the register.">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">✚</span>
+      <div>
+        <h1>MedAlert</h1>
+        <p class="tagline">Is this batch on anyone's alert list?</p>
+      </div>
+    </div>
+    <span class="user-chip">Hospital pharmacist · goods receipt</span>
+  </header>
+
+  <p class="sources-line" id="sourcesLine">Loading alert lists…</p>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <main>
+    <section class="card" id="stepRead">
+      <h2><span class="step">1</span> Read the pack</h2>
+      <div class="actions">
+        <label class="btn primary">
+          📷 Photograph the pack
+          <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+        </label>
+        <button class="btn" id="typeBtn" type="button">⌨ Type the batch instead</button>
+      </div>
+      <p class="hint">Barcode on the pack? It is read first. No barcode: the photo is read instead.</p>
+      <div class="samples">
+        <p class="samples-title">Demo packs from real alerts</p>
+        <div id="sampleList" class="sample-list"></div>
+      </div>
+      <div id="readStatus" class="status" hidden></div>
+    </section>
+
+    <section class="card" id="stepConfirm" hidden>
+      <h2><span class="step">2</span> Confirm every field</h2>
+      <div class="confirm-head">
+        <img id="packPhoto" alt="Pack being checked" hidden>
+        <p id="fieldSource" class="source-tag"></p>
+      </div>
+      <form id="fieldsForm" autocomplete="off">
+        <label class="field big"><span>Batch / lot no. <b>*</b></span><input name="batch" required inputmode="text" spellcheck="false"></label>
+        <label class="field"><span>Product</span><input name="product"></label>
+        <div class="row2">
+          <label class="field"><span>Strength</span><input name="strength"></label>
+          <label class="field"><span>Expiry</span><input name="expiry" placeholder="MM/YYYY"></label>
+        </div>
+        <label class="field"><span>Manufacturer</span><input name="manufacturer"></label>
+        <label class="field"><span>Registration no. (<abbr title="NAFDAC: Nigeria's medicines regulator. Changes with the country's regulator.">NAFDAC</abbr>)</span><input name="registration_no" placeholder="e.g. B4-6010"></label>
+        <p class="other" id="otherMarks" hidden></p>
+        <button class="btn primary wide" type="submit">I checked these against the pack: run the check</button>
+      </form>
+    </section>
+
+    <section class="card verdict" id="stepVerdict" hidden aria-live="polite"></section>
+
+    <section class="card report" id="report" hidden></section>
+
+    <details class="card drawer" id="stockDrawer">
+      <summary>Received batches <span class="tag">synthetic stock log</span></summary>
+      <div id="stockTable"></div>
+    </details>
+  </main>
+
+  <footer class="foot">
+    <button class="btn alert-btn" id="replayBtn" type="button">⚡ Simulate today's NAFDAC alert</button>
+    <button class="btn ghost" id="resetBtn" type="button">Reset demo</button>
+    <p class="fine">
+      MedAlert matches batches against official alerts only. A match is decided by fixed rules, not by AI; the AI only reads the pack.
+      “No alert found” is never a quality clearance.
+    </p>
+    <p class="fine" id="sourceLinks"></p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+{
+  "_synthetic": "Synthetic demo data: invented names, producer-card numbers and receipts. Coordinates are plausible but have NOT been checked with Whisp.",
+  "verified_with_whisp": false,
+  "cooperative": {
+    "name": "Société Coopérative des Producteurs de Soubré (démo)",
+    "registration": "RCCM CI-DEMO-0000 (demo)",
+    "municipality": "Soubré, Nawa",
+    "country": "CI",
+    "warehouse": [
+      -6.6069,
+      5.7853
+    ]
+  },
+  "farms": [
+    {
+      "id": "C1",
+      "farmer_name": "Kouassi Yao Bernard",
+      "farm": "Plantation Kouassi 1",
+      "crop": "Cocoa",
+      "producer_card": "CP-DEMO-0001",
+      "hectares": 3.2,
+      "region": "Nawa",
+      "municipality": "Soubré",
+      "village": "Gnamagui",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -6.612808,
+              5.790197
+            ],
+            [
+              -6.611192,
+              5.790197
+            ],
+            [
+              -6.611192,
+              5.791803
+            ],
+            [
+              -6.612808,
+              5.791803
+            ],
+            [
+              -6.612808,
+              5.790197
+            ]
+          ]
+        ]
+      },
+      "deliveries": [
+        {
+          "date": "2025-10-14",
+          "season": "2025-26",
+          "kg": 450,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-501"
+        },
+        {
+          "date": "2025-12-09",
+          "season": "2025-26",
+          "kg": 520,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-502"
+        },
+        {
+          "date": "2026-02-17",
+          "season": "2025-26",
+          "kg": 330,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-503"
+        }
+      ]
+    },
+    {
+      "id": "C2",
+      "farmer_name": "Aya Koffi Mariam",
+      "farm": "Plantation Aya",
+      "crop": "Cocoa",
+      "producer_card": "CP-DEMO-0002",
+      "hectares": 2.6,
+      "region": "Nawa",
+      "municipality": "Soubré",
+      "village": "Okrouyo",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -6.578728,
+              5.811276
+            ],
+            [
+              -6.577272,
+              5.811276
+            ],
+            [
+              -6.577272,
+              5.812724
+            ],
+            [
+              -6.578728,
+              5.812724
+            ],
+            [
+              -6.578728,
+              5.811276
+            ]
+          ]
+        ]
+      },
+      "deliveries": [
+        {
+          "date": "2025-10-14",
+          "season": "2025-26",
+          "kg": 380,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-504"
+        },
+        {
+          "date": "2025-12-09",
+          "season": "2025-26",
+          "kg": 410,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-505"
+        },
+        {
+          "date": "2026-02-17",
+          "season": "2025-26",
+          "kg": 290,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-506"
+        }
+      ]
+    },
+    {
+      "id": "C3",
+      "farmer_name": "N'Guessan Konan Paul",
+      "farm": "Plantation Konan A",
+      "crop": "Cocoa",
+      "producer_card": "CP-DEMO-0003",
+      "hectares": 1.8,
+      "region": "Nawa",
+      "municipality": "Soubré",
+      "village": "Liliyo",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -6.641606,
+              5.767397
+            ],
+            [
+              -6.640394,
+              5.767397
+            ],
+            [
+              -6.640394,
+              5.768603
+            ],
+            [
+              -6.641606,
+              5.768603
+            ],
+            [
+              -6.641606,
+              5.767397
+            ]
+          ]
+        ]
+      },
+      "deliveries": [
+        {
+          "date": "2025-10-14",
+          "season": "2025-26",
+          "kg": 1200,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-507"
+        },
+        {
+          "date": "2025-12-09",
+          "season": "2025-26",
+          "kg": 1300,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-508"
+        },
+        {
+          "date": "2026-02-17",
+          "season": "2025-26",
+          "kg": 900,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-509"
+        }
+      ]
+    },
+    {
+      "id": "C4",
+      "farmer_name": "N'Guessan Konan Paul",
+      "farm": "Plantation Konan B",
+      "crop": "Cocoa",
+      "producer_card": "CP-DEMO-0003",
+      "hectares": 1.4,
+      "region": "Nawa",
+      "municipality": "Soubré",
+      "village": "Liliyo",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -6.645534,
+              5.760469
+            ],
+            [
+              -6.644466,
+              5.760469
+            ],
+            [
+              -6.644466,
+              5.761531
+            ],
+            [
+              -6.645534,
+              5.761531
+            ],
+            [
+              -6.645534,
+              5.760469
+            ]
+          ]
+        ]
+      },
+      "deliveries": []
+    },
+    {
+      "id": "C5",
+      "farmer_name": "Traoré Ibrahim",
+      "farm": "Plantation Traoré",
+      "crop": "Cocoa",
+      "producer_card": "CP-DEMO-0004",
+      "hectares": 5.5,
+      "region": "Nawa",
+      "municipality": "Soubré",
+      "village": "Grand-Zattry",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.597,
+          5.744
+        ]
+      },
+      "deliveries": [
+        {
+          "date": "2025-10-14",
+          "season": "2025-26",
+          "kg": 800,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-510"
+        },
+        {
+          "date": "2025-12-09",
+          "season": "2025-26",
+          "kg": 900,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-511"
+        },
+        {
+          "date": "2026-02-17",
+          "season": "2025-26",
+          "kg": 700,
+          "unit": "kg fèves sèches",
+          "receipt": "BA-512"
+        }
+      ]
+    }
+  ]
+}

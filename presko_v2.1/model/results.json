@@ -1,0 +1,2061 @@
+{
+ "limits": {
+  "dayVetoHI": 52,
+  "commuteVetoHI": 50,
+  "commuteSunExposure": 0.5,
+  "classUnsafeWBGT": 31,
+  "classCautionWBGT": 28,
+  "noReadingMarginC": 1,
+  "readingPrior": 3,
+  "studentsPerRoom": 40,
+  "fanMaxTemp": 35,
+  "hiBias": 0
+ },
+ "calib": {
+  "metalNoCeiling": {
+   "model": 2.253919642857124,
+   "modelPeak": 2.5999999999999996,
+   "study": 2.2,
+   "studyPeak": 5.9
+  },
+  "metalWithCeiling": {
+   "model": -0.17523486024845258,
+   "study": -0.2
+  }
+ },
+ "auc": 0.49572649572649574,
+ "bias": 3.922075414593884,
+ "tShift": 3.2,
+ "rowsCal": [
+  {
+   "iso": "2024-03-01",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.30520701730293,
+   "dayVeto": false,
+   "commuteAM": 41.21800983763153,
+   "commutePM": 41.30520701730293
+  },
+  {
+   "iso": "2024-03-04",
+   "label": 0,
+   "full": 52,
+   "half": 16,
+   "closed": 2,
+   "peakHI": 39.497560981276436,
+   "dayVeto": false,
+   "commuteAM": 41.24362969439659,
+   "commutePM": 42.53784947115227
+  },
+  {
+   "iso": "2024-03-05",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 38.92879013768976,
+   "dayVeto": false,
+   "commuteAM": 40.810498017957286,
+   "commutePM": 41.3821629038657
+  },
+  {
+   "iso": "2024-03-06",
+   "label": 0,
+   "full": 29,
+   "half": 23,
+   "closed": 18,
+   "peakHI": 42.540301390293116,
+   "dayVeto": false,
+   "commuteAM": 44.20982334801921,
+   "commutePM": 45.392126412396756
+  },
+  {
+   "iso": "2024-03-07",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 40.43003818269162,
+   "dayVeto": false,
+   "commuteAM": 43.785566571007394,
+   "commutePM": 44.43003818269162
+  },
+  {
+   "iso": "2024-03-08",
+   "label": 0,
+   "full": 68,
+   "half": 0,
+   "closed": 2,
+   "peakHI": 36.64156410095646,
+   "dayVeto": false,
+   "commuteAM": 40.57354300634092,
+   "commutePM": 40.64156410095646
+  },
+  {
+   "iso": "2024-03-11",
+   "label": 0,
+   "full": 52,
+   "half": 16,
+   "closed": 2,
+   "peakHI": 38.79886886182899,
+   "dayVeto": false,
+   "commuteAM": 41.026010931060085,
+   "commutePM": 42.08699760816173
+  },
+  {
+   "iso": "2024-03-12",
+   "label": 0,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 39.90062503825459,
+   "dayVeto": false,
+   "commuteAM": 42.55618904589763,
+   "commutePM": 43.267508615833435
+  },
+  {
+   "iso": "2024-03-13",
+   "label": 0,
+   "full": 59,
+   "half": 6,
+   "closed": 5,
+   "peakHI": 38.03304974236463,
+   "dayVeto": false,
+   "commuteAM": 42.03304974236463,
+   "commutePM": 42.03304974236463
+  },
+  {
+   "iso": "2024-03-14",
+   "label": 0,
+   "full": 59,
+   "half": 6,
+   "closed": 5,
+   "peakHI": 37.71605051369382,
+   "dayVeto": false,
+   "commuteAM": 41.57439606462718,
+   "commutePM": 41.71605051369382
+  },
+  {
+   "iso": "2024-03-15",
+   "label": 0,
+   "full": 52,
+   "half": 16,
+   "closed": 2,
+   "peakHI": 38.79687637097516,
+   "dayVeto": false,
+   "commuteAM": 41.68822238093481,
+   "commutePM": 42.58773147806326
+  },
+  {
+   "iso": "2024-03-18",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.676374823715975,
+   "dayVeto": false,
+   "commuteAM": 41.60109323651531,
+   "commutePM": 41.676374823715975
+  },
+  {
+   "iso": "2024-03-19",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 38.37442228382153,
+   "dayVeto": false,
+   "commuteAM": 41.35252436118125,
+   "commutePM": 42.26617049139625
+  },
+  {
+   "iso": "2024-03-20",
+   "label": 0,
+   "full": 52,
+   "half": 16,
+   "closed": 2,
+   "peakHI": 38.71887298572522,
+   "dayVeto": false,
+   "commuteAM": 41.49860125803328,
+   "commutePM": 42.71887298572522
+  },
+  {
+   "iso": "2024-03-21",
+   "label": 0,
+   "full": 68,
+   "half": 0,
+   "closed": 2,
+   "peakHI": 36.134993952927374,
+   "dayVeto": false,
+   "commuteAM": 40.03260292579138,
+   "commutePM": 40.134993952927374
+  },
+  {
+   "iso": "2024-03-22",
+   "label": 0,
+   "full": 52,
+   "half": 16,
+   "closed": 2,
+   "peakHI": 39.308790554905364,
+   "dayVeto": false,
+   "commuteAM": 40.39803074222684,
+   "commutePM": 41.42663877756965
+  },
+  {
+   "iso": "2024-03-25",
+   "label": 0,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 38.76424049406972,
+   "dayVeto": false,
+   "commuteAM": 42.76424049406972,
+   "commutePM": 42.76424049406972
+  },
+  {
+   "iso": "2024-03-26",
+   "label": 0,
+   "full": 12,
+   "half": 40,
+   "closed": 18,
+   "peakHI": 44.00660561303013,
+   "dayVeto": false,
+   "commuteAM": 46.99837280596439,
+   "commutePM": 47.885355253773604
+  },
+  {
+   "iso": "2024-03-27",
+   "label": 0,
+   "full": 3,
+   "half": 35,
+   "closed": 32,
+   "peakHI": 44.08105469941249,
+   "dayVeto": false,
+   "commuteAM": 46.661292238628995,
+   "commutePM": 48.08105469941249
+  },
+  {
+   "iso": "2024-04-01",
+   "label": 1,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 41.44448223585742,
+   "dayVeto": false,
+   "commuteAM": 42.71268677858991,
+   "commutePM": 43.659921897417654
+  },
+  {
+   "iso": "2024-04-02",
+   "label": 1,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.17445146823545,
+   "dayVeto": false,
+   "commuteAM": 44.02197092522908,
+   "commutePM": 44.682447989040966
+  },
+  {
+   "iso": "2024-04-03",
+   "label": 1,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 40.29516544308926,
+   "dayVeto": false,
+   "commuteAM": 41.98769557112715,
+   "commutePM": 42.46361487689335
+  },
+  {
+   "iso": "2024-04-04",
+   "label": 1,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.78549705642955,
+   "dayVeto": false,
+   "commuteAM": 44.51118088839118,
+   "commutePM": 45.41163339892232
+  },
+  {
+   "iso": "2024-04-05",
+   "label": 1,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.7773244721794,
+   "dayVeto": false,
+   "commuteAM": 44.640520686351486,
+   "commutePM": 45.39863706351497
+  },
+  {
+   "iso": "2024-04-08",
+   "label": 0,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 40.21004774954138,
+   "dayVeto": false,
+   "commuteAM": 43.09981778882568,
+   "commutePM": 44.21004774954138
+  },
+  {
+   "iso": "2024-04-11",
+   "label": 0,
+   "full": 52,
+   "half": 7,
+   "closed": 11,
+   "peakHI": 41.08251192326868,
+   "dayVeto": false,
+   "commuteAM": 43.91209929128934,
+   "commutePM": 44.64723726103577
+  },
+  {
+   "iso": "2024-04-12",
+   "label": 0,
+   "full": 29,
+   "half": 23,
+   "closed": 18,
+   "peakHI": 42.31318425797342,
+   "dayVeto": false,
+   "commuteAM": 44.54834587541013,
+   "commutePM": 45.88525325548474
+  },
+  {
+   "iso": "2024-04-15",
+   "label": 0,
+   "full": 12,
+   "half": 40,
+   "closed": 18,
+   "peakHI": 43.31291664015775,
+   "dayVeto": false,
+   "commuteAM": 46.56009669524767,
+   "commutePM": 46.99639203880292
+  },
+  {
+   "iso": "2024-04-16",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.268450445411354,
+   "dayVeto": false,
+   "commuteAM": 45.268450445411354,
+   "commutePM": 45.268450445411354
+  },
+  {
+   "iso": "2024-04-17",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.69559623375054,
+   "dayVeto": false,
+   "commuteAM": 45.6061808819279,
+   "commutePM": 45.69559623375054
+  },
+  {
+   "iso": "2024-04-18",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.93234873087867,
+   "dayVeto": false,
+   "commuteAM": 45.780328267074964,
+   "commutePM": 45.780328267074964
+  },
+  {
+   "iso": "2024-04-19",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.8121910800707,
+   "dayVeto": false,
+   "commuteAM": 45.3361707359372,
+   "commutePM": 45.76039739890708
+  },
+  {
+   "iso": "2024-04-22",
+   "label": 0,
+   "full": 12,
+   "half": 26,
+   "closed": 32,
+   "peakHI": 43.8842783973769,
+   "dayVeto": false,
+   "commuteAM": 45.50559082727903,
+   "commutePM": 47.29021808941721
+  },
+  {
+   "iso": "2024-04-23",
+   "label": 0,
+   "full": 3,
+   "half": 9,
+   "closed": 58,
+   "peakHI": 44.333677593722754,
+   "dayVeto": false,
+   "commuteAM": 47.862704807087596,
+   "commutePM": 47.862704807087596
+  },
+  {
+   "iso": "2024-04-24",
+   "label": 0,
+   "full": 3,
+   "half": 35,
+   "closed": 32,
+   "peakHI": 44.56565247325749,
+   "dayVeto": false,
+   "commuteAM": 46.445066996368546,
+   "commutePM": 47.1079554155544
+  },
+  {
+   "iso": "2024-04-25",
+   "label": 1,
+   "full": 29,
+   "half": 23,
+   "closed": 18,
+   "peakHI": 42.91084769495564,
+   "dayVeto": false,
+   "commuteAM": 45.56680523730972,
+   "commutePM": 46.28972286258998
+  },
+  {
+   "iso": "2024-04-26",
+   "label": 1,
+   "full": 12,
+   "half": 40,
+   "closed": 18,
+   "peakHI": 43.68735684324308,
+   "dayVeto": false,
+   "commuteAM": 44.96029301628463,
+   "commutePM": 45.2181063841141
+  },
+  {
+   "iso": "2024-04-29",
+   "label": 1,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.617426538516625,
+   "dayVeto": false,
+   "commuteAM": 45.235183879030906,
+   "commutePM": 45.617426538516625
+  },
+  {
+   "iso": "2024-04-30",
+   "label": 1,
+   "full": 3,
+   "half": 35,
+   "closed": 32,
+   "peakHI": 44.652233877664145,
+   "dayVeto": false,
+   "commuteAM": 46.901780800672185,
+   "commutePM": 48.05715253264466
+  },
+  {
+   "iso": "2024-05-02",
+   "label": 0,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 40.55201964640548,
+   "dayVeto": false,
+   "commuteAM": 43.21811802514654,
+   "commutePM": 44.134958728822056
+  },
+  {
+   "iso": "2024-05-03",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.00609087551504,
+   "dayVeto": false,
+   "commuteAM": 44.17762911397989,
+   "commutePM": 44.31445067276983
+  },
+  {
+   "iso": "2024-05-06",
+   "label": 0,
+   "full": 12,
+   "half": 26,
+   "closed": 32,
+   "peakHI": 43.915704203800075,
+   "dayVeto": false,
+   "commuteAM": 46.62569463852792,
+   "commutePM": 47.915704203800075
+  },
+  {
+   "iso": "2024-05-07",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.96205578957725,
+   "dayVeto": false,
+   "commuteAM": 45.432970990856575,
+   "commutePM": 45.432970990856575
+  },
+  {
+   "iso": "2024-05-08",
+   "label": 0,
+   "full": 12,
+   "half": 26,
+   "closed": 32,
+   "peakHI": 43.51576839882499,
+   "dayVeto": false,
+   "commuteAM": 46.78075564168844,
+   "commutePM": 47.37217258480738
+  },
+  {
+   "iso": "2024-05-09",
+   "label": 0,
+   "full": 12,
+   "half": 0,
+   "closed": 58,
+   "peakHI": 43.82229596993856,
+   "dayVeto": false,
+   "commuteAM": 47.21646513106373,
+   "commutePM": 47.73028070269442
+  },
+  {
+   "iso": "2024-05-10",
+   "label": 0,
+   "full": 12,
+   "half": 26,
+   "closed": 32,
+   "peakHI": 43.80770295539052,
+   "dayVeto": false,
+   "commuteAM": 46.94764542199241,
+   "commutePM": 47.80770295539052
+  },
+  {
+   "iso": "2024-05-13",
+   "label": 0,
+   "full": 3,
+   "half": 9,
+   "closed": 58,
+   "peakHI": 46.073452853213126,
+   "dayVeto": false,
+   "commuteAM": 48.00601303997606,
+   "commutePM": 48.665918090518595
+  },
+  {
+   "iso": "2024-05-14",
+   "label": 0,
+   "full": 3,
+   "half": 35,
+   "closed": 32,
+   "peakHI": 45.03943996511449,
+   "dayVeto": false,
+   "commuteAM": 48.6134752724601,
+   "commutePM": 49.03943996511449
+  },
+  {
+   "iso": "2024-05-15",
+   "label": 0,
+   "full": 3,
+   "half": 22,
+   "closed": 45,
+   "peakHI": 44.64419367933059,
+   "dayVeto": false,
+   "commuteAM": 47.96867970618403,
+   "commutePM": 48.090602050645984
+  },
+  {
+   "iso": "2024-05-16",
+   "label": 0,
+   "full": 12,
+   "half": 26,
+   "closed": 32,
+   "peakHI": 43.554958755838406,
+   "dayVeto": false,
+   "commuteAM": 47.500606351192125,
+   "commutePM": 47.554958755838406
+  },
+  {
+   "iso": "2024-05-17",
+   "label": 0,
+   "full": 12,
+   "half": 26,
+   "closed": 32,
+   "peakHI": 43.664627676881224,
+   "dayVeto": false,
+   "commuteAM": 46.76156723958628,
+   "commutePM": 46.76156723958628
+  },
+  {
+   "iso": "2024-05-20",
+   "label": 0,
+   "full": 12,
+   "half": 26,
+   "closed": 32,
+   "peakHI": 43.45481951202381,
+   "dayVeto": false,
+   "commuteAM": 47.20501231542657,
+   "commutePM": 47.45481951202381
+  },
+  {
+   "iso": "2024-05-21",
+   "label": 0,
+   "full": 12,
+   "half": 13,
+   "closed": 45,
+   "peakHI": 43.638133471187565,
+   "dayVeto": false,
+   "commuteAM": 46.49538888842132,
+   "commutePM": 46.635402367279035
+  },
+  {
+   "iso": "2024-05-22",
+   "label": 0,
+   "full": 3,
+   "half": 9,
+   "closed": 58,
+   "peakHI": 44.940096253979036,
+   "dayVeto": false,
+   "commuteAM": 48.87939027860494,
+   "commutePM": 48.940096253979036
+  },
+  {
+   "iso": "2024-05-23",
+   "label": 0,
+   "full": 3,
+   "half": 35,
+   "closed": 32,
+   "peakHI": 44.40784409835325,
+   "dayVeto": false,
+   "commuteAM": 47.5409999957712,
+   "commutePM": 47.74936331115818
+  },
+  {
+   "iso": "2024-05-24",
+   "label": 0,
+   "full": 38,
+   "half": 14,
+   "closed": 18,
+   "peakHI": 42.93504267092774,
+   "dayVeto": false,
+   "commuteAM": 42.86562861033825,
+   "commutePM": 43.74119838215366
+  },
+  {
+   "iso": "2024-05-27",
+   "label": 0,
+   "full": 25,
+   "half": 43,
+   "closed": 2,
+   "peakHI": 44.02117166332479,
+   "dayVeto": false,
+   "commuteAM": 46.67858574960852,
+   "commutePM": 48.02117166332479
+  },
+  {
+   "iso": "2024-05-28",
+   "label": 0,
+   "full": 29,
+   "half": 41,
+   "closed": 0,
+   "peakHI": 44.108580714948,
+   "dayVeto": false,
+   "commuteAM": 42.720442877601194,
+   "commutePM": 45.20293478621457
+  },
+  {
+   "iso": "2024-05-29",
+   "label": 0,
+   "full": 38,
+   "half": 14,
+   "closed": 18,
+   "peakHI": 42.56622884388362,
+   "dayVeto": false,
+   "commuteAM": 46.09622884388362,
+   "commutePM": 46.09622884388362
+  },
+  {
+   "iso": "2024-05-30",
+   "label": 0,
+   "full": 12,
+   "half": 26,
+   "closed": 32,
+   "peakHI": 43.8775754163593,
+   "dayVeto": false,
+   "commuteAM": 47.505183930713656,
+   "commutePM": 47.505183930713656
+  },
+  {
+   "iso": "2024-05-31",
+   "label": 0,
+   "full": 3,
+   "half": 35,
+   "closed": 32,
+   "peakHI": 45.55585895063792,
+   "dayVeto": false,
+   "commuteAM": 48.57083931484476,
+   "commutePM": 48.754759935487954
+  }
+ ],
+ "confusionCal": {
+  "tp": 3,
+  "fp": 25,
+  "fn": 6,
+  "tn": 27
+ },
+ "hotterOpen": 30,
+ "medianSusp": 37.79998897844449,
+ "threshold50": 61.773396064529045,
+ "confusion": {
+  "tp": 0,
+  "fp": 0,
+  "fn": 9,
+  "tn": 52
+ },
+ "rows": [
+  {
+   "iso": "2024-03-01",
+   "label": 0,
+   "full": 70,
+   "half": 0,
+   "closed": 0,
+   "peakHI": 33.62144993961562,
+   "dayVeto": false,
+   "commuteAM": 37.55034496247111,
+   "commutePM": 37.62144993961562
+  },
+  {
+   "iso": "2024-03-04",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 35.616047560835526,
+   "dayVeto": false,
+   "commuteAM": 38.00349190562454,
+   "commutePM": 38.914690942817906
+  },
+  {
+   "iso": "2024-03-05",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 35.12465902100449,
+   "dayVeto": false,
+   "commuteAM": 37.67225303911118,
+   "commutePM": 38.07404859444454
+  },
+  {
+   "iso": "2024-03-06",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 38.491347098435504,
+   "dayVeto": false,
+   "commuteAM": 40.671152330017854,
+   "commutePM": 41.634030143777814
+  },
+  {
+   "iso": "2024-03-07",
+   "label": 0,
+   "full": 68,
+   "half": 0,
+   "closed": 2,
+   "peakHI": 36.45781422883556,
+   "dayVeto": false,
+   "commuteAM": 39.988929154824376,
+   "commutePM": 40.45781422883556
+  },
+  {
+   "iso": "2024-03-08",
+   "label": 0,
+   "full": 70,
+   "half": 0,
+   "closed": 0,
+   "peakHI": 33.03702130577785,
+   "dayVeto": false,
+   "commuteAM": 36.95208965708449,
+   "commutePM": 37.03702130577785
+  },
+  {
+   "iso": "2024-03-11",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 34.97599271575111,
+   "dayVeto": false,
+   "commuteAM": 37.772181517635524,
+   "commutePM": 38.48873600083557
+  },
+  {
+   "iso": "2024-03-12",
+   "label": 0,
+   "full": 68,
+   "half": 0,
+   "closed": 2,
+   "peakHI": 36.04800052699555,
+   "dayVeto": false,
+   "commuteAM": 39.04451980555562,
+   "commutePM": 39.58789682727779
+  },
+  {
+   "iso": "2024-03-13",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 34.23398985921771,
+   "dayVeto": false,
+   "commuteAM": 38.23398985921771,
+   "commutePM": 38.23398985921771
+  },
+  {
+   "iso": "2024-03-14",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 34.015211898897824,
+   "dayVeto": false,
+   "commuteAM": 37.89648464711123,
+   "commutePM": 38.015211898897824
+  },
+  {
+   "iso": "2024-03-15",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 34.914690942817906,
+   "dayVeto": false,
+   "commuteAM": 38.163334401564555,
+   "commutePM": 38.7957041167378
+  },
+  {
+   "iso": "2024-03-18",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 33.96073038369554,
+   "dayVeto": false,
+   "commuteAM": 37.89648464711123,
+   "commutePM": 37.96073038369554
+  },
+  {
+   "iso": "2024-03-19",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 34.629289976595615,
+   "dayVeto": false,
+   "commuteAM": 37.90454449740446,
+   "commutePM": 38.560402462257734
+  },
+  {
+   "iso": "2024-03-20",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 34.855849563555616,
+   "dayVeto": false,
+   "commuteAM": 38.00349190562454,
+   "commutePM": 38.855849563555616
+  },
+  {
+   "iso": "2024-03-21",
+   "label": 0,
+   "full": 70,
+   "half": 0,
+   "closed": 0,
+   "peakHI": 32.605771242604455,
+   "dayVeto": false,
+   "commuteAM": 36.5318383429156,
+   "commutePM": 36.605771242604455
+  },
+  {
+   "iso": "2024-03-22",
+   "label": 0,
+   "full": 68,
+   "half": 2,
+   "closed": 0,
+   "peakHI": 35.513380247404434,
+   "dayVeto": false,
+   "commuteAM": 37.45426527955562,
+   "commutePM": 38.18370879975788
+  },
+  {
+   "iso": "2024-03-25",
+   "label": 0,
+   "full": 68,
+   "half": 0,
+   "closed": 2,
+   "peakHI": 34.9225023221844,
+   "dayVeto": false,
+   "commuteAM": 38.9225023221844,
+   "commutePM": 38.9225023221844
+  },
+  {
+   "iso": "2024-03-26",
+   "label": 0,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 39.88022217177778,
+   "dayVeto": false,
+   "commuteAM": 43.08553877687107,
+   "commutePM": 43.78240401113559
+  },
+  {
+   "iso": "2024-03-27",
+   "label": 0,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 39.98643562599119,
+   "dayVeto": false,
+   "commuteAM": 42.959863731137744,
+   "commutePM": 43.98643562599119
+  },
+  {
+   "iso": "2024-04-01",
+   "label": 1,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.52105394444446,
+   "dayVeto": false,
+   "commuteAM": 39.601570927215676,
+   "commutePM": 40.28385373767115
+  },
+  {
+   "iso": "2024-04-02",
+   "label": 1,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.255741940957755,
+   "dayVeto": false,
+   "commuteAM": 40.41851291311118,
+   "commutePM": 40.89853838145778
+  },
+  {
+   "iso": "2024-04-03",
+   "label": 1,
+   "full": 63,
+   "half": 5,
+   "closed": 2,
+   "peakHI": 36.41791281739563,
+   "dayVeto": false,
+   "commuteAM": 38.8267280304445,
+   "commutePM": 39.18357928123556
+  },
+  {
+   "iso": "2024-04-04",
+   "label": 1,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.83491347777776,
+   "dayVeto": false,
+   "commuteAM": 40.91070788641558,
+   "commutePM": 41.564212855315525
+  },
+  {
+   "iso": "2024-04-05",
+   "label": 1,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.79998897844449,
+   "dayVeto": false,
+   "commuteAM": 40.995730183217816,
+   "commutePM": 41.526364086051125
+  },
+  {
+   "iso": "2024-04-08",
+   "label": 0,
+   "full": 68,
+   "half": 0,
+   "closed": 2,
+   "peakHI": 36.45548644313781,
+   "dayVeto": false,
+   "commuteAM": 39.66718930553776,
+   "commutePM": 40.45548644313781
+  },
+  {
+   "iso": "2024-04-11",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.11516679477108,
+   "dayVeto": false,
+   "commuteAM": 40.28894890844458,
+   "commutePM": 40.806334923075546
+  },
+  {
+   "iso": "2024-04-12",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 38.274597929075554,
+   "dayVeto": false,
+   "commuteAM": 40.966152330017856,
+   "commutePM": 41.95779035708454
+  },
+  {
+   "iso": "2024-04-15",
+   "label": 0,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 39.239634942371076,
+   "dayVeto": false,
+   "commuteAM": 42.70984559563557,
+   "commutePM": 43.01948393735116
+  },
+  {
+   "iso": "2024-04-16",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.3089218180157,
+   "dayVeto": false,
+   "commuteAM": 41.3089218180157,
+   "commutePM": 41.3089218180157
+  },
+  {
+   "iso": "2024-04-17",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.7136839148956,
+   "dayVeto": false,
+   "commuteAM": 41.6348463880356,
+   "commutePM": 41.7136839148956
+  },
+  {
+   "iso": "2024-04-18",
+   "label": 0,
+   "full": 59,
+   "half": 6,
+   "closed": 5,
+   "peakHI": 38.05964744521779,
+   "dayVeto": false,
+   "commuteAM": 41.88155493735782,
+   "commutePM": 41.88155493735782
+  },
+  {
+   "iso": "2024-04-19",
+   "label": 0,
+   "full": 59,
+   "half": 6,
+   "closed": 5,
+   "peakHI": 37.903316515971156,
+   "dayVeto": false,
+   "commuteAM": 41.5104843457956,
+   "commutePM": 41.83491347777776
+  },
+  {
+   "iso": "2024-04-22",
+   "label": 0,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 39.66532792892454,
+   "dayVeto": false,
+   "commuteAM": 42.11957741511108,
+   "commutePM": 43.31463623612454
+  },
+  {
+   "iso": "2024-04-23",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 40.2046244786845,
+   "dayVeto": false,
+   "commuteAM": 43.88022217177778,
+   "commutePM": 43.88022217177778
+  },
+  {
+   "iso": "2024-04-24",
+   "label": 0,
+   "full": 52,
+   "half": 7,
+   "closed": 11,
+   "peakHI": 40.49913008815791,
+   "dayVeto": false,
+   "commuteAM": 43.03336019249782,
+   "commutePM": 43.49815016044445
+  },
+  {
+   "iso": "2024-04-25",
+   "label": 1,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 39.03357521153779,
+   "dayVeto": false,
+   "commuteAM": 42.03229269063124,
+   "commutePM": 42.5617751230044
+  },
+  {
+   "iso": "2024-04-26",
+   "label": 1,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 39.61614689619564,
+   "dayVeto": false,
+   "commuteAM": 41.656316632231075,
+   "commutePM": 41.88086468321784
+  },
+  {
+   "iso": "2024-04-29",
+   "label": 1,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.71805098215121,
+   "dayVeto": false,
+   "commuteAM": 41.47038363999116,
+   "commutePM": 41.71805098215121
+  },
+  {
+   "iso": "2024-04-30",
+   "label": 1,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 40.52080937547569,
+   "dayVeto": false,
+   "commuteAM": 43.32963623612454,
+   "commutePM": 44.11487045473777
+  },
+  {
+   "iso": "2024-05-02",
+   "label": 0,
+   "full": 68,
+   "half": 0,
+   "closed": 2,
+   "peakHI": 36.8841618989156,
+   "dayVeto": false,
+   "commuteAM": 39.970528952017766,
+   "commutePM": 40.573461917715555
+  },
+  {
+   "iso": "2024-05-03",
+   "label": 0,
+   "full": 59,
+   "half": 9,
+   "closed": 2,
+   "peakHI": 37.177876550417864,
+   "dayVeto": false,
+   "commuteAM": 40.58676951844455,
+   "commutePM": 40.704129392835576
+  },
+  {
+   "iso": "2024-05-06",
+   "label": 0,
+   "full": 52,
+   "half": 13,
+   "closed": 5,
+   "peakHI": 39.835716878495695,
+   "dayVeto": false,
+   "commuteAM": 42.9300934206755,
+   "commutePM": 43.835716878495695
+  },
+  {
+   "iso": "2024-05-07",
+   "label": 0,
+   "full": 59,
+   "half": 6,
+   "closed": 5,
+   "peakHI": 38.10448122505558,
+   "dayVeto": false,
+   "commuteAM": 41.7122519242045,
+   "commutePM": 41.7122519242045
+  },
+  {
+   "iso": "2024-05-08",
+   "label": 0,
+   "full": 52,
+   "half": 11,
+   "closed": 7,
+   "peakHI": 39.49815016044445,
+   "dayVeto": false,
+   "commuteAM": 42.9672591972156,
+   "commutePM": 43.386496818595646
+  },
+  {
+   "iso": "2024-05-09",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 39.829193699571064,
+   "dayVeto": false,
+   "commuteAM": 43.386496818595646,
+   "commutePM": 43.750241000895564
+  },
+  {
+   "iso": "2024-05-10",
+   "label": 0,
+   "full": 52,
+   "half": 7,
+   "closed": 11,
+   "peakHI": 39.749357174097895,
+   "dayVeto": false,
+   "commuteAM": 43.112703223357805,
+   "commutePM": 43.749357174097895
+  },
+  {
+   "iso": "2024-05-13",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.93218259660439,
+   "dayVeto": false,
+   "commuteAM": 44.50424907331573,
+   "commutePM": 44.9581224097957
+  },
+  {
+   "iso": "2024-05-14",
+   "label": 0,
+   "full": 52,
+   "half": 7,
+   "closed": 11,
+   "peakHI": 40.968215887084476,
+   "dayVeto": false,
+   "commuteAM": 44.62008964977786,
+   "commutePM": 44.968215887084476
+  },
+  {
+   "iso": "2024-05-15",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 40.609714472631126,
+   "dayVeto": false,
+   "commuteAM": 44.11949613988444,
+   "commutePM": 44.23034481165107
+  },
+  {
+   "iso": "2024-05-16",
+   "label": 0,
+   "full": 52,
+   "half": 7,
+   "closed": 11,
+   "peakHI": 39.54687479139564,
+   "dayVeto": false,
+   "commuteAM": 43.46948963508448,
+   "commutePM": 43.54687479139564
+  },
+  {
+   "iso": "2024-05-17",
+   "label": 0,
+   "full": 52,
+   "half": 7,
+   "closed": 11,
+   "peakHI": 39.723335421617776,
+   "dayVeto": false,
+   "commuteAM": 43.03336019249782,
+   "commutePM": 43.03336019249782
+  },
+  {
+   "iso": "2024-05-20",
+   "label": 0,
+   "full": 52,
+   "half": 7,
+   "closed": 11,
+   "peakHI": 39.50440964490443,
+   "dayVeto": false,
+   "commuteAM": 43.29392889700446,
+   "commutePM": 43.50440964490443
+  },
+  {
+   "iso": "2024-05-21",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 39.66581851923561,
+   "dayVeto": false,
+   "commuteAM": 42.754237380195605,
+   "commutePM": 42.88982746468451
+  },
+  {
+   "iso": "2024-05-22",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 40.8416764367978,
+   "dayVeto": false,
+   "commuteAM": 44.78878681620441,
+   "commutePM": 44.8416764367978
+  },
+  {
+   "iso": "2024-05-23",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 40.368791227715676,
+   "dayVeto": false,
+   "commuteAM": 43.749357174097895,
+   "commutePM": 43.91093378188451
+  },
+  {
+   "iso": "2024-05-24",
+   "label": 0,
+   "full": 63,
+   "half": 5,
+   "closed": 2,
+   "peakHI": 38.688328258097876,
+   "dayVeto": false,
+   "commuteAM": 39.268910689795696,
+   "commutePM": 39.99206514155551
+  },
+  {
+   "iso": "2024-05-27",
+   "label": 0,
+   "full": 52,
+   "half": 18,
+   "closed": 0,
+   "peakHI": 39.61894470987561,
+   "dayVeto": false,
+   "commuteAM": 42.64291803977796,
+   "commutePM": 43.61894470987561
+  },
+  {
+   "iso": "2024-05-28",
+   "label": 0,
+   "full": 52,
+   "half": 18,
+   "closed": 0,
+   "peakHI": 39.43992763959121,
+   "dayVeto": false,
+   "commuteAM": 39.57710371967114,
+   "commutePM": 41.331966260231084
+  },
+  {
+   "iso": "2024-05-29",
+   "label": 0,
+   "full": 65,
+   "half": 3,
+   "closed": 2,
+   "peakHI": 37.95713568051556,
+   "dayVeto": false,
+   "commuteAM": 41.487135680515564,
+   "commutePM": 41.487135680515564
+  },
+  {
+   "iso": "2024-05-30",
+   "label": 0,
+   "full": 52,
+   "half": 7,
+   "closed": 11,
+   "peakHI": 39.68879695311118,
+   "dayVeto": false,
+   "commuteAM": 43.269919528771126,
+   "commutePM": 43.29019099444467
+  },
+  {
+   "iso": "2024-05-31",
+   "label": 0,
+   "full": 52,
+   "half": 0,
+   "closed": 18,
+   "peakHI": 41.33132126365101,
+   "dayVeto": false,
+   "commuteAM": 44.51858159279789,
+   "commutePM": 44.69638615836449
+  }
+ ],
+ "hottest": "2024-05-13",
+ "archetypes": [
+  {
+   "building": "Old Gabaldon building with high ceilings, wide windows on both sides, ",
+   "peakIndoorT": 40.1,
+   "peakWBGT": 31.771617649340712,
+   "morning": true,
+   "afternoon": false
+  },
+  {
+   "building": "One-storey concrete classrooms with ceiling boards and electric fans, ",
+   "peakIndoorT": 40.9,
+   "peakWBGT": 32.17061173177326,
+   "morning": false,
+   "afternoon": false
+  },
+  {
+   "building": "Two-storey concrete building with ceiling boards, windows on one side ",
+   "peakIndoorT": 42.300000000000004,
+   "peakWBGT": 32.86230328360413,
+   "morning": false,
+   "afternoon": false
+  },
+  {
+   "building": "Two-storey building, upper floor under a GI roof with no ceiling, wind",
+   "peakIndoorT": 44.4,
+   "peakWBGT": 34.3340824143246,
+   "morning": false,
+   "afternoon": false
+  },
+  {
+   "building": "One-storey classrooms with ceiling, facing west, mango trees on the we",
+   "peakIndoorT": 42.300000000000004,
+   "peakWBGT": 32.86230328360413,
+   "morning": false,
+   "afternoon": false
+  },
+  {
+   "building": "One-storey classrooms, GI roof with no ceiling, louvre windows on one ",
+   "peakIndoorT": 46.6,
+   "peakWBGT": 35.38473260960016,
+   "morning": false,
+   "afternoon": false
+  },
+  {
+   "building": "Three-storey building, top-floor rooms under a GI roof with no ceiling",
+   "peakIndoorT": 46.6,
+   "peakWBGT": 35.38473260960016,
+   "morning": false,
+   "afternoon": false
+  },
+  {
+   "building": "Temporary learning space (tent) set up after the 2023 typhoon, no fans",
+   "peakIndoorT": 46,
+   "peakWBGT": 35.10013509322691,
+   "morning": false,
+   "afternoon": false
+  },
+  {
+   "building": "Makeshift plywood classroom with a tin roof, no ceiling, small windows",
+   "peakIndoorT": 48.6,
+   "peakWBGT": 36.323449562804015,
+   "morning": false,
+   "afternoon": false
+  },
+  {
+   "building": "Converted library room with air-conditioning and a ceiling, no outside",
+   "peakIndoorT": 27,
+   "peakWBGT": 23.009876876065732,
+   "morning": true,
+   "afternoon": true
+  }
+ ],
+ "yearly": [
+  {
+   "year": 2023,
+   "weekdays": 66,
+   "maxPeakHI": 44.8280918712569,
+   "dayVetoDays": 0,
+   "commuteVetoDays": 0,
+   "daysMostSchoolsNotFullDay": 11
+  },
+  {
+   "year": 2024,
+   "weekdays": 66,
+   "maxPeakHI": 46.073452853213126,
+   "dayVetoDays": 0,
+   "commuteVetoDays": 0,
+   "daysMostSchoolsNotFullDay": 30
+  },
+  {
+   "year": 2025,
+   "weekdays": 65,
+   "maxPeakHI": 44.31303062921942,
+   "dayVetoDays": 0,
+   "commuteVetoDays": 0,
+   "daysMostSchoolsNotFullDay": 22
+  }
+ ],
+ "sensitivity": [
+  {
+   "classUnsafeWBGT": 30,
+   "schoolDaysNoSafeSession": 2211,
+   "daysMostSchoolsNotFull": 43,
+   "worstDayClosed": 67
+  },
+  {
+   "classUnsafeWBGT": 31,
+   "schoolDaysNoSafeSession": 1187,
+   "daysMostSchoolsNotFull": 28,
+   "worstDayClosed": 58
+  },
+  {
+   "classUnsafeWBGT": 32,
+   "schoolDaysNoSafeSession": 549,
+   "daysMostSchoolsNotFull": 11,
+   "worstDayClosed": 18
+  }
+ ],
+ "commutePeaks": [
+  41.30520701730293,
+  42.53784947115227,
+  41.3821629038657,
+  45.392126412396756,
+  44.43003818269162,
+  40.64156410095646,
+  42.08699760816173,
+  43.267508615833435,
+  42.03304974236463,
+  41.71605051369382,
+  42.58773147806326,
+  41.676374823715975,
+  42.26617049139625,
+  42.71887298572522,
+  40.134993952927374,
+  41.42663877756965,
+  42.76424049406972,
+  47.885355253773604,
+  48.08105469941249,
+  43.659921897417654,
+  44.682447989040966,
+  42.46361487689335,
+  45.41163339892232,
+  45.39863706351497,
+  44.21004774954138,
+  44.64723726103577,
+  45.88525325548474,
+  46.99639203880292,
+  45.268450445411354,
+  45.69559623375054,
+  45.780328267074964,
+  45.76039739890708,
+  47.29021808941721,
+  47.862704807087596,
+  47.1079554155544,
+  46.28972286258998,
+  45.2181063841141,
+  45.617426538516625,
+  48.05715253264466,
+  44.134958728822056,
+  44.31445067276983,
+  47.915704203800075,
+  45.432970990856575,
+  47.37217258480738,
+  47.73028070269442,
+  47.80770295539052,
+  48.665918090518595,
+  49.03943996511449,
+  48.090602050645984,
+  47.554958755838406,
+  46.76156723958628,
+  47.45481951202381,
+  46.635402367279035,
+  48.940096253979036,
+  47.74936331115818,
+  43.74119838215366,
+  48.02117166332479,
+  45.20293478621457,
+  46.09622884388362,
+  47.505183930713656,
+  48.754759935487954
+ ],
+ "tierCount": {
+  "Hinga": 31,
+  "Hinto": 30
+ },
+ "nov3": {
+  "omPeak": 36.72987025969787,
+  "shift": 4.85,
+  "withMargin": {
+   "full": 29,
+   "half": 9,
+   "closed": 32,
+   "peakHI": 43,
+   "dayVeto": false,
+   "commuteAM": 46.890613638737214,
+   "commutePM": 46.890613638737214
+  },
+  "noMargin": {
+   "full": 29,
+   "half": 23,
+   "closed": 18,
+   "peakHI": 43,
+   "dayVeto": false,
+   "commuteAM": 46.890613638737214,
+   "commutePM": 46.890613638737214
+  },
+  "pandac": {
+   "peakHI": 43,
+   "tier": {
+    "key": "hinto",
+    "label": "Hinto",
+    "min": 42,
+    "max": null,
+    "action": "Head may suspend on-site classes"
+   },
+   "dayVeto": false,
+   "sessions": {
+    "morning": {
+     "commuteVeto": false,
+     "worstCommute": 46.890613638737214,
+     "buildings": [
+      {
+       "id": "0-0",
+       "name": "Building A",
+       "usable": false,
+       "unsafeHours": [
+        9,
+        10
+       ],
+       "cautionHours": [
+        8
+       ],
+       "peakWBGT": 32.80477129153128,
+       "peakT": 40.31130129601791,
+       "peakAt": 10,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-1",
+       "name": "Building B",
+       "usable": false,
+       "unsafeHours": [
+        8,
+        9,
+        10
+       ],
+       "cautionHours": [
+        7
+       ],
+       "peakWBGT": 33.315255342909055,
+       "peakT": 41.340551296017914,
+       "peakAt": 10,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-2",
+       "name": "Building C",
+       "usable": false,
+       "unsafeHours": [
+        9,
+        10
+       ],
+       "cautionHours": [
+        8
+       ],
+       "peakWBGT": 32.50529677528988,
+       "peakT": 39.71130129601791,
+       "peakAt": 10,
+       "margin": 1,
+       "learned": false
+      }
+     ],
+     "safe": false,
+     "evidence": [
+      "Building A: estimated indoor WBGT 32.8 at 10:00 (limit 31)",
+      "Building B: estimated indoor WBGT 33.3 at 10:00 (limit 31)",
+      "Building C: estimated indoor WBGT 32.5 at 10:00 (limit 31)"
+     ],
+     "reason": "no classroom safe"
+    },
+    "afternoon": {
+     "commuteVeto": false,
+     "worstCommute": 46.890613638737214,
+     "buildings": [
+      {
+       "id": "0-0",
+       "name": "Building A",
+       "usable": false,
+       "unsafeHours": [
+        12,
+        13,
+        14,
+        15,
+        16
+       ],
+       "cautionHours": [],
+       "peakWBGT": 34.216950670530274,
+       "peakT": 43.45,
+       "peakAt": 13,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-1",
+       "name": "Building B",
+       "usable": false,
+       "unsafeHours": [
+        12,
+        13,
+        14,
+        15,
+        16
+       ],
+       "cautionHours": [],
+       "peakWBGT": 33.92484939047804,
+       "peakT": 42.85,
+       "peakAt": 13,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-2",
+       "name": "Building C",
+       "usable": false,
+       "unsafeHours": [
+        12,
+        13,
+        14,
+        15
+       ],
+       "cautionHours": [
+        16
+       ],
+       "peakWBGT": 33.138533845684975,
+       "peakT": 41.25,
+       "peakAt": 13,
+       "margin": 1,
+       "learned": false
+      }
+     ],
+     "safe": false,
+     "evidence": [
+      "Building A: estimated indoor WBGT 34.2 at 13:00 (limit 31)",
+      "Building B: estimated indoor WBGT 33.9 at 13:00 (limit 31)",
+      "Building C: estimated indoor WBGT 33.1 at 13:00 (limit 31)"
+     ],
+     "reason": "no classroom safe"
+    },
+    "fullDay": {
+     "commuteVeto": false,
+     "worstCommute": 42.9672014489401,
+     "buildings": [
+      {
+       "id": "0-0",
+       "name": "Building A",
+       "usable": false,
+       "unsafeHours": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+       ],
+       "cautionHours": [
+        8
+       ],
+       "peakWBGT": 34.216950670530274,
+       "peakT": 43.45,
+       "peakAt": 13,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-1",
+       "name": "Building B",
+       "usable": false,
+       "unsafeHours": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+       ],
+       "cautionHours": [
+        7
+       ],
+       "peakWBGT": 33.92484939047804,
+       "peakT": 42.85,
+       "peakAt": 13,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-2",
+       "name": "Building C",
+       "usable": false,
+       "unsafeHours": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+       ],
+       "cautionHours": [
+        8
+       ],
+       "peakWBGT": 33.138533845684975,
+       "peakT": 41.25,
+       "peakAt": 13,
+       "margin": 1,
+       "learned": false
+      }
+     ],
+     "safe": false,
+     "evidence": [
+      "Building A: estimated indoor WBGT 34.2 at 13:00 (limit 31)",
+      "Building B: estimated indoor WBGT 33.9 at 13:00 (limit 31)",
+      "Building C: estimated indoor WBGT 33.1 at 13:00 (limit 31)"
+     ],
+     "reason": "no classroom safe"
+    },
+    "hinayAM": {
+     "commuteVeto": false,
+     "worstCommute": 45.607686175053686,
+     "buildings": [
+      {
+       "id": "0-0",
+       "name": "Building A",
+       "usable": false,
+       "unsafeHours": [
+        9
+       ],
+       "cautionHours": [
+        8
+       ],
+       "peakWBGT": 31.889980236311025,
+       "peakT": 38.27473311740039,
+       "peakAt": 9,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-1",
+       "name": "Building B",
+       "usable": false,
+       "unsafeHours": [
+        8,
+        9
+       ],
+       "cautionHours": [
+        7
+       ],
+       "peakWBGT": 32.43652953613827,
+       "peakT": 39.36248311740039,
+       "peakAt": 9,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-2",
+       "name": "Building C",
+       "usable": false,
+       "unsafeHours": [
+        9
+       ],
+       "cautionHours": [
+        8
+       ],
+       "peakWBGT": 31.586953082348593,
+       "peakT": 37.674733117400386,
+       "peakAt": 9,
+       "margin": 1,
+       "learned": false
+      }
+     ],
+     "safe": false,
+     "evidence": [
+      "Building A: estimated indoor WBGT 31.9 at 09:00 (limit 31)",
+      "Building B: estimated indoor WBGT 32.4 at 09:00 (limit 31)",
+      "Building C: estimated indoor WBGT 31.6 at 09:00 (limit 31)"
+     ],
+     "reason": "no classroom safe"
+    },
+    "hinayPM": {
+     "commuteVeto": false,
+     "worstCommute": 47.04564629240329,
+     "buildings": [
+      {
+       "id": "0-0",
+       "name": "Building A",
+       "usable": false,
+       "unsafeHours": [
+        14,
+        15,
+        16
+       ],
+       "cautionHours": [
+        17
+       ],
+       "peakWBGT": 33.48013750366983,
+       "peakT": 42.66129123022368,
+       "peakAt": 14,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-1",
+       "name": "Building B",
+       "usable": false,
+       "unsafeHours": [
+        14,
+        15,
+        16
+       ],
+       "cautionHours": [
+        17
+       ],
+       "peakWBGT": 33.28985986847421,
+       "peakT": 42.27316623022368,
+       "peakAt": 14,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-2",
+       "name": "Building C",
+       "usable": false,
+       "unsafeHours": [
+        14,
+        15
+       ],
+       "cautionHours": [
+        16,
+        17
+       ],
+       "peakWBGT": 32.47756665280002,
+       "peakT": 40.63079123022368,
+       "peakAt": 14,
+       "margin": 1,
+       "learned": false
+      }
+     ],
+     "safe": false,
+     "evidence": [
+      "Building A: estimated indoor WBGT 33.5 at 14:00 (limit 31)",
+      "Building B: estimated indoor WBGT 33.3 at 14:00 (limit 31)",
+      "Building C: estimated indoor WBGT 32.5 at 14:00 (limit 31)"
+     ],
+     "reason": "no classroom safe"
+    }
+   },
+   "decision": "closed"
+  }
+ },
+ "learning": {
+  "curve": [
+   {
+    "day": "2026-10-20",
+    "n": 3,
+    "corr": -1.5599239141990744
+   },
+   {
+    "day": "2026-10-21",
+    "n": 6,
+    "corr": -2.028749661706388
+   },
+   {
+    "day": "2026-10-22",
+    "n": 9,
+    "corr": -2.287596684787422
+   },
+   {
+    "day": "2026-10-23",
+    "n": 12,
+    "corr": -2.4490860937039054
+   },
+   {
+    "day": "2026-10-26",
+    "n": 15,
+    "corr": -2.5418104250915343
+   },
+   {
+    "day": "2026-10-27",
+    "n": 18,
+    "corr": -2.6188491088648633
+   },
+   {
+    "day": "2026-10-28",
+    "n": 21,
+    "corr": -2.66576597202414
+   },
+   {
+    "day": "2026-10-29",
+    "n": 24,
+    "corr": -2.7114296435481964
+   },
+   {
+    "day": "2026-10-30",
+    "n": 27,
+    "corr": -2.753793434531737
+   },
+   {
+    "day": "2026-11-02",
+    "n": 30,
+    "corr": -2.7701314254974316
+   }
+  ],
+  "before": {
+   "commuteVeto": false,
+   "worstCommute": 46.890613638737214,
+   "buildings": [
+    {
+     "id": "demo",
+     "name": "Building A",
+     "usable": false,
+     "unsafeHours": [
+      9,
+      10
+     ],
+     "cautionHours": [
+      8
+     ],
+     "peakWBGT": 32.80477129153128,
+     "peakT": 40.31130129601791,
+     "peakAt": 10,
+     "margin": 1,
+     "learned": false
+    }
+   ],
+   "safe": false,
+   "evidence": [
+    "Building A: estimated indoor WBGT 32.8 at 10:00 (limit 31)"
+   ],
+   "reason": "no classroom safe"
+  },
+  "after": {
+   "commuteVeto": false,
+   "worstCommute": 46.890613638737214,
+   "buildings": [
+    {
+     "id": "demo",
+     "name": "Building A",
+     "usable": true,
+     "unsafeHours": [],
+     "cautionHours": [
+      8,
+      9,
+      10
+     ],
+     "peakWBGT": 30.90262740193154,
+     "peakT": 36.54116987052048,
+     "peakAt": 10,
+     "margin": 0,
+     "learned": true
+    }
+   ],
+   "safe": true,
+   "evidence": [],
+   "reason": "ok"
+  }
+ }
+}

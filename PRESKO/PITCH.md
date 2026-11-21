@@ -1,7 +1,7 @@
 # Presko — video script and slides
 
 *Sciences Po AI Hackathon 2026 · submit by 16:00 · Lens: public policy*
-*Prototype: https://claude.ai/artifact/6EgnVPLGoG67qXwMnvY6bs (set sharing to public before submitting). Local copy: `presko/` — run `node presko/serve.mjs`, open http://localhost:5180.*
+*Prototype: https://claude.ai/artifact/6EgnVPLGoG67qXwMnvY6bs (set sharing to public before submitting). Local copy: `PRESKO/` — run `node PRESKO/serve.mjs`, open http://localhost:5180 (opening index.html straight from disk fails: browsers block module imports from file://).*
 
 ## The line
 > **"When the heat index spikes, the Philippines' choice is all or nothing: a full day in a tin-roofed oven, or a whole day lost. Presko gives every school a third option — a plan for tomorrow, room by room — and the school head decides."**
@@ -18,10 +18,10 @@
 | 2 | Presko at "Normal April day · 34°C": map almost all green | "This is the Schools Division of Iloilo City: 70 real public schools from OpenStreetMap. On a normal April day, almost everyone runs a full day." |
 | 3 | Click "Danger · 44°C": dots change; summary shows full day / morning / modules / **0 conflicts** | "PAGASA forecasts 44 degrees tomorrow. Instead of closing everything, Presko proposes a plan per school: full day, morning only, or modules for some sections. A separate checker confirms zero conflicts." |
 | 4 | Open Pandac Elementary: red building, 12 sections on modules | "Pandac's top floor sits under a bare metal roof, facing west. Twelve sections would lose the day." |
-| 5 | Edit the note: "ceiling and roof insulation installed last year, windows on both sides, shade trees" → Re-read with Claude | "The coordinator corrects one note. Claude reads it into features — never temperatures. The rule is fixed and visible." |
+| 5 | Edit **Building A**'s note (only A flips the plan): "ceiling and roof insulation installed last year, windows on both sides, shade trees" → Re-read with Claude | "The coordinator corrects one note. Claude reads it into features — never temperatures. The rule is fixed and visible." |
 | 6 | Building turns green; plan becomes "Morning shift", 0 on modules | "Now every section fits in the morning. Twelve classes keep their teacher tomorrow." |
 | 7 | Message to parents: English → Filipino → Hiligaynon (AI draft) | "The school head gets a recommendation and a message to parents in English, Filipino and Hiligaynon — and decides." |
-| 8 | Click "Replay 30 April 2024" | "Replay 30 April 2024: at Iloilo's heat that day, Presko would have kept 85% of in-person learner-hours instead of zero. Building data here is illustrative; a division fills in its own." |
+| 8 | Click "Replay 30 April 2024" | "30 April 2024: classrooms closed nationwide, Iloilo included, though its heat that day was just under the threshold where a school head may switch. With a plan per school, Presko would have kept 85% of in-person learner-hours instead of zero. Building data here is illustrative; a division fills in its own." |
 
 **Record from the claude.ai view** (Claude re-read and Hiligaynon need the AI). If Claude isn't available, the page says "keyword fallback" and still works — say so.
 
@@ -40,6 +40,7 @@
 - **"What if the AI is wrong?"** The features and points are on screen; anyone can correct them; the school head decides.
 - **"Isn't morning-only bad?"** It's 5 h instead of 6 — far better than 0. We measure learner-hours honestly.
 - **"Who pays?"** DepEd DRRMS owns it; UNICEF Philippines as target funding partner for the pilot; it costs almost nothing to run.
+- **"Was Iloilo even above 40°C on the replay day?"** Not in our proxy (39.4°C on 30 Apr, 37.2°C on 29 Apr). The 0% is the real nationwide suspension; the replay shows what a per-school plan would have kept instead.
 - **"Heat data?"** On the day, the coordinator enters PAGASA's forecast. The replay uses Open-Meteo's archive as a proxy, which runs lower than PAGASA's heat index.
 
 ## Don't claim

@@ -1,0 +1,55 @@
+{
+  "name": "Côte d'Ivoire: cocoa (verification layer on the national system)",
+  "country_iso2": "CI",
+  "country_risk": "standard",
+  "whisp_national_codes": [
+    "ci"
+  ],
+  "_whisp_note": "Whisp has Ivorian national layers: nCI_Forest_bnetd_2020 and nCI_Cocoa_bnetd (https://github.com/forestdatapartnership/whisp/blob/main/layers_description.md). Requested with nationalCodes ['ci'].",
+  "rules": {
+    "cocoa": {
+      "nationalAvgKgPerHa": 462,
+      "maxKgPerHa": 924,
+      "_source": "462 kg/ha average for Côte d'Ivoire, 2023/24 season (Barry Callebaut/Agri-Logic White Paper 2026, p.11, sample incl. 1,340 Ivorian farmers: https://www.barry-callebaut.com/system/files/2026-02/Barry%20Callebaut%20White%20Paper%202026_%20Harvesting%20insights_what%20drives%20farmer%20prosperity.pdf). Threshold = 2x average, a review trigger, not proof: well-managed farms can approach it."
+    }
+  },
+  "art10": {
+    "a": [
+      "Côte d'Ivoire is standard risk (not listed in Impl. Reg. 2025/1093): full due diligence, no Art 13 simplification.",
+      "standard"
+    ],
+    "c": [
+      "Indigenous peoples overlay for Côte d'Ivoire: no source found yet. To be assessed by the operator.",
+      "gap"
+    ],
+    "d": [
+      "Only required where an overlap with indigenous peoples' land exists. Not assessed yet.",
+      "gap"
+    ],
+    "e": [
+      "No claims recorded. Source for claims over the area: not found yet.",
+      "gap"
+    ],
+    "f": [
+      "Prevalence of deforestation in the production area: to be assessed by the operator with sourced national figures (none attached yet). Whisp results per plot are in the Art 9 file.",
+      "gap"
+    ],
+    "h": [
+      "Requires narrative assessment of country concerns (corruption, document falsification, law enforcement, human rights, armed conflict, sanctions). Not drafted yet; operator to assess and sign off.",
+      "manual"
+    ],
+    "g": [
+      "Sales come from cooperative purchase records keyed by producer card (entered from the records; no AI document reading for Côte d'Ivoire yet). Reviewer decisions are logged with name and timestamp.",
+      "documented"
+    ],
+    "i": [
+      "Sales are recorded per producer card, not per plot. Volumes are pooled per card, crop and season over all the card's plots before the plausibility check. EFI (2026): excluding a farm on paper does not keep its cocoa out of the physical chain, which is why the volume check runs per card.",
+      "documented"
+    ]
+  },
+  "story": false,
+  "season_rule": {
+    "campaign_start_month": 10,
+    "_note": "Ivorian cocoa campaign runs 1 October to 30 September (main crop from October, mid crop from April)."
+  }
+}

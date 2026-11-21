@@ -1,0 +1,21 @@
+{
+  "note": "Synthetic P-Care visit list for one month. Field names are illustrative: the official P-Care bridging spec sits behind the BPJS developer portal. Centre figures are synthetic.",
+  "centre": {
+    "name": "Puskesmas Contoh (synthetic)",
+    "month": "November",
+    "registered_members": 6000,
+    "unique_members_in_pcare": 828,
+    "other_sheets": 11,
+    "other_sheets_missing_unique_members": 22
+  },
+  "entries": [
+    { "noKartu": "0009990000001", "nama": "Ani S.", "tglDaftar": "03/11", "kdDiag": "A09", "jenisKunjungan": "sakit" },
+    { "noKartu": "0009990000002", "nama": "Budi H.", "tglDaftar": "03/11", "kdDiag": "J06.9", "jenisKunjungan": "sakit" },
+    { "noKartu": "0009990000003", "nama": "Siti R.", "tglDaftar": "04/11", "kdDiag": "Z34.0", "jenisKunjungan": "sehat" },
+    { "noKartu": "0009990000004", "nama": "Dewi P.", "tglDaftar": "04/11", "kdDiag": "Z23", "jenisKunjungan": "sehat" },
+    { "noKartu": "0009990000006", "nama": "Wati L.", "tglDaftar": "05/11", "kdDiag": "I10", "jenisKunjungan": "sakit" },
+    { "noKartu": "0009990000007", "nama": "Joko T.", "tglDaftar": "06/11", "kdDiag": "A09", "jenisKunjungan": "sakit" },
+    { "noKartu": "0009990000009", "nama": "Rina M.", "tglDaftar": "07/11", "kdDiag": "Z34.8", "jenisKunjungan": "sehat" },
+    { "noKartu": "0009990000010", "nama": "Agus W.", "tglDaftar": "07/11", "kdDiag": "R50.9", "jenisKunjungan": "sakit" }
+  ]
+}

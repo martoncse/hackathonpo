@@ -1,0 +1,43 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "catatsekali",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "mvp/server.js"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "eudr-snap",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "eudr-snap/server.js"
+      ],
+      "port": 5174
+    },
+    {
+      "name": "medalert",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "medalert/server.js"
+      ],
+      "port": 5175
+    },
+    {
+      "name": "presko-2",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5176",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "presko_v2.1"
+      ],
+      "port": 5176
+    }
+  ]
+}

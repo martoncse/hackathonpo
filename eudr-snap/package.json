@@ -1,0 +1,19 @@
+{
+  "name": "eudr-snap",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Hackathon prototype: EUDR plot risk check via FAO Whisp for smallholder cooperatives.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "find-red": "node scripts/find-red-plot.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "zod": "^4.6.7"
+  }
+}

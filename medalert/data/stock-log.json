@@ -1,0 +1,12 @@
+{
+  "note": "SYNTHETIC stock log for the demo. Not a real hospital's stock.",
+  "facility": "Demo federal teaching hospital, pharmacy store",
+  "entries": [
+    { "id": "R-1101", "received": "2026-11-03", "product": "Tavanic 500mg tablets", "batch": "4MW4C", "manufacturer": "Sanofi", "expiry": "04/2027", "qty": "1 carton (10 x 5 tablets)", "location": "Ward store B", "supplier": "Wholesaler A" },
+    { "id": "R-1102", "received": "2026-11-03", "product": "Coartem 80/480 tablets", "batch": "KT7712", "manufacturer": "Novartis", "expiry": "08/2028", "qty": "4 cartons", "location": "Main store", "supplier": "Wholesaler A" },
+    { "id": "R-1103", "received": "2026-11-05", "product": "Alpaquine tablets 300mg", "batch": "AQ2508", "manufacturer": "Dony-Triumph", "expiry": "06/2028", "qty": "2 tubs", "location": "Main store", "supplier": "Wholesaler B" },
+    { "id": "R-1104", "received": "2026-11-10", "product": "Amoxicillin 500mg capsules", "batch": "AMX0925", "manufacturer": "Emzor", "expiry": "09/2028", "qty": "6 cartons", "location": "Ward store A", "supplier": "Wholesaler B" },
+    { "id": "R-1105", "received": "2026-11-12", "product": "Tavanic 500mg tablets", "batch": "5KQ8D", "manufacturer": "Sanofi", "expiry": "01/2028", "qty": "2 cartons", "location": "Main store", "supplier": "Wholesaler C" },
+    { "id": "R-1106", "received": "2026-11-18", "product": "Paracetamol 500mg tablets", "batch": "PC1126", "manufacturer": "Emzor", "expiry": "11/2029", "qty": "10 cartons", "location": "Main store", "supplier": "Wholesaler A" }
+  ]
+}

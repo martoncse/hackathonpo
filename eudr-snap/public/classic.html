@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EUDR-Snap</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="classic.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>EUDR-Snap</h1>
+      <p class="sub"><span id="coop">Cooperativa Cafetera del Sur</span> · plot risk check with FAO Whisp</p>
+    </div>
+    <div class="countdown"><strong id="days">–</strong> days until EUDR applies (30 Dec 2026)</div>
+  </header>
+
+  <details id="key-panel" class="panel">
+    <summary>Whisp API key <span id="key-state" class="pill">not set</span></summary>
+    <p class="hint">Free key from your account page at <a href="https://whisp.openforis.org" target="_blank" rel="noopener">whisp.openforis.org</a>. It is sent only to this local server and kept in memory (gone on restart).</p>
+    <div class="row">
+      <input id="key-input" type="password" autocomplete="off" placeholder="Paste Whisp API key" />
+      <button id="save-key">Save key</button>
+      <button id="test-key" class="secondary">Test key</button>
+      <button id="clear-key" class="secondary">Forget key</button>
+    </div>
+    <p id="key-msg" class="msg"></p>
+    <div id="find-setup">
+    <hr />
+    <p class="hint">One-time setup: send ~130 candidate plots to Whisp and keep 4 that Whisp rates <b>low risk</b> (Huila) and 1 it rates <b>high risk</b> (Amazon deforestation arc). Farmer names are synthetic; coordinates and risk are real.</p>
+    <div class="row">
+      <button id="find-plots" class="secondary">Find real plots with Whisp</button>
+    </div>
+    <p id="find-msg" class="msg"></p>
+    </div>
+  </details>
+
+  <div id="unverified" class="banner hidden">These farm locations haven't been checked with Whisp yet. Set a key and press <b>Find real plots with Whisp</b> once before the pitch.</div>
+
+  <section class="toolbar">
+    <button id="check" class="primary">Check with FAO Whisp</button>
+    <span id="source" class="badge">Not checked</span>
+    <label class="toggle"><input type="checkbox" id="exclude" checked /> Exclude high-risk plots from shipment</label>
+  </section>
+
+  <main>
+    <div id="map"></div>
+    <div class="side">
+      <table>
+        <thead><tr><th>Farmer</th><th>Crop</th><th>ha</th><th>kg</th><th>Status</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="totals">
+        <div><span id="ok-kg">–</span><small>kg in shipment</small></div>
+        <div><span id="blocking">–</span><small>geolocation errors</small></div>
+        <div><span id="excluded">–</span><small>plots excluded</small></div>
+      </div>
+      <p class="hint">Risk colours come from Whisp's <code>risk_pcrop</code> (perennial crops). The "&gt;4 ha needs a polygon" and "volume too high for the plot" checks are EUDR-Snap's own rules: Whisp sees land, not deliveries.</p>
+    </div>
+  </main>
+
+  <section class="steps">
+    <div class="step" id="intake">
+      <h2>1 · Record a purchase</h2>
+      <p class="hint">From the cooperative's paper receipt. Type it in, or read a photo with Claude (live, needs <code>ANTHROPIC_API_KEY</code> on the server). Coordinates never come from the photo.</p>
+      <div class="row"><input type="file" id="photo" accept="image/jpeg,image/png,image/webp" /><button id="read-photo" class="secondary">Read photo (live)</button></div>
+      <div id="extracted" class="hint"></div>
+      <div class="form">
+        <label>Producer / plot<select id="d-plot"></select></label>
+        <label>Receipt no.<input id="d-receipt" placeholder="BA-601" /></label>
+        <label>Date<input id="d-date" type="date" /></label>
+        <label>Season<input id="d-season" placeholder="2025-26" /></label>
+        <label>kg (as weighed)<input id="d-kg" type="number" min="0" step="0.1" /></label>
+      </div>
+      <label class="check hidden" id="d-checked-wrap"><input type="checkbox" id="d-checked" /> I checked every field against the paper receipt</label>
+      <div class="row"><button id="record">Record purchase</button><button id="reset-deliveries" class="secondary">Reset demo</button></div>
+      <p id="d-msg" class="msg"></p>
+    </div>
+    <div class="step" id="export">
+      <h2>2 · Review flagged plots</h2>
+      <p class="hint">Plots that need review have <b>Accept</b> (a written reason is required) and <b>Exclude</b> buttons in the table. Each decision is logged with a name and time and goes into the Art 10 and Art 11 files.</p>
+      <h2>3 · Send a lot to an EU buyer</h2>
+      <p class="hint">The importer files the due diligence statement and carries the liability, so the pack goes to them. The lot takes the cleared plots' purchases that aren't in another lot yet: the same cocoa or coffee can't be sold twice under the same evidence. The pack is frozen and hashed when you send it.</p>
+      <div class="form">
+        <label>EU buyer (importer)<input id="buyer-name" placeholder="e.g. Hamburg Specialty Imports GmbH" /></label>
+        <label>Buyer contact (optional)<input id="buyer-email" type="email" placeholder="compliance@buyer.example" /></label>
+      </div>
+      <button id="make-pack" class="primary">Prepare the lot and buyer link</button>
+      <p id="pack-msg" class="msg"></p>
+      <div id="share" class="hidden"><label class="hint" for="share-link">Private link for the buyer (anyone with it can open this lot):</label><div class="row"><input id="share-link" readonly /><button id="copy-link" class="secondary">Copy</button><a id="open-link" class="btn-link" target="_blank" rel="noopener">Open as the buyer</a></div></div>
+      <div id="docs"></div>
+    </div>
+  </section>
+
+  <section class="steps one">
+    <div class="step">
+      <h2>4 · Lots and buyers</h2>
+      <p class="hint">Your register: which purchases went to which buyer, and whether the buyer has filed. Once filed, the buyer's reference number is what processors further down the chain keep.</p>
+      <div class="scroll"><table class="register"><thead><tr><th>Lot</th><th>Buyer</th><th>Plots</th><th>Volume</th><th>Status</th><th></th></tr></thead><tbody id="register"><tr><td colspan="6" class="hint">No lot sent yet.</td></tr></tbody></table></div>
+    </div>
+  </section>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="classic.js"></script>
+</body>
+</html>

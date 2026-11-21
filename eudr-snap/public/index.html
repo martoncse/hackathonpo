@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EUDR-Snap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="story.css" />
+</head>
+<body>
+  <div id="map"></div>
+  <div class="vignette"></div>
+
+  <header class="topbar">
+    <div class="brand"><span class="logo">◆</span> EUDR-Snap <small>open infrastructure for smallholder cooperatives</small></div>
+    <div class="top-right">
+      <span id="source-badge" class="badge">Whisp: not run</span>
+      <button id="lite-btn" class="icon-btn" title="Lite mode (L): no 3D terrain">Lite</button>
+      <button id="key-btn" class="icon-btn" title="Whisp API key">Key</button>
+    </div>
+  </header>
+
+  <!-- Scene 0: hero -->
+  <section id="hero" class="hero">
+    <p class="eyebrow">EU Deforestation Regulation applies to large and medium operators on 30 December 2026</p>
+    <h1><span id="days" class="countdown">–</span> days</h1>
+    <p class="lede">From then, coffee and cocoa entering the EU must be traced to plots not deforested after 2020. Colombia has more than 500,000 coffee families. Plots are often mapped already (FNC's SICA). In areas with limited internet or electricity, deliveries are often recorded on paper (to confirm with a cooperative). EUDR-Snap links receipts to plots, and flags volumes above what the plot normally produces, for review.</p>
+    <button class="cta" data-next>See a cooperative get ready →</button>
+  </section>
+
+  <!-- Right-hand scene panel -->
+  <aside id="panel" class="panel hidden">
+    <div class="panel-head">
+      <span id="panel-step" class="step-chip">1 / 5</span>
+      <h2 id="panel-title"></h2>
+      <p id="panel-sub" class="sub"></p>
+    </div>
+    <div id="panel-body" class="panel-body"></div>
+  </aside>
+
+  <!-- Bottom progress rail -->
+  <nav class="rail" aria-label="Story steps">
+    <button class="rail-arrow" id="prev" title="Back (←)">←</button>
+    <ol id="rail-steps"></ol>
+    <button class="rail-arrow" id="next" title="Next (→)">→</button>
+  </nav>
+
+  <div id="notes" class="notes hidden"></div>
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Whisp key drawer -->
+  <div id="key-drawer" class="drawer hidden">
+    <h3>FAO Whisp API key</h3>
+    <p class="muted">Free key from your account page at whisp.openforis.org. Sent only to this local server, kept in memory (gone on restart).</p>
+    <input id="key-input" type="password" autocomplete="off" placeholder="Paste Whisp API key" />
+    <div class="row">
+      <button id="key-save" class="btn">Save</button>
+      <button id="key-test" class="btn ghost">Test</button>
+      <button id="key-close" class="btn ghost">Close</button>
+    </div>
+    <div class="row"><button id="reset-demo" class="btn ghost">Reset demo (clear review decisions)</button></div>
+    <p id="key-msg" class="muted"></p>
+    <p class="muted small">Backup without 3D: <a href="classic.html">classic view</a>.</p>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

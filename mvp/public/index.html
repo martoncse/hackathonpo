@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CatatSekali</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <nav class="brand">
+        <span class="logo" aria-hidden="true">✓</span>
+        <span class="brand-name">CatatSekali</span>
+        <span class="brand-gloss">“record once” in Indonesian</span>
+      </nav>
+
+      <div class="hero-grid">
+        <div>
+          <h1>A visit that never reaches P-Care<br>doesn't count.</h1>
+          <p class="lede">
+            Indonesian community health centres still record outreach, posyandu and maternal visits on paper, or miss them
+            when the internet or P-Care is down. BPJS pays part of each centre's capitation on its <strong>contact rate</strong>,
+            counted only from P-Care. CatatSekali reads the paper sheet, finds the visits P-Care is missing,
+            shows what they're worth, and prepares them to send.
+          </p>
+          <p class="source">Rule: Peraturan BPJS Kesehatan 7/2019. Burden: staff in about one centre in five enter data into more than six programmes (Ministry of Health survey, 2022 data, JMIR Medical Informatics 2025). Full map in ECOSYSTEM.md.</p>
+        </div>
+
+        <div class="stat-card" aria-label="The problem in numbers">
+          <div class="stat"><span class="stat-num">15%</span><span class="stat-label">of a centre's capitation depends on indicators computed from P-Care</span></div>
+          <div class="stat"><span class="stat-num">10%</span><span class="stat-label">can be lost on the contact rate alone</span></div>
+          <div class="stat stat-accent"><span class="stat-num">≥150</span><span class="stat-label">unique members seen per 1,000 registered: the monthly target</span></div>
+        </div>
+      </div>
+
+      <ol class="how" aria-label="How it works">
+        <li>
+          <span class="how-num">1</span>
+          <div><strong>Capture</strong><span>Photograph a paper sheet. AI reads each row, including the BPJS card number. The nurse reviews.</span></div>
+        </li>
+        <li>
+          <span class="how-num">2</span>
+          <div><strong>Reconcile</strong><span>Each visit is matched against the centre's P-Care list for the month. Missing members, and what they're worth, show up at once.</span></div>
+        </li>
+        <li>
+          <span class="how-num">3</span>
+          <div><strong>Send</strong><span>Missing entries are prepared for P-Care, and the visit record for SATUSEHAT. Nothing is sent without the nurse.</span></div>
+        </li>
+      </ol>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card upload-card" aria-labelledby="step1">
+      <div class="card-head">
+        <span class="step">1</span>
+        <div>
+          <h2 id="step1">Photograph the paper sheet</h2>
+          <p class="card-sub">Outreach, posyandu or maternal and child care sheets, or the register from a day P-Care was down.</p>
+        </div>
+      </div>
+
+      <label class="dropzone" id="dropzone">
+        <input id="photo" type="file" accept="image/*" capture="environment">
+        <span class="dz-icon" aria-hidden="true">📷</span>
+        <span class="dz-title">Drop a photo here, or click to choose one</span>
+        <span class="dz-hint">JPEG or PNG · on a phone this opens the camera</span>
+        <div id="preview" class="preview" hidden><img id="previewImg" alt="Photo of the paper sheet"></div>
+      </label>
+
+      <div class="actions">
+        <button id="read" class="primary" disabled><span class="spinner" aria-hidden="true"></span><span class="label">Read sheet</span></button>
+        <span class="or">or</span>
+        <button id="demo" class="ghost">Try the sample sheet (demo mode)</button>
+      </div>
+      <p class="hint">
+        No sheet to hand? Print or open the <a href="sample-register.html" target="_blank" rel="noopener">synthetic sample sheet</a>
+        and photograph it. Demo mode loads the same sheet already read, without calling the AI.
+      </p>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="results" hidden>
+      <section class="card summary-card" aria-labelledby="sumTitle">
+        <div class="card-head">
+          <span class="step">2</span>
+          <div>
+            <h2 id="sumTitle">What P-Care is missing, and what it's worth</h2>
+            <p class="card-sub">Matched against the centre's P-Care visit list for the month (synthetic). Only unique registered members count.</p>
+          </div>
+        </div>
+        <div id="summary"></div>
+        <details class="rating-details">
+          <summary>How the contact rate turns into capitation</summary>
+          <div id="ratingTable"></div>
+        </details>
+      </section>
+
+      <section class="card" aria-labelledby="visitsTitle">
+        <div class="card-head">
+          <span class="step">✓</span>
+          <div>
+            <h2 id="visitsTitle">Review the visits</h2>
+            <p class="card-sub">This is what the AI read. Fix anything it got wrong, such as a card number. The match updates as you type.</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="visits" id="visitsTable">
+            <thead>
+              <tr>
+                <th>#</th><th>Date</th><th>Name</th><th>BPJS card</th><th>Sex</th><th>Age (yrs)</th><th>Visit</th><th>Detail</th><th>P-Care</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card flags-card" aria-labelledby="flagsTitle">
+        <div class="card-head">
+          <span class="step step-warn">!</span>
+          <div>
+            <h2 id="flagsTitle">Check before sending</h2>
+            <p class="card-sub">Missing visits, uncertain matches and gaps that would make the systems disagree.</p>
+          </div>
+        </div>
+        <ul id="flags" class="flags"></ul>
+      </section>
+
+      <section class="card" aria-labelledby="step3">
+        <div class="card-head">
+          <span class="step">3</span>
+          <div>
+            <h2 id="step3">Send</h2>
+            <p class="card-sub">Prototype exports only. No live connection to P-Care or SATUSEHAT.</p>
+          </div>
+        </div>
+        <div class="send-grid">
+          <div class="send">
+            <span class="dest pcare">P-Care · BPJS</span>
+            <p><strong><span id="pcareCount">0</span> missing entries</strong> ready for the P-Care bridging service. This is the route that counts for the contact rate.</p>
+            <button id="exportPcare" class="ghost">Download P-Care entries</button>
+            <p class="meta small">Field names illustrative: the real spec is behind the BPJS developer portal.</p>
+          </div>
+          <div class="send">
+            <span class="dest facility">SATUSEHAT · Ministry of Health</span>
+            <p><strong>Visit record</strong> as a FHIR Bundle (Encounter, Condition, Immunization), for the national medical record.</p>
+            <button id="exportFhir" class="ghost">Download FHIR Bundle</button>
+            <p class="meta small">Shaped to SATUSEHAT profiles, not validated. ASIK isn't connected in this version.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">Prototype for the Sciences Po AI Hackathon 2026 · Synthetic data only · The nurse confirms every record; the AI never decides. Deployment would need in-country model hosting.</div>
+  </footer>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
