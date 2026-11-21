@@ -72,18 +72,67 @@ export function keywordFeatures(note) {
 // ---------- the division (real schools, illustrative buildings) ----------
 
 // Illustrative building notes. Features were extracted once and cached here (re-read live on edit).
+// Each template carries the fields a National School Building Inventory (NSBI) record holds
+// (building type, storeys, classification, condition, materials). Illustrative values.
 export const NOTE_TEMPLATES = [
-  { note: "Old Gabaldon building with high ceilings, wide windows on both sides, acacia trees around it.", w: 2 },
-  { note: "One-storey concrete classrooms with ceiling boards and electric fans, windows on both sides.", w: 4 },
-  { note: "Two-storey concrete building with ceiling boards, windows on one side only.", w: 4 },
-  { note: "Two-storey building, upper floor under a GI roof with no ceiling, windows on both sides.", w: 4 },
-  { note: "One-storey classrooms with ceiling, facing west, mango trees on the west side.", w: 3 },
-  { note: "One-storey classrooms, GI roof with no ceiling, louvre windows on one side only, faces west.", w: 3 },
-  { note: "Three-storey building, top-floor rooms under a GI roof with no ceiling, faces west.", w: 2 },
-  { note: "Temporary learning space (tent) set up after the 2023 typhoon, no fans.", w: 1 },
-  { note: "Makeshift plywood classroom with a tin roof, no ceiling, small windows.", w: 1 },
-  { note: "Converted library room with air-conditioning and a ceiling, no outside windows.", w: 1 },
+  { note: "Old Gabaldon building with high ceilings, wide windows on both sides, acacia trees around it.", w: 2, nsbi: { type: "Gabaldon", storeys: 1, cls: "Permanent", condition: "Needs Minor Repair", materials: "Wood, concrete" } },
+  { note: "One-storey concrete classrooms with ceiling boards and electric fans, windows on both sides.", w: 4, nsbi: { type: "SEDIP", storeys: 1, cls: "Permanent", condition: "Good", materials: "Concrete" } },
+  { note: "Two-storey concrete building with ceiling boards, windows on one side only.", w: 4, nsbi: { type: "TEEP", storeys: 2, cls: "Permanent", condition: "Good", materials: "Concrete" } },
+  { note: "Two-storey building, upper floor under a GI roof with no ceiling, windows on both sides.", w: 4, nsbi: { type: "Others", storeys: 2, cls: "Permanent", condition: "Needs Minor Repair", materials: "Concrete, steel" } },
+  { note: "One-storey classrooms with ceiling, facing west, mango trees on the west side.", w: 3, nsbi: { type: "SEDIP", storeys: 1, cls: "Permanent", condition: "Good", materials: "Concrete" } },
+  { note: "One-storey classrooms, GI roof with no ceiling, louvre windows on one side only, faces west.", w: 3, nsbi: { type: "Marcos Pre-Fab", storeys: 1, cls: "Permanent", condition: "Needs Major Repair", materials: "Steel, concrete" } },
+  { note: "Three-storey building, top-floor rooms under a GI roof with no ceiling, faces west.", w: 2, nsbi: { type: "Others", storeys: 3, cls: "Permanent", condition: "Good", materials: "Concrete, steel" } },
+  { note: "Temporary learning space (tent) set up after the 2023 typhoon, no fans.", w: 1, nsbi: { type: "Others", storeys: 1, cls: "Semi-Permanent", condition: "Needs Major Repair", materials: "Canvas, steel frame" } },
+  { note: "Makeshift plywood classroom with a tin roof, no ceiling, small windows.", w: 1, nsbi: { type: "Others", storeys: 1, cls: "Semi-Permanent", condition: "Needs Major Repair", materials: "Wood, light materials" } },
+  { note: "Converted library room with air-conditioning and a ceiling, no outside windows.", w: 1, nsbi: { type: "Others", storeys: 1, cls: "Permanent", condition: "Good", materials: "Concrete" } },
 ];
+
+// Where each feature comes from during set-up. NSBI covers structure; a 5-question heat checklist,
+// answered once per building by the school head, covers what NSBI does not record.
+export const FEATURE_SOURCE = {
+  makeshift: "NSBI",            // Classification = Semi-Permanent
+  upper_floor: "NSBI + checklist", // Storeys ≥ 2 (NSBI) and top floor directly under the roof (checklist)
+  roof_no_ceiling: "Checklist",
+  ceiling_or_insulated: "Checklist",
+  poor_ventilation: "Checklist",
+  cross_ventilation: "Checklist",
+  west_facing: "Checklist",
+  shade_trees: "Checklist",
+  aircon: "Checklist",
+};
+export const HEAT_CHECKLIST = [
+  { q: "Is there a ceiling or insulation under the roof?", keys: ["ceiling_or_insulated", "roof_no_ceiling"] },
+  { q: "Do classroom windows open on both sides, one side, or barely?", keys: ["cross_ventilation", "poor_ventilation"] },
+  { q: "Which way do the classroom windows face?", keys: ["west_facing"] },
+  { q: "Do trees or other buildings shade it in the afternoon?", keys: ["shade_trees"] },
+  { q: "Is any room air-conditioned?", keys: ["aircon"] },
+];
+
+// Checklist answers <-> features. The checklist is the input; features are derived from NSBI + checklist.
+export function checklistFromFeatures(f) {
+  return {
+    ceiling: f.roof_no_ceiling ? "no" : f.ceiling_or_insulated ? "yes" : "na",
+    windows: f.cross_ventilation ? "both" : f.poor_ventilation ? "poor" : "one",
+    west: !!f.west_facing, shade: !!f.shade_trees, aircon: !!f.aircon,
+  };
+}
+export function featuresFrom(nsbi, c) {
+  const roof = c.ceiling === "no";
+  return {
+    roof_no_ceiling: roof, ceiling_or_insulated: c.ceiling === "yes",
+    makeshift: nsbi.cls === "Semi-Permanent", upper_floor: nsbi.storeys >= 2 && roof,
+    poor_ventilation: c.windows === "poor", cross_ventilation: c.windows === "both",
+    west_facing: !!c.west, shade_trees: !!c.shade, aircon: !!c.aircon,
+  };
+}
+
+// Features implied by an NSBI record alone (before the checklist).
+export function nsbiFeatures(nsbi, checklist) {
+  return {
+    makeshift: nsbi.cls === "Semi-Permanent",
+    upper_floor: nsbi.storeys >= 2 && !!checklist.roof_no_ceiling,
+  };
+}
 NOTE_TEMPLATES.forEach((t) => (t.features = keywordFeatures(t.note)));
 
 function rng(seed) {
@@ -117,7 +166,8 @@ export function makeDivision() {
     for (let b = 0; b < nB; b++) {
       const tpl = pickWeighted(r, NOTE_TEMPLATES);
       const rooms = tpl.note.includes("library") ? 1 : tpl.note.includes("tent") || tpl.note.includes("plywood") ? 1 + Math.floor(r() * 2) : 3 + Math.floor(r() * 6);
-      buildings.push({ id: `${i}-${b}`, name: `Building ${"ABC"[b]}`, note: tpl.note, features: { ...tpl.features }, source: "cached", rooms });
+      const nsbi = { ...tpl.nsbi, buildingNo: `${String(i + 1).padStart(3, "0")}-${b + 1}`, classrooms: rooms, yearBuilt: tpl.nsbi.type === "Gabaldon" ? 1930 + ((i * 7 + b * 3) % 15) : 1975 + ((i * 11 + b * 5) % 45) };
+      buildings.push({ id: `${i}-${b}`, name: `Building ${"ABC"[b]}`, note: tpl.note, features: { ...tpl.features }, source: "cached", rooms, nsbi });
     }
     const totalRooms = buildings.reduce((s, b) => s + b.rooms, 0);
     const doubleShift = r() < (kind === "secondary" ? 0.3 : 0.45);
@@ -142,22 +192,58 @@ export const SLOTS = {
   morning: { id: "morning", label: "06:00–11:00", hours: 5, morning: true },
   early: { id: "early", label: "06:00–08:30", hours: 2.5, morning: true },
   late: { id: "late", label: "08:30–11:00", hours: 2.5, morning: true },
+  afternoon: { id: "afternoon", label: "12:00–17:00", hours: 5, morning: false },
+  pm1: { id: "pm1", label: "12:00–14:30", hours: 2.5, morning: false },
+  pm2: { id: "pm2", label: "14:30–17:00", hours: 2.5, morning: false },
 };
+// Which part of the day a slot needs to be safe in.
+const SLOT_WINDOW = { full: "both", am: "both", pm: "both", morning: "am", early: "am", late: "am", afternoon: "pm", pm1: "pm", pm2: "pm" };
 
-function roomsOf(school, hi) {
+// ---------- hourly forecast -> heat index -> morning / afternoon ----------
+
+// Heat index (°C) from air temperature (°C) and relative humidity (%), NWS Rothfusz regression.
+export function heatIndex(tc, rh) {
+  const T = (tc * 9) / 5 + 32;
+  let H = 0.5 * (T + 61 + (T - 68) * 1.2 + rh * 0.094);
+  if ((H + T) / 2 >= 80) {
+    H = -42.379 + 2.04901523 * T + 10.14333127 * rh - 0.22475541 * T * rh - 0.00683783 * T * T - 0.05481717 * rh * rh + 0.00122874 * T * T * rh + 0.00085282 * T * rh * rh - 0.00000199 * T * T * rh * rh;
+    if (rh < 13 && T >= 80 && T <= 112) H -= ((13 - rh) / 4) * Math.sqrt((17 - Math.abs(T - 95)) / 17);
+    if (rh > 85 && T >= 80 && T <= 87) H += ((rh - 85) / 10) * ((87 - T) / 5);
+  }
+  return Math.round((((H - 32) * 5) / 9) * 10) / 10;
+}
+// hours: [{h, t, rh}] for one day -> { hourly: [{h, hi}], am, pm, peak }
+// am = mean heat index 06:00–10:59, pm = mean 12:00–16:59 (class hours), peak = daily max.
+export function windowsFromHourly(hours) {
+  const hourly = hours.filter((x) => x.h >= 6 && x.h <= 17).map((x) => ({ h: x.h, hi: heatIndex(x.t, x.rh) }));
+  const mean = (a) => (a.length ? Math.round((a.reduce((s, x) => s + x.hi, 0) / a.length) * 10) / 10 : null);
+  return { hourly, am: mean(hourly.filter((x) => x.h <= 10)), pm: mean(hourly.filter((x) => x.h >= 12 && x.h <= 16)), peak: Math.max(...hourly.map((x) => x.hi)) };
+}
+
+// The cooler window tolerates amber rooms (with precautions); the hotter window needs green.
+// With one value for the day, the morning counts as the cooler window.
+function roomsOf(school, hiAM, hiPM) {
   const rooms = [];
+  const amCooler = hiAM <= hiPM;
+  const ok = (bd, cooler) => (cooler ? bd !== "red" : bd === "green");
   for (const b of school.buildings) {
-    const { band: bd, total } = band(hi, b.features);
-    for (let k = 0; k < b.rooms; k++) rooms.push({ id: `${b.id}-r${k + 1}`, name: `${b.name} · Room ${k + 1}`, building: b.id, band: bd, points: total });
+    const am = band(hiAM, b.features), pm = band(hiPM, b.features), worst = band(Math.max(hiAM, hiPM), b.features);
+    for (let k = 0; k < b.rooms; k++) rooms.push({ id: `${b.id}-r${k + 1}`, name: `${b.name} · Room ${k + 1}`, building: b.id, band: worst.band, bandAM: am.band, bandPM: pm.band, points: worst.total,
+      amOK: ok(am.band, amCooler), pmOK: ok(pm.band, !amCooler) });
   }
   return rooms;
 }
 
+// hi: a number (one value for the day) or { am, pm }.
 export function planSchool(school, hi) {
-  const rooms = roomsOf(school, hi);
-  const green = rooms.filter((r) => r.band === "green");
-  const amber = rooms.filter((r) => r.band === "amber");
-  const red = rooms.filter((r) => r.band === "red");
+  const hiAM = typeof hi === "number" ? hi : hi.am;
+  const hiPM = typeof hi === "number" ? hi : hi.pm;
+  const rooms = roomsOf(school, hiAM, hiPM);
+  const green = rooms.filter((r) => r.amOK && r.pmOK);
+  const amber = rooms.filter((r) => r.amOK !== r.pmOK);
+  const red = rooms.filter((r) => !r.amOK && !r.pmOK);
+  const pmRooms = rooms.filter((r) => r.pmOK);
+  const amOnly = rooms.filter((r) => r.amOK);
   const S = school.sections;
   const normalHours = school.doubleShift ? NORMAL_HOURS.double : NORMAL_HOURS.single;
 
@@ -178,12 +264,17 @@ export function planSchool(school, hi) {
     slotsUsed = fullSlots;
     assignments = fill(pairsFor(green, fullSlots));
   } else {
-    const usable = [...green, ...amber];
-    const morningSlots = S.length <= usable.length ? [SLOTS.morning] : [SLOTS.early, SLOTS.late];
-    slotsUsed = morningSlots;
-    assignments = fill(pairsFor(usable, morningSlots));
+    // Morning-only (afternoon closure) vs afternoon-only (morning closure): take whichever window holds more sections.
+    const amRooms = amOnly;
+    const amSlots = S.length <= amRooms.length ? [SLOTS.morning] : [SLOTS.early, SLOTS.late];
+    const pmSlots = S.length <= pmRooms.length ? [SLOTS.afternoon] : [SLOTS.pm1, SLOTS.pm2];
+    const amCap = Math.min(S.length, amRooms.length * amSlots.length);
+    const pmCap = Math.min(S.length, pmRooms.length * pmSlots.length);
+    const usePM = pmCap > amCap;
+    slotsUsed = usePM ? pmSlots : amSlots;
+    assignments = fill(pairsFor(usePM ? pmRooms : amRooms, slotsUsed));
     const adm = assignments.filter((a) => a.slot === "adm").length;
-    mode = adm === 0 ? "morning" : adm === S.length ? "adm" : "partial";
+    mode = adm === S.length ? "adm" : adm === 0 ? (usePM ? "afternoon" : "morning") : "partial";
   }
 
   const slotById = Object.fromEntries(Object.values(SLOTS).map((s) => [s.id, s]));
@@ -199,16 +290,17 @@ export function planSchool(school, hi) {
 }
 
 function explain(mode, s, g, a, r, adm, dbl) {
-  const rooms = `${g} green, ${a} amber, ${r} red room${r === 1 ? "" : "s"}`;
-  if (mode === "full") return `${s} sections fit in ${g} green room${g === 1 ? "" : "s"}${dbl ? " across two shifts" : ""} (${rooms}).`;
-  if (mode === "morning") return `Too few green rooms for a full day; all ${s} sections fit in the morning in ${g + a} green or amber rooms.`;
-  if (mode === "partial") return `Morning slots hold ${s - adm} of ${s} sections (${rooms}); ${adm} go to alternative delivery.`;
-  return `No green or amber rooms tomorrow (${rooms}): all ${s} sections go to alternative delivery.`;
+  const rooms = `${g} all-day, ${a} half-day, ${r} unsafe room${r === 1 ? "" : "s"}`;
+  if (mode === "full") return `${s} sections fit in ${g} all-day room${g === 1 ? "" : "s"}${dbl ? " across two shifts" : ""}.`;
+  if (mode === "morning") return `Afternoon too hot for a full day; all ${s} sections fit in the morning (${rooms}).`;
+  if (mode === "afternoon") return `Morning too hot; all ${s} sections fit in the afternoon (${rooms}).`;
+  if (mode === "partial") return `${s - adm} of ${s} sections fit in one window (${rooms}); ${adm} go to ADM.`;
+  return `No safe rooms in either window (${rooms}): all ${s} sections go to ADM.`;
 }
 
 export function planDivision(schools, hi) {
   const plans = schools.map((s) => planSchool(s, hi));
-  const tally = { full: 0, morning: 0, partial: 0, adm: 0 };
+  const tally = { full: 0, morning: 0, afternoon: 0, partial: 0, adm: 0 };
   let keptLH = 0, normalLH = 0, adm = 0, sections = 0;
   for (const p of plans) { tally[p.mode]++; keptLH += p.keptLH; normalLH += p.normalLH; adm += p.admCount; sections += p.assignments.length; }
   return { hi, plans, tally, keptLH, normalLH, admSections: adm, sections };
@@ -229,13 +321,14 @@ export function check(school, plan) {
     const slot = slotById[a.slot];
     if (!room) { problems.push(`unknown room ${a.room}`); continue; }
     if (!slot) { problems.push(`unknown slot ${a.slot}`); continue; }
-    if (room.band === "red") problems.push(`${a.section} placed in a red room`);
-    if (room.band === "amber" && !slot.morning) problems.push(`${a.section} in an amber room after 11:00`);
+    const w = SLOT_WINDOW[a.slot];
+    if ((w === "am" || w === "both") && !room.amOK) problems.push(`${a.section} in a room unsafe in the morning`);
+    if ((w === "pm" || w === "both") && !room.pmOK) problems.push(`${a.section} in a room unsafe in the afternoon`);
     const key = `${a.room}|${a.slot}`;
     if (seenRoomSlot.has(key)) problems.push(`${room.name} double-booked ${slot.label}`);
     seenRoomSlot.add(key);
     // overlapping slots in one room
-    for (const other of ["early", "late", "morning", "am", "pm", "full"]) {
+    for (const other of ["early", "late", "morning", "am", "pm", "full", "afternoon", "pm1", "pm2"]) {
       if (other === a.slot) continue;
       if (seenRoomSlot.has(`${a.room}|${other}`) && overlaps(a.slot, other)) problems.push(`${room.name} has overlapping slots`);
     }
@@ -246,7 +339,7 @@ export function check(school, plan) {
   }
   return problems;
 }
-const RANGES = { full: [7.5, 15.5], am: [6, 12], pm: [12, 18], morning: [6, 11], early: [6, 8.5], late: [8.5, 11] };
+const RANGES = { full: [7.5, 15.5], am: [6, 12], pm: [12, 18], morning: [6, 11], early: [6, 8.5], late: [8.5, 11], afternoon: [12, 17], pm1: [12, 14.5], pm2: [14.5, 17] };
 function overlaps(a, b) { const [a1, a2] = RANGES[a]; const [b1, b2] = RANGES[b]; return a1 < b2 && b1 < a2; }
 
 // ---------- real April 2024 heat (Open-Meteo archive, apparent temperature as a heat-index proxy) ----------
