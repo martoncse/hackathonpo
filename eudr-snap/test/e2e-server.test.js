@@ -8,6 +8,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { verifyPassport } from "../shared/passport.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const servers = [];
@@ -80,6 +81,19 @@ test("Côte d'Ivoire: a recorded purchase flows into the rules, the review and t
   assert.equal(pack.status, 200);
   const docs = Object.fromEntries(pack.body.documents.map((d) => [d.id, d]));
   assert.deepEqual(Object.keys(docs).sort(), ["art10", "art11", "art9", "dds", "geojson", "passport", "report", "retention"]);
+
+  // The signed passport pins every other file; a buyer re-checks it from the files alone.
+  const passport = JSON.parse(docs.passport.content);
+  const others = pack.body.documents.filter((d) => d.id !== "passport").map((d) => ({ name: d.filename, bytes: new TextEncoder().encode(d.content) }));
+  const v = await verifyPassport(passport, others);
+  assert.equal(v.valid, true, JSON.stringify(v));
+  assert.equal(v.files.filter((f) => f.status === "match").length, 7);
+  assert.equal(passport.payload.decisions.entries.length, 3);
+  const key = await api("GET", "/api/passport/key");
+  assert.equal(key.body.key_fingerprint, passport.payload.issuer.key_fingerprint);
+  const fetched = await api("GET", `/api/passports/${encodeURIComponent(pack.body.passport.id)}`);
+  assert.equal(fetched.status, 200);
+  assert.equal(fetched.body.passport.signature.value, passport.signature.value);
 
   const geo = JSON.parse(docs.geojson.content);
   assert.equal(geo.features.length, 4);
