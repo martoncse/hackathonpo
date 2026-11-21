@@ -9,7 +9,9 @@ cd eudr-snap
 npm start
 ```
 
-Open http://localhost:5174. No `npm install` is needed: there are no dependencies, just Node 20 or newer.
+Open http://localhost:5174. Run `npm install` once first: live document reading uses the Anthropic SDK and zod. Needs Node 20 or newer.
+
+**Live receipt reading (optional):** set `$env:ANTHROPIC_API_KEY` before `npm start`. In the Intake scene, **Read a receipt or land document (live)** sends one photo to Claude (`claude-opus-5-5`, structured outputs). Every field comes back with a confidence and the verbatim text it was read from. Deterministic post-checks follow: Spanish thousands separators, arrobas/quintales/cargas converted to kg with the factor shown, dates kept only when unambiguous, and illegible values left blank. Legally material fields (name, cédula, date, kg, hectares) need a person to click **Accept**. Coordinates are never taken from the model. An accepted receipt that matches a cooperative farmer can be added as a delivery to that plot, which re-runs the volume check. Without a key, the page says so and the recorded extractions still work. Use `public/sample-receipt.html` (synthetic) to photograph. Accuracy on real handwritten receipts is **not yet measured**: the architecture calls for an evaluation on 30–50 real documents before relying on it.
 
 1. **Get a key.** Sign up free at whisp.openforis.org, then generate an API key on your account page.
 2. **Paste it** into the *Whisp API key* panel and press **Save key**, then **Test key**. The key stays in the server's memory: it's never written to disk and is gone on restart. You can also set `$env:WHISP_API_KEY` before `npm start`.
@@ -36,7 +38,7 @@ The demo farm of Luis Alberto Cuéllar measures 2.79 ha (mapped boundary). He de
 - **Offline field capture already exists** (FAO's Ground app, with Whisp built in). EUDR-Snap's addition is reading the receipt photo and the volume-plausibility review.
 - **Who's responsible:** the EU importer (operator) files the due diligence statement and remains responsible. EUDR-Snap prepares a draft. Colombia is **standard risk** (Impl. Reg. 2025/1093), so full due diligence applies.
 - **Impact claim:** it *reduces the risk* of smallholders being dropped. We found no documented exclusions yet, only warnings.
-- **Export:** `netWeightKg` is left for the importer to fill in. The pack gives `estimatedGreenKgFromDeliveries` as an estimate only.
+- **Export:** `netWeightKg` is left for the importer to fill in. The pack gives `estimatedKgFromDeliveries` (with `estimatedKgUnit`) as an estimate only.
 
 If you change volumes or hectares in `sample-farms.json`, the saved Whisp result is re-run through the local rules automatically. No new Whisp call is needed.
 

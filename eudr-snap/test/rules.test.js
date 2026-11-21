@@ -124,6 +124,7 @@ test("pack is blocked by the point, then built after walking the boundary", asyn
   const dds = JSON.parse(pack.documents.find((d) => d.id === "dds").content);
   assert.equal(dds.commodities[0].hsHeading, "090111");
   assert.match(dds.commodities[0].netWeightKg, /Importer fills/);
-  assert.equal(typeof dds.commodities[0].estimatedGreenKgFromDeliveries, "number");
+  assert.equal(typeof dds.commodities[0].estimatedKgFromDeliveries, "number");
+  assert.equal(dds.commodities[0].estimatedKgUnit, "kg green");
   assert.equal(pack.art10.length, 14);
 });

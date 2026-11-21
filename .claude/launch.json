@@ -12,6 +12,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["eudr-snap/server.js"],
       "port": 5174
+    },
+    {
+      "name": "medalert",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["medalert/server.js"],
+      "port": 5175
     }
   ]
 }

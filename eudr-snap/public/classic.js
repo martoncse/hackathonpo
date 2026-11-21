@@ -56,9 +56,9 @@ function render() {
 
     const reasons = r ? r.reasons.map((x) => `<span class="reason">${x}</span>`).join("") : "";
     rows.push(`<tr class="${isExcluded ? "excluded" : ""}" data-id="${f.id}">
-      <td><b>${f.farmer_name}</b><span class="reason">${f.farm} · ${f.region}</span></td>
+      <td><b>${f.farmer_name}</b><span class="reason">${f.farm} · ${f.region}${f.producer_card ? " · card " + f.producer_card : ""}</span></td>
       <td>${f.crop}</td><td>${f.hectares}</td>
-      <td>${kgOf(f).toLocaleString("en")}<span class="reason ${r?.yield?.flag ? "yield-bad" : ""}">${(r?.yield?.kg_per_ha ?? Math.round(kgOf(f) / f.hectares)).toLocaleString("en")}/ha</span></td>
+      <td>${kgOf(f).toLocaleString("en")}<span class="reason ${r?.yield?.flag ? "yield-bad" : ""}">${(r?.yield?.producer?.kg_per_ha ?? r?.yield?.kg_per_ha ?? Math.round(kgOf(f) / f.hectares)).toLocaleString("en")}/ha${r?.yield?.producer ? " (card total)" : ""}</span></td>
       <td><span class="status ${st}">${LABELS[st]}</span>${reasons}</td></tr>`);
   }
   $("rows").innerHTML = rows.join("");
@@ -97,6 +97,12 @@ function setBadge(data) {
 async function loadFarms() {
   const doc = await (await fetch("/api/farms")).json();
   farms = doc.farms || [];
+  if (doc.cooperative?.name) $("coop").textContent = doc.cooperative.name;
+  if (doc.profile?.id) {
+    // Non-default profile: no plot finder (Colombian setup), no 3D story.
+    $("find-setup").classList.add("hidden");
+    $("unverified").textContent = "Demo plots for " + doc.profile.name + " are synthetic and haven't been checked with Whisp. Set a key and press Check with FAO Whisp.";
+  }
   $("unverified").classList.toggle("hidden", Boolean(doc.verified_with_whisp));
   render.fitted = false;
   render();

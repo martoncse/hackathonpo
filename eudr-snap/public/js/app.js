@@ -1,6 +1,6 @@
 // EUDR-Snap story mode: receipt -> plot -> Whisp -> review -> segregated lot -> importer pack.
 import { Map3D, COLOURS, centroid } from "./map3d.js";
-import { classify, checkLot, STATUS_LABELS, CONFIG } from "/shared/rules.js";
+import { classify, checkLot, STATUS_LABELS, CONFIG, seasonOf, applyRuleOverrides } from "/shared/rules.js";
 import { buildPack, DISCLAIMER } from "/shared/export.js";
 
 const $ = (s) => document.querySelector(s);
@@ -34,6 +34,8 @@ const state = {
   reviewId: "F5",
   walked: false,
   lite: store("eudr-lite") === "1",
+  // Live intake: { image, result, values: {field: value}, accepted: {field: true}, linked }
+  live: null,
 };
 
 const map3d = new Map3D("map", { lite: state.lite });
@@ -244,13 +246,157 @@ function renderRail() {
 
 // ---------- 1: intake ----------
 
+// ---------- live intake (photo -> Claude -> reviewed fields -> delivery on a plot) ----------
+
+const LIVE_LABELS = { farmer_name: "farmer", cedula: "cédula", receipt_number: "receipt no." };
+const nameKey = (s) => {
+  const words = String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length > 1);
+  return words.length ? `${words[0]} ${words.at(-1)}` : "";
+};
+
+function liveFarm() {
+  const v = state.live?.values || {};
+  const byName = nameKey(v.farmer_name);
+  const byFarm = nameKey(v.farm);
+  return state.farms.find((f) => (byName && nameKey(f.farmer_name) === byName) || (byFarm && nameKey(f.farm) === byFarm)) || null;
+}
+
+function liveCard() {
+  const L = state.live;
+  if (!L?.result) return "";
+  const r = L.result;
+  const rows = r.fields
+    .map((f) => {
+      if (f.field === "coordinates") {
+        return `<div class="field show"><div><div class="k">coordinates</div><div class="v">from GPS capture</div></div><span class="conf gps">GPS</span><div class="src">${esc(f.note)}</div></div>`;
+      }
+      const conf = f.confidence == null ? "" : `<span class="conf ${f.confidence >= 0.85 ? "hi" : "mid"}">${Math.round(f.confidence * 100)}%</span>`;
+      const ok = L.accepted[f.field];
+      const val = L.values[f.field] ?? "";
+      const input = f.needs_check
+        ? `<input class="live-input" data-live="${f.field}" value="${esc(val)}" aria-label="${esc(f.field)}" ${ok ? "disabled" : ""}>
+           <button class="btn ghost live-accept" data-accept="${f.field}" ${ok || val === "" ? "disabled" : ""}>${ok ? "Accepted ✓" : "Accept"}</button>`
+        : `<div class="v">${esc(val)}</div>`;
+      return `<div class="field show ${f.needs_check && !ok ? "pending" : ""}"><div><div class="k">${esc(LIVE_LABELS[f.field] || f.field.replace("_", " "))}${f.material ? " *" : ""}</div>${input}</div>${conf}<div class="src">${f.note ? esc(f.note) + (f.source ? " · " : "") : ""}${f.source ? `“${esc(f.source)}”` : ""}</div></div>`;
+    })
+    .join("");
+  const pending = r.fields.filter((f) => f.needs_check && !L.accepted[f.field]).length;
+  const farm = liveFarm();
+  const kg = Number(L.values.kg);
+  let link = "";
+  if (L.linked) link = `<p class="ok small">Added as a delivery to ${esc(L.linked)}. The volume check now includes it.</p>`;
+  else if (pending) link = `<p class="muted small">${pending} field(s) still need a person to check and accept them (* = legally material).</p>`;
+  else if (!farm) link = `<p class="muted small">No plot in this cooperative matches the farmer or farm name. Register the plot first.</p>`;
+  else if (!(kg > 0) || !L.values.date) link = `<p class="muted small">A date and a kg quantity are needed to record a delivery.</p>`;
+  else link = `<button class="btn wide" id="live-link">Add ${fmt(kg)} kg to ${esc(farm.farm)} (${esc(farm.farmer_name)})</button>`;
+  const warn = (r.warnings || []).length ? `<p class="muted small">Model warnings: ${r.warnings.map(esc).join(" · ")}</p>` : "";
+  return `<div class="receipt live-receipt">
+      <div class="paper live-photo"><img src="${L.image}" alt="Photo of the document"></div>
+      <div class="fields"><div class="live-badge">LIVE · ${esc(r.model || "Claude")} · ${esc(r.document_type)}</div>${rows}${warn}${link}</div>
+    </div>`;
+}
+
+function downscale(file, maxSide = 1800) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s);
+      c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("not an image"));
+    };
+    img.src = url;
+  });
+}
+
+async function runLiveExtraction(file) {
+  const msg = $("#live-msg");
+  let image;
+  try {
+    image = await downscale(file);
+  } catch {
+    msg.textContent = "That file couldn't be opened as an image.";
+    return;
+  }
+  msg.textContent = "Reading the document with Claude…";
+  $("#live-pick").disabled = true;
+  const { ok, body } = await api("/api/extract", { method: "POST", body: JSON.stringify({ imageBase64: image.split(",")[1], mediaType: "image/jpeg" }) });
+  $("#live-pick").disabled = false;
+  if (!ok) {
+    msg.textContent = `${body.error || "Extraction failed."} The recorded extractions below still work.`;
+    return;
+  }
+  const values = Object.fromEntries(body.fields.filter((f) => f.field !== "coordinates").map((f) => [f.field, f.value ?? ""]));
+  const accepted = Object.fromEntries(body.fields.filter((f) => !f.needs_check).map((f) => [f.field, true]));
+  state.live = { image, result: body, values, accepted, linked: null };
+  renderIntake();
+}
+
+function bindLive() {
+  const input = $("#live-file");
+  if (!input) return;
+  $("#live-pick").onclick = () => input.click();
+  input.onchange = () => input.files?.[0] && runLiveExtraction(input.files[0]);
+  for (const el of document.querySelectorAll("[data-live]")) {
+    el.oninput = () => {
+      state.live.values[el.dataset.live] = el.value.trim();
+      const btn = document.querySelector(`[data-accept="${el.dataset.live}"]`);
+      if (btn) btn.disabled = el.value.trim() === "";
+    };
+  }
+  for (const btn of document.querySelectorAll("[data-accept]")) {
+    btn.onclick = () => {
+      state.live.accepted[btn.dataset.accept] = true;
+      renderIntake();
+    };
+  }
+  const link = $("#live-link");
+  if (link) {
+    link.onclick = () => {
+      const farm = liveFarm();
+      const v = state.live.values;
+      farm.deliveries = [
+        ...(farm.deliveries || []),
+        {
+          date: v.date,
+          // Season assignment is simplified for the demo: the plot's current season.
+          season: seasonOf(farm),
+          kg: Number(v.kg),
+          unit: v.product || "kg as delivered",
+          receipt: v.receipt_number || "LIVE",
+          source: "live extraction, human-accepted",
+        },
+      ];
+      state.live.linked = farm.farm;
+      recompute();
+      renderIntake();
+      toast(`Delivery added to ${farm.farm}. Volume check re-run.`);
+    };
+  }
+}
+
 function renderIntake() {
   const receipts = state.doc.receipts || [];
   panel(
     2,
     "Paper becomes data",
-    "Claude vision reads receipts and land certificates. Recorded extractions for the demo.",
-    `<div class="receipts">${receipts
+    "Claude vision reads receipts and land certificates. Try a live photo, or use the recorded extractions below.",
+    `<div class="live-intake">
+      <div class="row"><button class="btn wide" id="live-pick">📷 Read a receipt or land document (live)</button></div>
+      <input type="file" id="live-file" accept="image/*" capture="environment" hidden>
+      <p id="live-msg" class="muted small">Sent to Claude with structured outputs. Coordinates are never taken from the AI. <a href="sample-receipt.html" target="_blank" rel="noopener">Synthetic receipt to photograph</a>.</p>
+      ${liveCard()}
+    </div>
+    <p class="muted small">Recorded extractions:</p>
+    <div class="receipts">${receipts
       .map(
         (r, i) => `<div class="receipt" style="animation-delay:${i * 0.25}s">
         <div class="paper"><div class="scan"></div><div class="head">${esc(r.lines[0])}</div>${r.lines.slice(1).map((l) => `<div>${esc(l)}</div>`).join("")}</div>
@@ -270,6 +416,7 @@ function renderIntake() {
   const fields = [...document.querySelectorAll(".field")];
   fields.forEach((el, i) => setTimeout(() => el.classList.add("show"), 600 + i * 140));
   $("#place-btn").onclick = () => placePlots(true);
+  bindLive();
 }
 
 async function placePlots(animate = true) {
@@ -548,6 +695,7 @@ async function makePack() {
     lot: { id: "EU-2026-A", market: "EU", plot_ids: state.lots.EU },
     cooperative: state.doc.cooperative,
     whisp: state.whisp,
+    profile: state.doc.profile,
   });
   if (pack.blocking.length) return toast(pack.blocking[0], 5000);
   state.pack = pack;
@@ -556,7 +704,7 @@ async function makePack() {
 }
 
 function renderPack(pack) {
-  const net = JSON.parse(pack.documents.find((d) => d.id === "dds").content).commodities.reduce((s, c) => s + (Number(c.estimatedGreenKgFromDeliveries) || 0), 0);
+  const net = JSON.parse(pack.documents.find((d) => d.id === "dds").content).commodities.reduce((s, c) => s + (Number(c.estimatedKgFromDeliveries) || 0), 0);
   $("#pack").innerHTML = `<div class="summary">
       <div><b>${fmt(net)}</b><small>kg est. from deliveries</small></div>
       <div><b>${state.lots.EU.length}</b><small>plots traced</small></div>
@@ -652,6 +800,9 @@ async function boot() {
   $("#days").textContent = days;
   const [farms, review] = await Promise.all([api("/api/farms"), api("/api/review")]);
   state.doc = farms.body;
+  // The 3D story is scripted for the Colombian demo; other country profiles use the 2D view.
+  if (state.doc.profile && state.doc.profile.story === false) return location.replace("classic.html");
+  applyRuleOverrides(state.doc.profile?.rules);
   state.farms = structuredClone(farms.body.farms);
   state.decisions = review.body.decisions || {};
   await map3d.ready;

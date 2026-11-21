@@ -26,14 +26,14 @@ export function stringifyGeoJSON(fc, space = 2) {
 }
 
 // EU Information System GeoJSON: FeatureCollection, WGS84, exact-case property names.
-export function buildTracesGeoJSON(plots) {
+export function buildTracesGeoJSON(plots, country = "CO") {
   return {
     type: "FeatureCollection",
     features: plots.map((p) => ({
       type: "Feature",
       properties: {
         ProducerName: p.farmer_name,
-        ProducerCountry: "CO",
+        ProducerCountry: country,
         ProductionPlace: `${p.farm}, ${p.municipality || p.region}`,
         Area: Math.round(Number(p.hectares) * 100) / 100,
       },
@@ -75,7 +75,7 @@ const ART10 = [
   ["n", "Complementary information, e.g. certification or third-party schemes"],
 ];
 
-function art10Rows(lotPlots, results, lotCheck) {
+function art10Rows(lotPlots, results, lotCheck, overrides = {}, country = "CO") {
   const res = new Map(results.map((r) => [r.id, r]));
   const rs = lotPlots.map((p) => res.get(p.id));
   const whispRuns = rs.filter((r) => r?.whisp_risk).length;
@@ -84,7 +84,7 @@ function art10Rows(lotPlots, results, lotCheck) {
   const yieldFlags = rs.filter((r) => r?.yield?.flag).length;
   const auto = {
     a: ["Colombia is standard risk (Impl. Reg. 2025/1093): full due diligence, no Art 13 simplification.", "standard"],
-    b: [`${whispRuns}/${lotPlots.length} plots checked with FAO Whisp (JRC GFC2020, TMF, Hansen, RADD/GLAD, IDEAM layers). ${afterHigh} flagged high risk and handled by review. Whisp supports due diligence; it does not replace it, and no single map gives the full picture (FAO). The operator should confirm with its own sources.`, afterHigh ? "mitigated" : "supported"],
+    b: [`${whispRuns}/${lotPlots.length} plots checked with FAO Whisp (JRC GFC2020, TMF, Hansen, RADD/GLAD${country === "CO" ? ", IDEAM" : ""} layers). ${afterHigh} flagged high risk and handled by review. Whisp supports due diligence; it does not replace it, and no single map gives the full picture (FAO). The operator should confirm with its own sources.`, afterHigh ? "mitigated" : "supported"],
     c: ["Overlap with ANT resguardos and consejos comunitarios: overlay planned (next phase). No overlap declared in questionnaire.", "gap"],
     d: ["Only required where an ethnic-territory overlap exists. None detected yet (overlay planned).", "gap"],
     e: ["No claims recorded. Overlay with ANT and land-restitution register planned.", "gap"],
@@ -98,6 +98,8 @@ function art10Rows(lotPlots, results, lotCheck) {
     m: ["None recorded.", "manual"],
     n: ["Certifications support but do not replace due diligence. None attached.", "manual"],
   };
+  // A country profile replaces the country-specific rows (a, c, d, e, f, h); computed rows stay computed.
+  for (const [k, row] of Object.entries(overrides)) if (["a", "c", "d", "e", "f", "h"].includes(k)) auto[k] = row;
   return ART10.map(([k, criterion]) => ({ criterion: `10(2)(${k})`, text: criterion, finding: auto[k][0], rating: auto[k][1] }));
 }
 
@@ -120,7 +122,8 @@ function art11Log(lotPlots, results) {
 // ---------- the pack ----------
 
 // Returns { blocking: [...], lot, documents: [{ id, title, filename, mime, content, sha256 }] }
-export async function buildPack({ plots, results, lot, cooperative, whisp }) {
+export async function buildPack({ plots, results, lot, cooperative, whisp, profile }) {
+  const country = profile?.country_iso2 || "CO";
   const res = new Map(results.map((r) => [r.id, r]));
   const lotPlots = plots.filter((p) => lot.plot_ids.includes(p.id));
   const lotCheck = checkLot(lot, plots, results);
@@ -137,7 +140,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp }) {
   const byCrop = {};
   for (const p of lotPlots) (byCrop[p.crop.toLowerCase()] ||= []).push(p);
 
-  const geojsonText = stringifyGeoJSON(buildTracesGeoJSON(lotPlots));
+  const geojsonText = stringifyGeoJSON(buildTracesGeoJSON(lotPlots, country));
   const dds = {
     _status: DISCLAIMER,
     activityType: "IMPORT",
@@ -148,9 +151,10 @@ export async function buildPack({ plots, results, lot, cooperative, whisp }) {
       hsHeading: HS[crop]?.hsHeading,
       descriptionOfGoods: HS[crop]?.description,
       netWeightKg: "[Importer fills: net mass actually shipped]",
-      estimatedGreenKgFromDeliveries: ps.reduce((s, p) => s + (res.get(p.id)?.yield?.kg_comparable || 0), 0),
-      producers: ps.map((p) => ({ country: "CO", name: p.farmer_name })),
-      geolocation: { file: "traces-geolocation.geojson", geometryGeojsonBase64: utf8ToBase64(stringifyGeoJSON(buildTracesGeoJSON(ps), 0)) },
+      estimatedKgFromDeliveries: ps.reduce((s, p) => s + (res.get(p.id)?.yield?.kg_comparable || 0), 0),
+      estimatedKgUnit: (res.get(ps[0]?.id)?.yield?.unit || "").replace("/ha", "") || null,
+      producers: ps.map((p) => ({ country, name: p.farmer_name })),
+      geolocation: { file: "traces-geolocation.geojson", geometryGeojsonBase64: utf8ToBase64(stringifyGeoJSON(buildTracesGeoJSON(ps, country), 0)) },
     })),
     declaration: "Point 5 (Annex II) statement and point 6 signature are completed by the operator in the EU Information System.",
     afterFiling: { referenceNumber: null, verificationNumber: null, customsCode: "C716" },
@@ -162,7 +166,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp }) {
     article: "Art 9(1)(a)-(h)",
     lot: lot.id,
     products: Object.entries(byCrop).map(([crop, ps]) => ({ crop, hs: HS[crop]?.hsHeading, estimatedKgFromDeliveries: ps.reduce((s, p) => s + (res.get(p.id)?.yield?.kg_comparable || 0), 0) })),
-    countryOfProduction: "CO",
+    countryOfProduction: country,
     plots: lotPlots.map((p) => {
       const r = res.get(p.id);
       return {
@@ -170,6 +174,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp }) {
         farmer: p.farmer_name,
         farm: p.farm,
         municipality: p.municipality,
+        producerCard: p.producer_card || null,
         hectares: p.hectares,
         geometryType: p.geometry.type,
         season: r?.yield?.season,
@@ -184,7 +189,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp }) {
   };
   const art9Text = JSON.stringify(art9, null, 2);
 
-  const rows = art10Rows(lotPlots, results, lotCheck);
+  const rows = art10Rows(lotPlots, results, lotCheck, profile?.art10, country);
   const log = art11Log(plots, results);
   const art10Text = JSON.stringify({ _status: DISCLAIMER, conclusion: "Draft: negligible risk subject to operator review of criteria marked manual/gap", criteria: rows }, null, 2);
   const art11Text = JSON.stringify({ _status: DISCLAIMER, entries: log }, null, 2);

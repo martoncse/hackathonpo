@@ -11,7 +11,7 @@
   <header>
     <div>
       <h1>EUDR-Snap</h1>
-      <p class="sub">Cooperativa Cafetera del Sur · plot risk check with FAO Whisp</p>
+      <p class="sub"><span id="coop">Cooperativa Cafetera del Sur</span> · plot risk check with FAO Whisp</p>
     </div>
     <div class="countdown"><strong id="days">–</strong> days until EUDR applies (30 Dec 2026)</div>
   </header>
@@ -26,12 +26,14 @@
       <button id="clear-key" class="secondary">Forget key</button>
     </div>
     <p id="key-msg" class="msg"></p>
+    <div id="find-setup">
     <hr />
     <p class="hint">One-time setup: send ~130 candidate plots to Whisp and keep 4 that Whisp rates <b>low risk</b> (Huila) and 1 it rates <b>high risk</b> (Amazon deforestation arc). Farmer names are synthetic; coordinates and risk are real.</p>
     <div class="row">
       <button id="find-plots" class="secondary">Find real plots with Whisp</button>
     </div>
     <p id="find-msg" class="msg"></p>
+    </div>
   </details>
 
   <div id="unverified" class="banner hidden">These farm locations haven't been checked with Whisp yet. Set a key and press <b>Find real plots with Whisp</b> once before the pitch.</div>

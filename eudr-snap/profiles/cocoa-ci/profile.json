@@ -1,0 +1,22 @@
+{
+  "name": "Côte d'Ivoire: cocoa (verification layer on the national system)",
+  "country_iso2": "CI",
+  "whisp_national_codes": [],
+  "_whisp_note": "Whether Whisp has Ivorian national layers behind nationalCodes ['ci'] was not found (commodities/cocoa-ci/ARCHITECTURE.md §5). Sent without nationalCodes until verified.",
+  "rules": {
+    "cocoa": {
+      "nationalAvgKgPerHa": 435,
+      "maxKgPerHa": 870,
+      "_source": "435 kg/ha average (AFD 2016; Barry Callebaut/Agri-Logic 2023, top fifth ~620 kg/ha). Threshold = 2x average, a review trigger, not proof. Old data: verify."
+    }
+  },
+  "art10": {
+    "a": ["Côte d'Ivoire is standard risk (not listed in Impl. Reg. 2025/1093): full due diligence, no Art 13 simplification.", "standard"],
+    "c": ["Indigenous peoples overlay for Côte d'Ivoire: no source found yet. To be assessed by the operator.", "gap"],
+    "d": ["Only required where an overlap with indigenous peoples' land exists. Not assessed yet.", "gap"],
+    "e": ["No claims recorded. Source for claims over the area: not found yet.", "gap"],
+    "f": ["Cocoa is a recognised driver of forest loss in Côte d'Ivoire. National figures for the current year: verify before filing.", "context"],
+    "h": ["Requires narrative assessment. Note the EFI 2026 finding: excluding a farm on paper does not keep its cocoa out of the physical chain. EUDR-Snap's producer-card volume check is the mitigation offered; operator to sign off.", "manual"]
+  },
+  "story": false
+}

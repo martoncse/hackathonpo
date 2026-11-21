@@ -45,11 +45,11 @@ async function callWhisp(url, apiKey, init = {}) {
 }
 
 // Submits plots and waits for the result. Returns the result FeatureCollection.
-export async function analysePlots(plots, apiKey, { async = false, maxWaitMs = 60_000, onProgress } = {}) {
+export async function analysePlots(plots, apiKey, { async = false, maxWaitMs = 60_000, onProgress, nationalCodes = ["co"] } = {}) {
   if (!apiKey) throw new WhispError("No Whisp API key set", "auth_missing_api_key");
   const payload = {
     ...toFeatureCollection(plots),
-    analysisOptions: { async, externalIdColumn: "plot_id", unitType: "ha", nationalCodes: ["co"] },
+    analysisOptions: { async, externalIdColumn: "plot_id", unitType: "ha", ...(nationalCodes.length ? { nationalCodes } : {}) },
   };
   let { status, body } = await callWhisp(`${BASE}/submit/geojson`, apiKey, {
     method: "POST",

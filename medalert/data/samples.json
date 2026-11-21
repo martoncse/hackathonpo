@@ -1,0 +1,71 @@
+{
+  "note": "Demo packs. Photos are from the official alert pages (credited). 'fields' is the saved reading used when live photo reading is off or slow; it was checked by eye against the photo.",
+  "samples": [
+    {
+      "id": "who-quinine",
+      "label": "Quinine tub (WHO alert photo)",
+      "photo": "img/who-quinine-44680.jpg",
+      "credit": "Photo: WHO, Medical Product Alert N°1/2020",
+      "fields": {
+        "product": "Quinine Sulphate Tablets B.P.",
+        "strength": "300mg",
+        "batch": "44680",
+        "manufacturer": "Remedica Ltd, Cyprus",
+        "mfg_date": "09/2017",
+        "expiry": "10/2020",
+        "registration_no": null,
+        "other_marks": "Essential Drugs Programme logo; 1000 tablets",
+        "uncertain_fields": ["expiry"]
+      }
+    },
+    {
+      "id": "nafdac-tavanic",
+      "label": "Tavanic carton (NAFDAC alert photo)",
+      "photo": "img/nafdac-tavanic1.jpg",
+      "credit": "Photo: NAFDAC, Public Alert No. 01/2026",
+      "fields": {
+        "product": "Tavanic",
+        "strength": null,
+        "batch": "4MW4C",
+        "manufacturer": "Sanofi-Aventis Deutschland GmbH",
+        "mfg_date": "05/2024",
+        "expiry": "04/2027",
+        "registration_no": null,
+        "other_marks": "Authorised medicine n°41382.01.00; mPedigree scratch label",
+        "uncertain_fields": ["strength"]
+      }
+    },
+    {
+      "id": "typed-alpaquine",
+      "label": "Registered quinine, synthetic batch (typed)",
+      "typed": true,
+      "fields": {
+        "product": "Alpaquine Tablets",
+        "strength": "300mg",
+        "batch": "AQ2508",
+        "manufacturer": "Dony-Triumph and Company Nigeria Limited",
+        "mfg_date": "06/2025",
+        "expiry": "06/2028",
+        "registration_no": "B4-6010",
+        "other_marks": null,
+        "uncertain_fields": []
+      }
+    },
+    {
+      "id": "typed-india",
+      "label": "India: thyroxine from the CDSCO list (typed)",
+      "typed": true,
+      "fields": {
+        "product": "Thyroxine Tablets IP 25 mcg",
+        "strength": "25 mcg",
+        "batch": "T-639",
+        "manufacturer": "Jackson Laboratories Pvt. Ltd",
+        "mfg_date": "05/2026",
+        "expiry": "04/2028",
+        "registration_no": null,
+        "other_marks": null,
+        "uncertain_fields": []
+      }
+    }
+  ]
+}

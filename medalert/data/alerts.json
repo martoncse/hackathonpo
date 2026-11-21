@@ -1,0 +1,62 @@
+{
+  "note": "Official alerts only. Copied from the published alert pages; never from crowd reports.",
+  "alerts": [
+    {
+      "id": "WHO-1-2020",
+      "issuer": "WHO",
+      "issuer_long": "World Health Organization",
+      "title": "WHO Medical Product Alert N°1/2020",
+      "date": "2020-03-09",
+      "url": "https://www.who.int/news/item/09-03-2020-medical-product-alert-n-1-2020-english-version",
+      "category": "falsified",
+      "product": "Quinine Sulphate Tablets B.P. 300mg",
+      "strength": "300mg",
+      "stated_manufacturer": "Remedica Ltd, Cyprus",
+      "batches": ["44680"],
+      "countries": ["Chad", "Cameroon", "Nigeria"],
+      "lots": [
+        { "country": "Cameroon", "batch": "44680", "mfg": "09/2017", "expiry": "10/2020", "result": "No quinine identified" },
+        { "country": "Nigeria", "batch": "44680", "mfg": "04/2017", "expiry": "04/2021", "result": "No quinine identified" },
+        { "country": "Nigeria", "batch": "44680", "mfg": "09/2017", "expiry": "10/2020", "result": "No quinine identified" },
+        { "country": "Chad", "batch": "44680", "mfg": "10/2018", "expiry": "10/2023", "result": "No quinine identified; traces of chloroquine" }
+      ],
+      "quote": "Recently received results of analysed samples show they do not contain any of the expected active ingredients.",
+      "signs": [
+        "Grey or white plastic tubs of 1000 loose tablets",
+        "Outdated WHO Essential Drugs Programme logo",
+        "English and French labels with mistakes",
+        "Remedica confirms it never used this batch number"
+      ],
+      "advice": "If you hold this product, do not use it. Report to your national medicines regulator.",
+      "photo": "img/who-quinine-44680.jpg",
+      "photo_credit": "Photo: WHO, Medical Product Alert N°1/2020"
+    },
+    {
+      "id": "NAFDAC-01-2026",
+      "issuer": "NAFDAC",
+      "issuer_long": "Nigeria's medicines regulator (NAFDAC)",
+      "title": "NAFDAC Public Alert No. 01/2026",
+      "date": "2026-01-08",
+      "url": "https://nafdac.gov.ng/public-alert-no-01-2026-sale-of-falsified-tavanic-500mg-tablet-in-nigeria/",
+      "category": "falsified",
+      "product": "Tavanic 500mg tablets (levofloxacin)",
+      "strength": "500mg",
+      "stated_manufacturer": "Sanofi",
+      "batches": ["4MW4C"],
+      "countries": ["Nigeria"],
+      "lots": [
+        { "country": "Nigeria", "batch": "4MW4C", "mfg": "05/2024", "expiry": "04/2027", "result": "Relabelled older expired batch; sold on the open market (Idumota, Lagos)" }
+      ],
+      "quote": "The affected packs did not originate from the authorised supply chain.",
+      "signs": [
+        "Batch, manufacture and expiry dates on removable stickers on the blister",
+        "Uneven batch-number printing",
+        "Authentication scratch label from the wrong provider"
+      ],
+      "advice": "Do not dispense. Quarantine and report to NAFDAC.",
+      "photo": "img/nafdac-tavanic1.jpg",
+      "photo_credit": "Photo: NAFDAC, Public Alert No. 01/2026",
+      "replay": true
+    }
+  ]
+}

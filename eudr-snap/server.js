@@ -12,23 +12,37 @@
 //   POST /api/lots             { lots, plots? } -> segregation / taint check
 //   POST /api/export           { lot, plots? } -> importer pack (422 if blocked)
 //   POST /api/find-plots       -> searches Whisp for real demo plots (one-time setup)
+//   POST /api/extract          { imageBase64, mediaType } -> live Claude extraction of a receipt / land document
 import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { analysePlots, testKey, findDemoPlots, WhispError } from "./whisp.js";
-import { classify, checkLot } from "./shared/rules.js";
+import { classify, checkLot, applyRuleOverrides } from "./shared/rules.js";
 import { buildPack } from "./shared/export.js";
+import { extractDocument, friendlyExtractError, ExtractError } from "./extract.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(here, "public");
 const SHARED_DIR = path.join(here, "shared");
 const DATA_DIR = path.join(here, "data");
-const FARMS_FILE = path.join(PUBLIC_DIR, "sample-farms.json");
-const CACHE_FILE = path.join(PUBLIC_DIR, "whisp-cache.json");
-const DECISIONS_FILE = path.join(DATA_DIR, "decisions.json");
+// Country profile. No EUDR_PROFILE = the original Colombian demo, unchanged.
+// EUDR_PROFILE=cocoa-ci loads profiles/cocoa-ci/{profile.json, sample-farms.json, whisp-cache.json}.
+const DEFAULT_PROFILE = { id: "", name: "Colombia: coffee and cocoa", country_iso2: "CO", whisp_national_codes: ["co"], rules: {}, story: true };
+const PROFILE_ID = process.env.EUDR_PROFILE || "";
+if (PROFILE_ID && !/^[a-z0-9-]+$/.test(PROFILE_ID)) throw new Error("EUDR_PROFILE may only contain a-z, 0-9 and -");
+const PROFILE_DIR = PROFILE_ID ? path.join(here, "profiles", PROFILE_ID) : null;
+const profile = PROFILE_DIR
+  ? { ...DEFAULT_PROFILE, story: false, ...JSON.parse(await fs.readFile(path.join(PROFILE_DIR, "profile.json"), "utf8")), id: PROFILE_ID }
+  : DEFAULT_PROFILE;
+applyRuleOverrides(profile.rules);
+const FARMS_FILE = path.join(PROFILE_DIR || PUBLIC_DIR, "sample-farms.json");
+const CACHE_FILE = path.join(PROFILE_DIR || PUBLIC_DIR, "whisp-cache.json");
+const DECISIONS_FILE = path.join(DATA_DIR, PROFILE_ID ? `decisions-${PROFILE_ID}.json` : "decisions.json");
 const PORT = Number(process.env.PORT) || 5174;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
+const MAX_IMAGE_BODY_BYTES = 10 * 1024 * 1024;
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 // In memory only: never written to disk or logged.
 let whispKey = process.env.WHISP_API_KEY || "";
@@ -43,12 +57,12 @@ function sendJson(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-async function readJsonBody(req) {
+async function readJsonBody(req, limit = MAX_BODY_BYTES) {
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) throw new WhispError("Request body too large", "too_large");
+    if (size > limit) throw new WhispError("Request body too large", "too_large");
     chunks.push(chunk);
   }
   if (!size) return {};
@@ -109,7 +123,7 @@ async function handleRisk(req, res) {
   const plots = Array.isArray(body.plots) && body.plots.length ? body.plots : await demoFarms();
   if (!plots.length) return sendJson(res, 400, { error: "No plots to check." });
   try {
-    const fc = await analysePlots(plots, whispKey, { maxWaitMs: 60_000 });
+    const fc = await analysePlots(plots, whispKey, { maxWaitMs: 60_000, nationalCodes: profile.whisp_national_codes });
     const checkedAt = new Date().toISOString();
     const result = { source: "live", checked_at: checkedAt, whisp: whispMeta(fc, checkedAt), results: classify(plots, fc, decisions), raw: fc };
     // Only the default demo batch refreshes the stage backup.
@@ -155,8 +169,23 @@ async function handleExport(req, res) {
   const plots = body.plots?.length ? body.plots : farmsDoc?.farms || [];
   const saved = await savedResult(plots);
   const results = saved?.results || classify(plots, null, decisions);
-  const pack = await buildPack({ plots, results, lot: body.lot, cooperative: farmsDoc?.cooperative, whisp: saved?.whisp });
+  const pack = await buildPack({ plots, results, lot: body.lot, cooperative: farmsDoc?.cooperative, whisp: saved?.whisp, profile });
   return sendJson(res, pack.blocking.length ? 422 : 200, pack);
+}
+
+async function handleExtract(req, res) {
+  try {
+    const { imageBase64, mediaType } = await readJsonBody(req, MAX_IMAGE_BODY_BYTES);
+    if (typeof imageBase64 !== "string" || !imageBase64) throw new ExtractError(400, "No image was sent.");
+    if (!IMAGE_TYPES.has(mediaType)) throw new ExtractError(400, "Use a JPEG, PNG, WebP or GIF image.");
+    const result = await extractDocument(imageBase64, mediaType);
+    return sendJson(res, 200, { source: "live", extracted_at: new Date().toISOString(), ...result });
+  } catch (error) {
+    if (error instanceof WhispError) return sendJson(res, 413, { error: "Image too large. Use a smaller photo." });
+    const [status, message] = friendlyExtractError(error);
+    if (status >= 500) console.warn("Extraction failed:", error.message);
+    return sendJson(res, status, { error: message });
+  }
 }
 
 function startFindJob() {
@@ -235,7 +264,7 @@ async function route(req, res) {
       return sendJson(res, 200, { ok: false, error: friendly(error) });
     }
   }
-  if (pathname === "/api/farms" && req.method === "GET") return sendJson(res, 200, (await readJsonFile(FARMS_FILE)) || { farms: [] });
+  if (pathname === "/api/farms" && req.method === "GET") return sendJson(res, 200, { ...((await readJsonFile(FARMS_FILE)) || { farms: [] }), profile });
   if (pathname === "/api/risk" && req.method === "POST") return handleRisk(req, res);
   if (pathname === "/api/risk/saved" && req.method === "GET") {
     return sendJson(res, 200, (await savedResult(await demoFarms())) || { source: "none", results: [] });
@@ -244,7 +273,9 @@ async function route(req, res) {
   if (pathname === "/api/review" && req.method === "POST") return handleReview(req, res);
   if (pathname === "/api/lots" && req.method === "POST") return handleLots(req, res);
   if (pathname === "/api/export" && req.method === "POST") return handleExport(req, res);
+  if (pathname === "/api/extract" && req.method === "POST") return handleExtract(req, res);
   if (pathname === "/api/find-plots" && req.method === "POST") {
+    if (PROFILE_ID) return sendJson(res, 400, { error: "The plot finder only exists for the Colombian demo." });
     if (!whispKey) return sendJson(res, 400, { error: friendly({ code: "auth_missing_api_key" }) });
     startFindJob();
     return sendJson(res, 202, findJob);
@@ -263,6 +294,6 @@ const server = http.createServer((req, res) => {
 
 await loadDecisions();
 server.listen(PORT, () => {
-  console.log(`EUDR-Snap running at http://localhost:${PORT}`);
+  console.log(`EUDR-Snap running at http://localhost:${PORT} (profile: ${profile.name})`);
   console.log(whispKey ? "Whisp key loaded from WHISP_API_KEY." : "No Whisp key yet: paste one in the page.");
 });
