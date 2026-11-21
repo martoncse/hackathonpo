@@ -57,3 +57,36 @@ Every successful live check of the demo batch overwrites `whisp-cache.json`. If 
 ## API for the Lovable frontend
 
 `POST http://localhost:5174/api/risk` with `{ "plots": [{ "id", "hectares", "geometry" }] }` returns `{ source, checked_at, results: [{ id, status, whisp_risk, reasons }] }`. CORS is open.
+
+## Story mode (3D demo for the jury)
+
+`http://localhost:5174/` now opens the 3D story. `classic.html` is the 2D backup, with no 3D or extra tiles.
+
+| Key | Action |
+|---|---|
+| → / Space / PageDown | Next scene |
+| ← / PageUp | Previous scene |
+| N | Speaker notes |
+| L | Lite mode (no 3D terrain, for slow laptops) |
+
+The **Key** button (top right) holds the Whisp key panel and **Reset demo**, which clears reviewer decisions between rehearsals.
+
+1. **39 days.** A globe with the shipment arc from Huila to Rotterdam.
+2. **Intake.** Receipts are read into fields with a confidence score and the exact source text. These are recorded extractions. Coordinates always come from GPS capture, never from the AI. **Place plots** raises them in 3D.
+3. **Analyse.** **Scan with FAO Whisp** calls `/api/risk` live, or uses the saved result if the live call fails (the badge says which). The five-stage pipeline lights up, and light beams show each plot's status.
+4. **Review.** The camera flies to the flagged plot and shows the Hansen tree-cover-loss layer next to Whisp's indicators (JRC vs IDEAM 2020). The choices are Accept (needs a reason), Mitigate or Exclude. Each decision is saved to `data/decisions.json` and feeds the Art 11 log.
+5. **Lots & file.**
+   - Delivery flows run to the warehouse. Tapping a sack moves it between the EU and non-EU lots, and one uncleared input taints the EU lot.
+   - **Walk the boundary** replaces Buenavista's 6.2 ha point with a polygon. That unblocks export and re-checks the polygon with Whisp if a key is set.
+   - **Generate importer pack** produces downloadable files with SHA-256 hashes: GeoJSON (6 decimals), the DDS data pack, Art 9, Art 10 (a)–(n), the Art 11 log and a retention index.
+
+Map tiles need internet: Esri imagery, AWS Terrarium terrain, Hansen loss tiles and MapLibre 5.24.0 from unpkg. If the venue Wi-Fi is weak, use `classic.html` and a screen recording.
+
+### API added for the Lovable frontend
+
+- `GET/POST /api/review`: reviewer decisions.
+- `POST /api/lots`: `{ lots: [{ id, market: "EU"|"non-EU", plot_ids }] }` → taint check.
+- `POST /api/export`: `{ lot }` → the pack (HTTP 422 with `blocking` if something blocks it).
+- `GET /shared/rules.js` and `/shared/export.js`: the same rule code the server runs.
+
+Tests: `npm test` (`node --test`).
