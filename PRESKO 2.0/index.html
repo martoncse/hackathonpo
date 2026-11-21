@@ -282,7 +282,7 @@ const state = {
   smsThread: {},  // schoolId -> [{me, text}]
   requests: [],   // { id, school, text, at, status }
   comms: {},      // kind -> { at, label, n }
-  rule: { version: 1, approvedBy: null, approvedAt: null, cutoff: "17:00" },
+  rule: { version: 1, approvedBy: "sdo.iloilocity@deped.gov.ph", approvedAt: "2026-11-21 09:00", cutoff: "17:00" }, // v2.1 approved; editing a limit creates v2.2 for re-approval
   dayHours: [],   // hourly weather for tomorrow: [{h, t, rh, sw}]
   forecastHI: null, // PAGASA forecast heat index when known (replay), else the peak of the hourly data
   readings: {},   // schoolId -> { buildingId: [{h, t}] } indoor readings at 08:00 / 12:00 / 14:00
