@@ -111,7 +111,31 @@ tbody tr.current { background: var(--sunk) }
 .sources li { margin-bottom: 4px }
 a { color: var(--accent) }
 
-@media (max-width: 900px) { .main, .controls, .two { grid-template-columns: minmax(0, 1fr) } .summary { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+/* customer journey */
+.journey { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; counter-reset: step }
+.jstep { text-align: left; display: grid; gap: 4px; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); position: relative }
+.jstep .who { font: 600 11px/1.2 var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+.jstep .when { font: 600 12px var(--mono); color: var(--accent) }
+.jstep b { font: 600 15px/1.25 var(--display) }
+.jstep span.desc { font-size: 13px; color: var(--muted) }
+.jstep[aria-current="step"] { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent) }
+.jstep .done { position: absolute; top: 10px; right: 10px; font-size: 12px; color: var(--green); font-weight: 600 }
+.jbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; margin-top: 12px }
+.flash { animation: flash 1.2s ease 1 }
+@keyframes flash { 0% { box-shadow: 0 0 0 0 var(--accent) } 30% { box-shadow: 0 0 0 4px var(--accent) } 100% { box-shadow: 0 0 0 0 transparent } }
+@media (prefers-reduced-motion: reduce) { .flash { animation: none } }
+/* free interaction */
+.ftoggles { display: flex; flex-wrap: wrap; gap: 6px }
+.ftoggles button { font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--bg) }
+.ftoggles button[aria-pressed="true"].plus { background: var(--sunk); box-shadow: inset 3px 0 0 var(--red); border-color: var(--line) }
+.ftoggles button[aria-pressed="true"].minus { background: var(--sunk); box-shadow: inset 3px 0 0 var(--green); border-color: var(--line) }
+.ftoggles button[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line) }
+.stepper { display: inline-flex; align-items: center; gap: 6px; font-size: 13px }
+.stepper button { padding: 2px 9px; font-weight: 600 }
+.decide { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px }
+.decided { font-size: 13px; font-weight: 600; color: var(--accent) }
+.whatif { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 14px }
+@media (max-width: 900px) { .main, .controls, .two { grid-template-columns: minmax(0, 1fr) } .summary, .journey { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
 @media (prefers-reduced-motion: no-preference) { .map .dot { transition: fill .35s ease } }
 </style>
 
@@ -125,7 +149,18 @@ a { color: var(--accent) }
     <span class="tag-ill">Real school locations · illustrative building data</span>
   </header>
 
-  <section class="card controls" aria-label="Heat forecast">
+  <section class="card" aria-label="Journey">
+    <div class="eyebrow" style="margin-bottom:10px">One afternoon, four people</div>
+    <div class="journey" id="journey">
+      <button class="jstep" data-step="0"><span class="when">16:00</span><span class="who">PAGASA → DRRM coordinator</span><b>Tomorrow's heat index arrives</b><span class="desc">The division's DRRM coordinator sets the forecast.</span></button>
+      <button class="jstep" data-step="1"><span class="when">16:05</span><span class="who">DRRM coordinator</span><b>Presko plans every school</b><span class="desc">Full day, morning shift or modules, with 0 conflicts.</span></button>
+      <button class="jstep" data-step="2"><span class="when">16:30</span><span class="who">School head</span><b>Reviews, fixes a note, decides</b><span class="desc">Confirms the plan or overrides it. The head decides.</span></button>
+      <button class="jstep" data-step="3"><span class="when">17:00</span><span class="who">Parents</span><b>Get the message</b><span class="desc">SMS and Facebook post in English, Filipino, Hiligaynon.</span></button>
+    </div>
+    <div class="jbar"><span class="small muted" id="jhint">Click a step, or walk through it.</span><span class="row"><button id="jprev">← Back</button><button id="jnext" class="primary">Start the walk-through →</button></span></div>
+  </section>
+
+  <section class="card controls" id="forecastCard" aria-label="Heat forecast">
     <div>
       <div class="eyebrow">Heat index forecast for tomorrow</div>
       <div class="readout"><span class="hi mono" id="hiOut">44°C</span><span class="cat" id="catOut">Danger</span></div>
@@ -143,9 +178,10 @@ a { color: var(--accent) }
     </div>
   </section>
 
-  <section class="card" aria-label="Division summary">
+  <section class="card" id="summaryCard" aria-label="Division summary">
     <div class="summary" id="summary"></div>
     <div class="kpis" id="kpis"></div>
+    <div class="whatif" id="whatif"></div>
   </section>
 
   <div class="main">
@@ -205,7 +241,8 @@ const MODE = {
 };
 const SLOT_LABEL = Object.fromEntries(Object.values(SLOTS).map((s) => [s.id, s.label]));
 
-const state = { hi: 44, schools: makeDivision(), selected: null, replay: false, lang: "en", hil: {}, busy: {} };
+const state = { hi: 44, schools: makeDivision(), selected: null, replay: false, lang: "en", hil: {}, busy: {}, decisions: {}, step: -1 };
+const DECISION_LABEL = { confirm: "Confirmed Presko's plan", full: "Chose: full day", morning: "Chose: morning shift for all", adm: "Chose: modules for all" };
 let sample = null;
 const samplePromise = window.claude?.use ? window.claude.use("sample").catch(() => null) : Promise.resolve(null);
 samplePromise.then((s) => { sample = s; renderPanel(); });
@@ -226,7 +263,8 @@ function renderMap(div) {
     return `<circle class="dot" data-id="${s.id}" cx="${px(s.lon).toFixed(1)}" cy="${py(s.lat).toFixed(1)}" r="7" fill="${MODE[p.mode].color}"><title>${esc(s.name)}: ${MODE[p.mode].label}</title></circle>`;
   }).join("");
   const sel = state.selected ? state.schools.find((s) => s.id === state.selected) : null;
-  const ring = sel ? `<circle class="sel" cx="${px(sel.lon).toFixed(1)}" cy="${py(sel.lat).toFixed(1)}" r="12"/>` : "";
+  const decidedRings = Object.keys(state.decisions).map((id) => { const s = state.schools[+id]; return `<circle cx="${px(s.lon).toFixed(1)}" cy="${py(s.lat).toFixed(1)}" r="10" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3 2"/>`; }).join("");
+  const ring = decidedRings + (sel ? `<circle class="sel" cx="${px(sel.lon).toFixed(1)}" cy="${py(sel.lat).toFixed(1)}" r="12"/>` : "");
   $("mapBox").innerHTML = `<svg viewBox="-10 -10 ${W + 20} ${H + 20}" role="img" aria-label="Schools of Iloilo City coloured by tomorrow's plan">
     <rect x="-10" y="-10" width="${W + 20}" height="${H + 20}" fill="var(--sunk)" rx="8"/>
     ${dots}${ring}
@@ -249,7 +287,27 @@ function renderSummary(div, problems) {
     <span><b class="mono">${pct}%</b> of normal in-person learner-hours kept, against 0% if every school suspends</span>
     <span><b class="mono">${fmt(div.admSections)}</b> of ${fmt(div.sections)} sections on modules</span>
     <span class="${problems === 0 ? "ok" : "bad"}">${problems === 0 ? "✓ 0 conflicts" : `✕ ${problems} conflicts`}</span>
-    <span class="muted small">checked independently: no room double-booked, no class in a red room, no amber room after 11:00, every section placed once</span>`;
+    <span class="muted small">checked independently: no room double-booked, no class in a red room, no amber room after 11:00, every section placed once</span>
+    <span><b class="mono">${Object.keys(state.decisions).length}</b> of ${state.schools.length} school heads have decided</span>`;
+  renderWhatIf(div);
+}
+
+// What if every bare metal roof got a ceiling? Same rule, same planner, modified buildings.
+function renderWhatIf(div) {
+  let n = 0;
+  const retro = state.schools.map((s) => ({ ...s, buildings: s.buildings.map((b) => {
+    if (!b.features.roof_no_ceiling) return b;
+    n++;
+    return { ...b, features: { ...b.features, roof_no_ceiling: false, ceiling_or_insulated: true } };
+  }) }));
+  const r = planDivision(retro, state.hi);
+  const now = div.normalLH ? (100 * div.keptLH) / div.normalLH : 0;
+  const after = r.normalLH ? (100 * r.keptLH) / r.normalLH : 0;
+  const gains = div.plans.map((p, i) => ({ s: state.schools[i], gain: r.plans[i].keptLH - p.keptLH })).filter((g) => g.gain > 0).sort((a, b) => b.gain - a.gain).slice(0, 3);
+  $("whatif").innerHTML = `<b>What if</b> the ${n} buildings with a bare metal roof got a ceiling?
+    <span>Learner-hours kept at ${state.hi}°C: <b class="mono">${Math.round(now)}% → ${Math.round(after)}%</b></span>
+    ${gains.length ? `<span class="small muted">Biggest gains: ${gains.map((g) => `<a href="#" data-goto="${g.s.id}">${esc(g.s.name)}</a>`).join(", ")}</span>` : `<span class="small muted">No change at this heat level.</span>`}`;
+  $("whatif").querySelectorAll("[data-goto]").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); select(a.dataset.goto); $("panel").scrollIntoView({ behavior: "smooth", block: "start" }); }));
 }
 
 function renderReplay() {
@@ -272,6 +330,14 @@ function renderList(div) {
 }
 
 // ---------- school panel ----------
+// The plan that gets sent: Presko's, unless the school head overrode it.
+function effective(s, p) {
+  const d = state.decisions[s.id];
+  if (!d || d.choice === "confirm") return p;
+  if (d.choice === "adm") return { ...p, mode: "adm", slotsUsed: [], assignments: p.assignments.map((a) => ({ ...a, room: null, slot: "adm" })) };
+  if (d.choice === "full") return { ...p, mode: "full", slotsUsed: s.doubleShift ? ["am", "pm"] : ["full"] };
+  return { ...p, mode: "morning", slotsUsed: ["morning"] };
+}
 function message(s, p, lang) {
   const cat = pagasaCategory(state.hi);
   const two = p.slotsUsed.length === 2 && p.mode !== "full";
@@ -305,13 +371,13 @@ function renderPanel() {
   const bldgs = s.buildings.map((b) => {
     const bd = band(state.hi, b.features);
     const tags = FEATURE_KEYS.filter((k) => b.features[k]).map((k) => `<span class="chip ${FEATURES[k].points > 0 ? "plus" : "minus"}">${esc(FEATURES[k].label)} ${FEATURES[k].points > 0 ? "+" : ""}${FEATURES[k].points}</span>`).join("") || `<span class="chip">no features found</span>`;
-    const srcLabel = b.source === "claude" ? `<span class="src ai">Read by Claude just now</span>` : b.source === "keywords" ? `<span class="src">Keyword fallback (no AI)</span>` : `<span class="src">Read once, cached</span>`;
+    const srcLabel = b.source === "claude" ? `<span class="src ai">Read by Claude just now</span>` : b.source === "keywords" ? `<span class="src">Keyword fallback (no AI)</span>` : b.source === "hand" ? `<span class="src">Corrected by hand</span>` : `<span class="src">Read once, cached</span>`;
     const evidence = b.evidence ? `<div class="small muted">Evidence: ${esc(b.evidence)}</div>` : "";
     return `<div class="bldg">
-      <div class="bldg-head"><h3>${esc(b.name)} · ${b.rooms} room${b.rooms === 1 ? "" : "s"}</h3><span class="band ${bd.band}">${bd.band} · ${bd.total} pts</span></div>
+      <div class="bldg-head"><h3>${esc(b.name)}</h3><span class="stepper"><button data-rooms="${b.id}" data-d="-1" aria-label="One room fewer in ${esc(b.name)}">−</button><span class="mono">${b.rooms} room${b.rooms === 1 ? "" : "s"}</span><button data-rooms="${b.id}" data-d="1" aria-label="One more room in ${esc(b.name)}">+</button></span><span class="band ${bd.band}">${bd.band} · ${bd.total} pts</span></div>
       <textarea id="note-${b.id}" aria-label="Building note for ${esc(b.name)}">${esc(b.note)}</textarea>
       <div class="row"><button data-reread="${b.id}" ${state.busy[b.id] ? "disabled" : ""}>${state.busy[b.id] ? "Reading…" : sample ? "Re-read note with Claude" : "Re-read note"}</button>${srcLabel}</div>
-      <div class="chips">${tags}</div>${evidence}
+      <div class="ftoggles" role="group" aria-label="Features of ${esc(b.name)}: click to switch on or off">${FEATURE_KEYS.map((k) => `<button data-feat="${k}" data-b="${b.id}" class="${FEATURES[k].points > 0 ? "plus" : "minus"}" aria-pressed="${!!b.features[k]}">${esc(FEATURES[k].label)} ${FEATURES[k].points > 0 ? "+" : ""}${FEATURES[k].points}</button>`).join("")}</div>${evidence}
       <div class="small muted">Heat index ${state.hi}°C adds ${bd.total - buildingPoints(b.features)} pts; building adds ${buildingPoints(b.features)} pts.</div>
     </div>`;
   }).join("");
@@ -320,13 +386,21 @@ function renderPanel() {
     const room = p.rooms.find((r) => r.id === a.room);
     return `<tr><td>${esc(sec.name)}</td><td class="num">${sec.learners}</td><td>${a.slot === "adm" ? `<b>Modules at home</b>` : esc(room.name)}</td><td class="mono">${a.slot === "adm" ? "–" : SLOT_LABEL[a.slot]}</td></tr>`;
   }).join("");
-  const msg = state.lang === "hil" ? (state.hil[`${s.id}|${state.hi}|${p.mode}`] || "") : message(s, p, state.lang);
+  const ep = effective(s, p);
+  const msg = state.lang === "hil" ? (state.hil[`${s.id}|${state.hi}|${ep.mode}`] || "") : message(s, ep, state.lang);
   const hilBtn = sample ? `<button data-lang="hil" aria-pressed="${state.lang === "hil"}">Hiligaynon (AI draft)</button>` : "";
   $("panel").innerHTML = `
     <div class="eyebrow">${s.kind === "secondary" ? "Secondary school" : s.kind === "integrated" ? "Integrated school" : "Elementary school"} · ${s.doubleShift ? "double shift" : "single shift"} · ${s.sections.length} sections</div>
     <h2 style="margin-top:4px">${esc(s.name)}</h2>
     <div class="row" style="margin-top:8px"><span class="plan-badge" style="background:${m.color}">${m.label}</span><span class="${problems.length ? "bad" : "ok"} small">${problems.length ? `✕ ${problems.length} conflicts` : "✓ 0 conflicts"}</span></div>
-    <div class="rec"><b>Recommendation for the school head.</b> ${esc(p.why)} The school head decides and can override.</div>
+    <div class="rec" id="recBox"><b>Recommendation for the school head.</b> ${esc(p.why)} The school head decides and can override.
+      <div class="decide" role="group" aria-label="School head's decision">
+        <button data-decide="confirm" class="primary">Confirm plan</button>
+        ${["full", "morning", "adm"].filter((m) => m !== p.mode).map((m) => `<button data-decide="${m}">Override: ${m === "full" ? "full day" : m === "morning" ? "morning for all" : "modules for all"}</button>`).join("")}
+        ${state.decisions[s.id] ? `<button data-decide="clear">Undo</button>` : ""}
+      </div>
+      ${state.decisions[s.id] ? `<div class="decided" style="margin-top:6px">School head: ${DECISION_LABEL[state.decisions[s.id].choice]} at ${state.decisions[s.id].hi}°C</div>` : ""}
+    </div>
     <p class="small muted" style="margin:0">Rooms tomorrow: <b>${p.counts.green}</b> green, <b>${p.counts.amber}</b> amber, <b>${p.counts.red}</b> red. In-person learner-hours: <b class="mono">${fmt(p.keptLH)}</b> of ${fmt(p.normalLH)}.</p>
     ${bldgs}
     <details><summary>Section plan (${p.assignments.length} sections)</summary><div class="tbl-wrap"><table><thead><tr><th>Section</th><th class="num">Learners</th><th>Room</th><th>Time</th></tr></thead><tbody>${secRows}</tbody></table></div></details>
@@ -340,7 +414,26 @@ function renderPanel() {
     <div class="small muted">${state.lang === "hil" ? "AI draft: check with a native speaker before sending." : state.lang === "tl" ? "Template: check wording with the school before sending." : "Template filled from the plan."} SMS and the school's Facebook group.</div>`;
 
   $("panel").querySelectorAll("[data-reread]").forEach((b) => b.addEventListener("click", () => reread(s, b.dataset.reread)));
-  $("panel").querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => setLang(s, p, b.dataset.lang)));
+  $("panel").querySelectorAll("[data-feat]").forEach((btn) => btn.addEventListener("click", () => {
+    const b = s.buildings.find((x) => x.id === btn.dataset.b);
+    const k = btn.dataset.feat;
+    b.features = { ...b.features, [k]: !b.features[k] };
+    if (k === "roof_no_ceiling" && b.features[k]) b.features.ceiling_or_insulated = false;
+    if (k === "ceiling_or_insulated" && b.features[k]) b.features.roof_no_ceiling = false;
+    b.source = "hand"; b.evidence = "";
+    renderAll();
+  }));
+  $("panel").querySelectorAll("[data-rooms]").forEach((btn) => btn.addEventListener("click", () => {
+    const b = s.buildings.find((x) => x.id === btn.dataset.rooms);
+    b.rooms = Math.max(0, Math.min(20, b.rooms + +btn.dataset.d));
+    renderAll();
+  }));
+  $("panel").querySelectorAll("[data-decide]").forEach((btn) => btn.addEventListener("click", () => {
+    if (btn.dataset.decide === "clear") delete state.decisions[s.id];
+    else state.decisions[s.id] = { choice: btn.dataset.decide, hi: state.hi, plan: p.mode };
+    renderAll();
+  }));
+  $("panel").querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => setLang(s, effective(s, p), b.dataset.lang)));
   $("copyMsg").addEventListener("click", async () => {
     const text = $("sms").textContent;
     try { await navigator.clipboard.writeText(text); $("copyMsg").textContent = "Copied"; }
@@ -402,6 +495,7 @@ function renderAll() {
   renderMap(div);
   renderList(div);
   renderPanel();
+  renderJourney();
 }
 
 // ---------- rule tables ----------
@@ -412,6 +506,36 @@ $("ruleBand").innerHTML = `<thead><tr><th>Total</th><th>Band</th></tr></thead><t
 // ---------- controls ----------
 $("hi").addEventListener("input", (e) => { state.hi = +e.target.value; state.replay = false; renderAll(); });
 document.querySelectorAll(".presets button").forEach((b) => b.addEventListener("click", () => { state.hi = +b.dataset.hi; state.replay = !!b.dataset.replay; state.lang = state.lang === "hil" ? "en" : state.lang; renderAll(); }));
+
+// ---------- customer journey ----------
+const JOURNEY = [
+  { hint: "16:00. PAGASA's forecast for tomorrow is in: 44°C, Danger. The coordinator sets it here.", target: "forecastCard", run: () => { state.hi = 44; state.replay = false; } },
+  { hint: "16:05. Presko plans all 70 schools at once. Every assignment is re-checked: 0 conflicts.", target: "summaryCard", run: () => {} },
+  { hint: "16:30. The school head opens their school. A building note is out of date: switch features on or off, or edit the note and re-read it. Then confirm or override.", target: "panel", run: () => { const s = state.schools.find((x) => /pandac/i.test(x.name)); if (s) state.selected = s.id; } },
+  { hint: "17:00. Parents get the message in their language. The head's decision is what gets sent.", target: "sms", run: () => {} },
+];
+function goStep(i) {
+  state.step = Math.max(0, Math.min(JOURNEY.length - 1, i));
+  const j = JOURNEY[state.step];
+  j.run();
+  renderAll();
+  const el = $(j.target);
+  if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+}
+function renderJourney() {
+  document.querySelectorAll(".jstep").forEach((b) => {
+    const i = +b.dataset.step;
+    if (i === state.step) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+    b.querySelector(".done")?.remove();
+    if (state.step > i) b.insertAdjacentHTML("beforeend", `<span class="done">✓</span>`);
+  });
+  $("jhint").textContent = state.step < 0 ? "Click a step, or walk through it." : JOURNEY[state.step].hint;
+  $("jnext").textContent = state.step < 0 ? "Start the walk-through →" : state.step === JOURNEY.length - 1 ? "Start again" : "Next step →";
+  $("jprev").disabled = state.step <= 0;
+}
+document.querySelectorAll(".jstep").forEach((b) => b.addEventListener("click", () => goStep(+b.dataset.step)));
+$("jnext").addEventListener("click", () => goStep(state.step === JOURNEY.length - 1 ? 0 : state.step + 1));
+$("jprev").addEventListener("click", () => goStep(state.step - 1));
 
 // open on a school that shows the planner at work
 const first = planDivision(state.schools, state.hi).plans.find((p) => p.mode === "partial") || planDivision(state.schools, state.hi).plans[0];
