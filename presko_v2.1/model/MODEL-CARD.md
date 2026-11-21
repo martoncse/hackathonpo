@@ -7,7 +7,7 @@
 - `backtest.mjs`: runs it on real weather, the 2024 suspensions and the 3 Nov 2026 closures, then writes `results.json`.
 - `data/`: Open-Meteo hourly archive for Iloilo City, March–May 2023–2025 and 20 Oct–19 Nov 2026.
 
-Run it with `node "PRESKO 2.0/model/backtest.mjs"`.
+Run it with `node "presko_v2.1/model/backtest.mjs"`.
 
 ## How the model sits under the rules (21 Nov 2026)
 

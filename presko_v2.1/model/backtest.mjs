@@ -1,5 +1,5 @@
 // Backtest the safety model on real Iloilo City weather (Open-Meteo archive) and real 2024 class suspensions.
-// Run: node "PRESKO 2.0/model/backtest.mjs"  → prints a report and writes model/results.json
+// Run: node "presko_v2.1/model/backtest.mjs"  → prints a report and writes model/results.json
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

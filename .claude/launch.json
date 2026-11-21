@@ -35,7 +35,7 @@
         "--bind",
         "127.0.0.1",
         "--directory",
-        "PRESKO 2.0"
+        "presko_v2.1"
       ],
       "port": 5176
     }

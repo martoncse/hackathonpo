@@ -1,8 +1,6 @@
 // Presko engine: building notes -> features -> heat band -> per-school plan -> independent checker.
 // Pure functions, no DOM. Same file runs in the browser and in Node tests.
 import { SCHOOLS_OSM } from "./schools-data.js";
-import { assessDay, learnCorrection, LIMITS } from "./model/safety-model.js";
-import { level as level4H, cityOverlay, CITY } from "./rules.js";
 
 // ---------- the visible rule ----------
 
@@ -197,11 +195,9 @@ export const SLOTS = {
   afternoon: { id: "afternoon", label: "12:00–17:00", hours: 5, morning: false },
   pm1: { id: "pm1", label: "12:00–14:30", hours: 2.5, morning: false },
   pm2: { id: "pm2", label: "14:30–17:00", hours: 2.5, morning: false },
-  hinayAM: { id: "hinayAM", label: "06:00–10:00", hours: 4, morning: true },
-  hinayPM: { id: "hinayPM", label: "14:00–18:00", hours: 4, morning: false },
 };
 // Which part of the day a slot needs to be safe in.
-const SLOT_WINDOW = { full: "both", am: "both", pm: "both", morning: "am", early: "am", late: "am", afternoon: "pm", pm1: "pm", pm2: "pm", hinayAM: "am", hinayPM: "pm" };
+const SLOT_WINDOW = { full: "both", am: "both", pm: "both", morning: "am", early: "am", late: "am", afternoon: "pm", pm1: "pm", pm2: "pm" };
 
 // ---------- hourly forecast -> heat index -> morning / afternoon ----------
 
@@ -238,59 +234,12 @@ function roomsOf(school, hiAM, hiPM) {
   return rooms;
 }
 
-// hi: a number (one value for the day) or { am, pm }. Rule v1 (points), kept for comparison.
+// hi: a number (one value for the day) or { am, pm }.
 export function planSchool(school, hi) {
   const hiAM = typeof hi === "number" ? hi : hi.am;
   const hiPM = typeof hi === "number" ? hi : hi.pm;
-  return planWithRooms(school, hi, roomsOf(school, hiAM, hiPM));
-}
-
-// ---------- Safety model v2.1 → rooms ----------
-// Model inputs for a school's buildings: learners per room from its sections, fans from the building record,
-// and any correction learned from the school's 08:00 / 12:00 / 14:00 indoor readings.
-export function modelBuildings(school, corrections = {}) {
-  const perRoom = Math.round(school.sections.reduce((t, x) => t + x.learners, 0) / school.sections.length);
-  return school.buildings.map((b) => {
-    const c = corrections[b.id] || { corr: 0, n: 0 };
-    return { id: b.id, name: b.name, features: b.features, students: perRoom, fans: /electric fans/.test(b.note) ? 2 : 0, corr: c.corr, nReadings: c.n };
-  });
-}
-// readings: { buildingId: [{ h, t }] } taken on `day` → { buildingId: { corr, n } }
-export function correctionsFrom(school, day, readings = {}) {
-  const out = {};
-  for (const b of modelBuildings(school)) {
-    const rs = (readings[b.id] || []).filter((r) => Number.isFinite(r.t)).map((r) => ({ day, h: r.h, t: r.t }));
-    if (rs.length) out[b.id] = learnCorrection(b, rs);
-  }
-  return out;
-}
-// day: hourly [{h, t, rh, sw}]. opts: { forecastHI, corrections }.
-export function planSchoolSafety(school, day, opts = {}) {
-  const a = assessDay(day, modelBuildings(school, opts.corrections), opts);
-  const S = a.sessions, byB = (sess) => Object.fromEntries(sess.buildings.map((b) => [b.id, b]));
-  const am = byB(S.morning), pm = byB(S.afternoon), full = byB(S.fullDay);
-  const amOpen = !a.dayVeto && !S.morning.commuteVeto, pmOpen = !a.dayVeto && !S.afternoon.commuteVeto, fullOpen = !a.dayVeto && !S.fullDay.commuteVeto;
-  const rooms = [];
-  for (const b of school.buildings) {
-    const amOK = amOpen && am[b.id].usable, pmOK = pmOpen && pm[b.id].usable, fullOK = fullOpen && full[b.id].usable && amOK && pmOK;
-    for (let k = 0; k < b.rooms; k++) rooms.push({ id: `${b.id}-r${k + 1}`, name: `${b.name} · Room ${k + 1}`, building: b.id, amOK, pmOK, fullOK,
-      band: fullOK ? "green" : amOK || pmOK ? "amber" : "red", peakWBGT: full[b.id].peakWBGT, peakT: full[b.id].peakT });
-  }
-  const hi = { am: a.peakHI, pm: a.peakHI };
-  const plan = planWithRooms(school, hi, rooms);
-  plan.safety = a;
-  return plan;
-}
-export function planDivisionSafety(schools, day, opts = {}) {
-  const plans = schools.map((s) => planSchoolSafety(s, day, { forecastHI: opts.forecastHI, corrections: opts.corrections?.[s.id] }));
-  const tally = { full: 0, morning: 0, afternoon: 0, partial: 0, adm: 0 };
-  let keptLH = 0, normalLH = 0, adm = 0, sections = 0;
-  for (const p of plans) { tally[p.mode]++; keptLH += p.keptLH; normalLH += p.normalLH; adm += p.admCount; sections += p.assignments.length; }
-  return { plans, tally, keptLH, normalLH, admSections: adm, sections };
-}
-
-function planWithRooms(school, hi, rooms) {
-  const green = rooms.filter((r) => r.fullOK ?? (r.amOK && r.pmOK));
+  const rooms = roomsOf(school, hiAM, hiPM);
+  const green = rooms.filter((r) => r.amOK && r.pmOK);
   const amber = rooms.filter((r) => r.amOK !== r.pmOK);
   const red = rooms.filter((r) => !r.amOK && !r.pmOK);
   const pmRooms = rooms.filter((r) => r.pmOK);
@@ -326,7 +275,6 @@ function planWithRooms(school, hi, rooms) {
     assignments = fill(pairsFor(usePM ? pmRooms : amRooms, slotsUsed));
     const adm = assignments.filter((a) => a.slot === "adm").length;
     mode = adm === S.length ? "adm" : adm === 0 ? (usePM ? "afternoon" : "morning") : "partial";
-    if (mode === "adm") slotsUsed = [];
   }
 
   const slotById = Object.fromEntries(Object.values(SLOTS).map((s) => [s.id, s]));
@@ -376,12 +324,11 @@ export function check(school, plan) {
     const w = SLOT_WINDOW[a.slot];
     if ((w === "am" || w === "both") && !room.amOK) problems.push(`${a.section} in a room unsafe in the morning`);
     if ((w === "pm" || w === "both") && !room.pmOK) problems.push(`${a.section} in a room unsafe in the afternoon`);
-    if (w === "both" && room.fullOK === false) problems.push(`${a.section} in a room unsafe for a full day`);
     const key = `${a.room}|${a.slot}`;
     if (seenRoomSlot.has(key)) problems.push(`${room.name} double-booked ${slot.label}`);
     seenRoomSlot.add(key);
     // overlapping slots in one room
-    for (const other of ["early", "late", "morning", "am", "pm", "full", "afternoon", "pm1", "pm2", "hinayAM", "hinayPM"]) {
+    for (const other of ["early", "late", "morning", "am", "pm", "full", "afternoon", "pm1", "pm2"]) {
       if (other === a.slot) continue;
       if (seenRoomSlot.has(`${a.room}|${other}`) && overlaps(a.slot, other)) problems.push(`${room.name} has overlapping slots`);
     }
@@ -392,7 +339,7 @@ export function check(school, plan) {
   }
   return problems;
 }
-export const RANGES = { full: [7.5, 15.5], am: [6, 12], pm: [12, 18], morning: [6, 11], early: [6, 8.5], late: [8.5, 11], afternoon: [12, 17], pm1: [12, 14.5], pm2: [14.5, 17], hinayAM: [6, 10], hinayPM: [14, 18] };
+const RANGES = { full: [7.5, 15.5], am: [6, 12], pm: [12, 18], morning: [6, 11], early: [6, 8.5], late: [8.5, 11], afternoon: [12, 17], pm1: [12, 14.5], pm2: [14.5, 17] };
 function overlaps(a, b) { const [a1, a2] = RANGES[a]; const [b1, b2] = RANGES[b]; return a1 < b2 && b1 < a2; }
 
 // ---------- real April 2024 heat (Open-Meteo archive, apparent temperature as a heat-index proxy) ----------
@@ -401,58 +348,3 @@ export const ILOILO_HEAT_2024 = {
   source: "Open-Meteo historical archive, daily apparent_temperature_max, Iloilo City (10.72 N, 122.56 E)",
   days: { "2024-04-23": 40.4, "2024-04-24": 40.1, "2024-04-25": 40.3, "2024-04-27": 40.5, "2024-04-28": 41.0, "2024-04-29": 37.2, "2024-04-30": 39.4 },
 };
-
-
-// ---------- DM 064 "4H" plan: the regulation sets what is allowed, the safety model says which rooms are safe ----------
-const HAYO_TYPE = { full: "full", morning: "split", afternoon: "split", partial: "splitPartial", adm: "home" };
-const learnersOf = (school) => school.sections.reduce((t, x) => t + x.learners, 0);
-const litFrom = (slotIds) => slotIds.map((id) => ({ id, start: RANGES[id][0], end: RANGES[id][1], label: SLOTS[Object.keys(SLOTS).find((k) => SLOTS[k].id === id)].label }));
-
-// Shortened day (Hinay): every section gets one 4-hour slot, 06:00–10:00 or 14:00–18:00, in a room safe for that slot.
-// strict: grounds for a face-to-face request on a Hinga day need rooms that stay below the caution line, not just the unsafe line.
-function planShortened(school, a, strict = false) {
-  const S = a.sessions, open = (k) => !a.dayVeto && !S[k].commuteVeto;
-  const ok = (k, id) => { const b = S[k].buildings.find((x) => x.id === id); return open(k) && b.usable && (!strict || b.cautionHours.length === 0); };
-  const rooms = [];
-  for (const b of school.buildings) {
-    const amOK = ok("hinayAM", b.id), pmOK = ok("hinayPM", b.id);
-    for (let k = 0; k < b.rooms; k++) rooms.push({ id: `${b.id}-r${k + 1}`, name: `${b.name} · Room ${k + 1}`, building: b.id, amOK, pmOK, fullOK: false, band: amOK && pmOK ? "green" : amOK || pmOK ? "amber" : "red" });
-  }
-  const pairs = [...rooms.filter((r) => r.amOK).map((room) => ({ room, slot: "hinayAM" })), ...rooms.filter((r) => r.pmOK).map((room) => ({ room, slot: "hinayPM" }))];
-  const assignments = school.sections.map((sec, k) => (pairs[k] ? { section: sec.id, room: pairs[k].room.id, slot: pairs[k].slot } : { section: sec.id, room: null, slot: "adm" }));
-  const f2f = assignments.filter((x) => x.slot !== "adm").length;
-  const used = [...new Set(assignments.filter((x) => x.slot !== "adm").map((x) => x.slot))].sort();
-  return { rooms, assignments, f2f, slotsUsed: used, type: f2f === 0 ? "home" : f2f === school.sections.length ? "split" : "splitPartial" };
-}
-
-// day: hourly [{h,t,rh,sw}]. opts: { forecastHI, corrections, water = true, cityAuto = 42, f2fApproved }.
-export function planSchool4H(school, day, opts = {}) {
-  const base = planSchoolSafety(school, day, opts); // safety assessment + Hayo plan
-  const a = base.safety, hi = a.peakHI;
-  const lvl = level4H(hi, { water: opts.water !== false });
-  const city = cityOverlay(hi, opts.cityAuto ?? CITY.autoDefault);
-  const hinay = planShortened(school, a, lvl === "HINGA" || city?.status === "auto");
-  const sections = school.sections.length;
-  let planType, assignments, slotsUsed, rooms = base.rooms, f2fSections = 0, requestSections = 0;
-  const home = () => school.sections.map((sec) => ({ section: sec.id, room: null, slot: "adm" }));
-  if (lvl === "HINTO" || a.dayVeto) { planType = "stop"; assignments = home(); slotsUsed = []; }
-  else if (lvl === "HINGA" || city?.status === "auto") {
-    requestSections = hinay.f2f;
-    if (opts.f2fApproved && hinay.f2f > 0) { planType = hinay.type; assignments = hinay.assignments; slotsUsed = hinay.slotsUsed; rooms = hinay.rooms; f2fSections = hinay.f2f; requestSections = 0; }
-    else { planType = hinay.f2f > 0 ? "request" : "home"; assignments = home(); slotsUsed = []; }
-  } else if (lvl === "HINAY") { planType = hinay.type; assignments = hinay.assignments; slotsUsed = hinay.slotsUsed; rooms = hinay.rooms; f2fSections = hinay.f2f; }
-  else { planType = HAYO_TYPE[base.mode]; assignments = base.assignments; slotsUsed = base.slotsUsed; f2fSections = assignments.filter((x) => x.slot !== "adm").length; }
-  const slotById = Object.fromEntries(Object.values(SLOTS).map((x) => [x.id, x]));
-  const bySection = Object.fromEntries(school.sections.map((x) => [x.id, x]));
-  const normalHours = school.doubleShift ? NORMAL_HOURS.double : NORMAL_HOURS.single;
-  let keptLH = 0, normalLH = 0;
-  for (const x of assignments) { const l = bySection[x.section].learners; normalLH += l * normalHours; if (x.slot !== "adm") keptLH += l * slotById[x.slot].hours; }
-  return { ...base, level: lvl, city, planType, mode: planType, assignments, rooms, slotsUsed, litSlots: litFrom(slotsUsed), f2fSections, requestSections,
-    sections, learners: learnersOf(school), keptLH, normalLH, admCount: assignments.filter((x) => x.slot === "adm").length, hinay };
-}
-export function planDivision4H(schools, day, opts = {}) {
-  const plans = schools.map((s) => planSchool4H(s, day, { ...opts, corrections: opts.corrections?.[s.id], water: opts.water?.[s.id] !== false, f2fApproved: !!opts.f2fApproved?.[s.id] }));
-  const tally = { full: 0, split: 0, splitPartial: 0, home: 0, request: 0, stop: 0 };
-  for (const p of plans) tally[p.planType]++;
-  return { plans, tally, level: plans[0]?.level, peakHI: plans[0]?.safety.peakHI };
-}

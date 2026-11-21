@@ -1,4 +1,4 @@
-// node --test "PRESKO 2.0/model/plan.test.mjs"
+// node --test "presko_v2.1/model/plan.test.mjs"
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeDivision, planDivisionSafety, planSchoolSafety, correctionsFrom, check } from "../engine.js";
