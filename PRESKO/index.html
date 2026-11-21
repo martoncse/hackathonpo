@@ -259,7 +259,7 @@ function renderReplay() {
   const a = planDivision(state.schools, d30);
   const pct = Math.round((100 * a.keptLH) / a.normalLH);
   el.hidden = false;
-  el.innerHTML = `<b>29–30 April 2024:</b> DepEd suspended in-person classes in every public school. Iloilo's heat those days (proxy): ${d29}°C and ${d30}°C. At ${d30}°C Presko would have kept <b>${a.tally.full}</b> schools on a full day and <b>${a.tally.morning + a.tally.partial}</b> on a morning shift, or <b>${pct}%</b> of in-person learner-hours instead of 0%. <span class="muted">Computed from illustrative building data.</span>`;
+  el.innerHTML = `<b>29–30 April 2024:</b> DepEd suspended in-person classes in every public school. Iloilo's heat those days (proxy): ${d29}°C and ${d30}°C, below the ~40°C at which DO 037 lets a school head switch; the closure was national. At ${d30}°C Presko would have kept <b>${a.tally.full}</b> schools on a full day and <b>${a.tally.morning + a.tally.partial}</b> on a morning shift, or <b>${pct}%</b> of in-person learner-hours instead of 0%. <span class="muted">Computed from illustrative building data.</span>`;
 }
 
 // ---------- list ----------
