@@ -52,8 +52,8 @@ function render() {
 
     const isExcluded = exclude && st === "excluded";
     if (isExcluded) excluded++;
-    else if (st === "excluded" || st === "amber" || st === "unchecked") blocking++;
-    if (!isExcluded && st === "green") okKg += kgOf(f);
+    else if (st === "blocked") blocking++;
+    if (!isExcluded && r?.eligible) okKg += kgOf(f);
 
     const reasons = r ? r.reasons.map((x) => `<span class="reason">${x}</span>`).join("") : "";
     rows.push(`<tr class="${isExcluded ? "excluded" : ""}" data-id="${f.id}">
