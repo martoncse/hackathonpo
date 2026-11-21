@@ -144,7 +144,7 @@ export async function signPassport(payload, privateJwk) {
 // files: optional [{ name, bytes: Uint8Array }]. Matched to the passport's list by file name,
 // or by hash when a buyer renamed a download. Returns every check, never throws on bad input.
 export async function verifyPassport(passport, files = []) {
-  const out = { format: false, signature: false, fingerprintMatches: false, decisionChain: null, files: [], errors: [] };
+  const out = { valid: false, format: false, signature: false, fingerprintMatches: false, decisionChain: null, files: [], errors: [] };
   try {
     const p = passport?.payload;
     if (!p || p.format !== PASSPORT_FORMAT) {
