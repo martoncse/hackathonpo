@@ -1,0 +1,229 @@
+<title>Presko Data Flow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one planning sheet. A daily timeline on top, then three columns (inputs → engine → outputs) joined by arrows; stacks on phones. */
+:root {
+  --bg: #f3f6f4; --surface: #ffffff; --sunk: #e9eeeb; --ink: #13201c; --muted: #5a6a65; --line: #d3ddd8;
+  --accent: #0e6c64; --school: #2f6fb0; --gov: #8a5a12; --rule: #5b2a86; --new: #b3261e; --real: #2e8b57;
+  --hayo: #2e8b57; --hinay: #c98a10; --hinga: #b3261e; --hinto: #5b2a86;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1513; --surface: #16201e; --sunk: #1d2926; --ink: #e5eeeb; --muted: #9aaca6; --line: #2b3a36;
+  --accent: #4fb3a7; --school: #6fa8e8; --gov: #e0b26a; --rule: #b48be0; --new: #ef6a60; --real: #4fbf86;
+  --hayo: #4fbf86; --hinay: #efb547; --hinga: #ef6a60; --hinto: #b48be0; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1513; --surface: #16201e; --sunk: #1d2926; --ink: #e5eeeb; --muted: #9aaca6; --line: #2b3a36;
+  --accent: #4fb3a7; --school: #6fa8e8; --gov: #e0b26a; --rule: #b48be0; --new: #ef6a60; --real: #4fbf86;
+  --hayo: #4fbf86; --hinay: #efb547; --hinga: #ef6a60; --hinto: #b48be0; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body) }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 24px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px }
+h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.15; text-wrap: balance }
+h1 { font-size: clamp(26px, 3.6vw, 36px); font-weight: 800 }
+h2 { font-size: 18px; font-weight: 600 }
+h3 { font-size: 14px; font-weight: 600; font-family: var(--body) }
+p { margin: 0 }
+.lede { color: var(--muted); max-width: 70ch; margin-top: 6px }
+.eyebrow { font: 600 11px/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+code, .mono { font-family: var(--mono); font-size: 12px }
+code { color: var(--muted) }
+
+/* legend */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--muted); align-items: center }
+.tag { display: inline-flex; align-items: center; font: 600 10.5px/1 var(--body); letter-spacing: .03em; padding: 4px 7px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap }
+.t-real { color: var(--real) } .t-ill { color: var(--muted) } .t-new { color: var(--new) } .t-news { color: var(--gov) }
+
+/* timeline */
+.timeline { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden }
+.step { padding: 14px 14px 16px; border-right: 1px solid var(--line); position: relative; display: grid; gap: 4px; align-content: start; min-width: 0 }
+.step:last-child { border-right: 0 }
+.step .time { font: 600 20px/1 var(--mono); font-variant-numeric: tabular-nums }
+.step .who { font: 600 11px/1.2 var(--body); letter-spacing: .06em; text-transform: uppercase }
+.step p { font-size: 13px; color: var(--muted) }
+.who.school { color: var(--school) } .who.gov { color: var(--gov) } .who.sdo { color: var(--rule) } .who.presko { color: var(--accent) }
+.step.morning { background: var(--sunk) }
+
+/* flow */
+.flow { display: grid; grid-template-columns: minmax(0, 1.15fr) 28px minmax(0, 1fr) 28px minmax(0, 1fr); align-items: stretch }
+.col { display: grid; gap: 12px; align-content: start; min-width: 0 }
+.col > .eyebrow { padding-left: 2px }
+.arrow { display: flex; align-items: center; justify-content: center; color: var(--muted) }
+.arrow svg { width: 22px; height: 22px }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; min-width: 0 }
+.box > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap }
+.box.school { box-shadow: inset 4px 0 0 var(--school) }
+.box.gov { box-shadow: inset 4px 0 0 var(--gov) }
+.box.rule { box-shadow: inset 4px 0 0 var(--rule) }
+.box.out { box-shadow: inset 4px 0 0 var(--accent) }
+.vars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px }
+.vars li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: start; padding-top: 8px; border-top: 1px dashed var(--line) }
+.vars li:first-child { border-top: 0; padding-top: 0 }
+.vars b { font-weight: 600 }
+.vars .meta { grid-column: 1 / -1; font-size: 12px; color: var(--muted) }
+.when { font: 500 11px var(--mono); color: var(--muted) }
+
+/* engine steps */
+.engine { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 0 }
+.estep { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 10px 0; border-top: 1px solid var(--line) }
+.estep:first-of-type { border-top: 0; padding-top: 4px }
+.estep .n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 600 12px var(--mono); background: var(--sunk); color: var(--ink) }
+.estep p { font-size: 13px; color: var(--muted) }
+.estep .formula { font: 12px/1.5 var(--mono); color: var(--ink); background: var(--sunk); border-radius: 6px; padding: 6px 8px; margin-top: 6px; overflow-x: auto; white-space: pre }
+.levels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 6px }
+.levels span { font: 600 11px/1.25 var(--body); color: #fff; border-radius: 6px; padding: 5px 6px; text-align: center }
+.levels span small { display: block; font-weight: 500; opacity: .9 }
+.l-hayo { background: var(--hayo) } .l-hinay { background: var(--hinay) } .l-hinga { background: var(--hinga) } .l-hinto { background: var(--hinto) }
+
+/* gaps */
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 6px; align-content: start }
+.note p { font-size: 13px; color: var(--muted) }
+
+@media (max-width: 1000px) {
+  .flow { grid-template-columns: minmax(0, 1fr) }
+  .arrow { height: 32px } .arrow svg { transform: rotate(90deg) }
+  .timeline { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+  .step:nth-child(3) { border-right: 0 } .step:nth-child(-n+3) { border-bottom: 1px solid var(--line) }
+  .notes { grid-template-columns: minmax(0, 1fr) }
+}
+@media (max-width: 520px) {
+  .timeline { grid-template-columns: minmax(0, 1fr) }
+  .step { border-right: 0; border-bottom: 1px solid var(--line) } .step:last-child { border-bottom: 0 }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Presko · SDO Iloilo City · planning sheet</div>
+    <h1>Inputs, engine and outputs</h1>
+    <p class="lede">What each school enters, what comes from government and other sources, which rule settings we fixed, and how they turn into tomorrow's 4H level, plan and parent message. Code names refer to <code>PRESKO/engine.js</code>.</p>
+  </header>
+
+  <div class="legend" aria-label="Legend">
+    <span class="tag t-real">Real</span> sourced data
+    <span class="tag t-news">News-reported</span> from coverage, primary text not read
+    <span class="tag t-ill">Illustrative</span> placeholder until the division fills it in
+    <span class="tag t-new">New</span> input added today
+  </div>
+
+  <section aria-label="Daily timeline">
+    <div class="timeline">
+      <div class="step"><span class="time">Day before</span><span class="who gov">PAGASA → coordinator</span><p>The DRRM coordinator types PAGASA's latest heat-index forecast for tomorrow. The 5 p.m. advisory is the official trigger, so Presko is re-run when it lands.</p></div>
+      <div class="step"><span class="time">16:00</span><span class="who presko">Presko</span><p>On the latest forecast: a 4H level for every school, a plan, rooms to check, a draft request, a draft message.</p></div>
+      <div class="step"><span class="time">16:30</span><span class="who school">School head</span><p>Confirms or changes the level and records the decision, with a reason if it differs.</p></div>
+      <div class="step"><span class="time">16:45</span><span class="who sdo">SDO</span><p>Approves or returns decisions. Approval is required when a decision is less protective than the rule.</p></div>
+      <div class="step"><span class="time">by 17:00</span><span class="who school">School head</span><p>Official message to parents: school page, class group chats, radio. Log goes to the SDO as CSV.</p></div>
+      <div class="step morning"><span class="time">08:00</span><span class="who school">School, next day</span><p>Indoor reading per building. Hotter buildings are emptied; if all read hotter, the school steps up a level.</p></div>
+    </div>
+    <p class="mono" style="color:var(--muted);margin-top:6px">Practice reported in Mandaue: heads set the next day's level between 16:00 and 17:00. Iloilo City's EO 24 keys on PAGASA's 5 p.m. advisory, so a changed forecast marks earlier decisions "re-confirm".</p>
+  </section>
+
+  <section class="flow" aria-label="Data flow">
+    <div class="col">
+      <div class="eyebrow">Inputs</div>
+
+      <div class="box school">
+        <header><h2>School enters</h2><span class="when">who: school head / property custodian</span></header>
+        <ul class="vars">
+          <li><b>Buildings: name, classrooms</b><span class="tag t-ill">Illustrative</span><span class="meta">Once, at onboarding · <code>buildings[].rooms</code></span></li>
+          <li><b>Building note (free text)</b><span class="tag t-ill">Illustrative</span><span class="meta">"GI roof, no ceiling, faces west…" · updated after repairs · <code>buildings[].note</code></span></li>
+          <li><b>Sections and learners</b><span class="tag t-ill">Illustrative</span><span class="meta">Each school year; could come from DepEd's school records (unverified) · <code>sections[]</code></span></li>
+          <li><b>Usual timetable</b><span class="tag t-new">New</span><span class="meta">Single or double shift and times. Iloilo City NHS's 13:10–20:20 shift is reported · <code>timetable.shifts</code></span></li>
+          <li><b>Water supply tomorrow</b><span class="tag t-real">Real input</span><span class="meta">Daily · no water forces at least Hinga · <code>water</code></span></li>
+          <li><b>Head's decision</b><span class="tag t-new">New</span><span class="meta">Daily · level, name, reason if it differs, time · <code>decision</code> via <code>recordDecision()</code></span></li>
+          <li><b>8:00 indoor reading per building</b><span class="tag t-new">New</span><span class="meta">Morning of · calibrated thermometer/hygrometer · <code>readings[buildingId]</code></span></li>
+        </ul>
+      </div>
+
+      <div class="box gov">
+        <header><h2>Government and other sources</h2><span class="when">who: DRRM coordinator / Presko</span></header>
+        <ul class="vars">
+          <li><b>Heat-index forecast for tomorrow</b><span class="tag t-real">Real</span><span class="meta">PAGASA 5 p.m. advisory, typed in · the main input · <code>hi</code></span></li>
+          <li><b>4H levels and what each allows</b><span class="tag t-news">News-reported</span><span class="meta">DepEd DM 064 s. 2026 · bands = PAGASA categories · <code>FOURH</code></span></li>
+          <li><b>Who decides</b><span class="tag t-news">News-reported</span><span class="meta">Head, with the SDO, informs the SDS · DM 064, DO 22 s. 2024</span></li>
+          <li><b>City threshold</b><span class="tag t-news">News-reported</span><span class="meta">Iloilo City EO 24 s. 2025: 40°C optional, automatic at 40/41/42 (reports differ) · <code>CITY</code></span></li>
+          <li><b>National tiers</b><span class="tag t-news">News-reported</span><span class="meta">EO 130 s. 2026 · heat trigger unconfirmed, guidelines pending · <code>EO130</code></span></li>
+          <li><b>School names and locations</b><span class="tag t-real">Real</span><span class="meta">OpenStreetMap (HOT/HDX), one private school removed · <code>SCHOOLS_OSM</code></span></li>
+          <li><b>Division totals</b><span class="tag t-real">Real</span><span class="meta">66 public schools, 75,890 learners, 2,242 classrooms · DepEd via TeacherPH · display only</span></li>
+          <li><b>Replay heat</b><span class="tag t-real">Real</span><span class="meta">Open-Meteo hourly temperature + humidity; PAGASA forecasts from news · <code>ILOILO_HEAT</code></span></li>
+        </ul>
+      </div>
+
+      <div class="box rule">
+        <header><h2>Rule settings we fixed</h2><span class="when">visible on the page</span></header>
+        <ul class="vars">
+          <li><b>Feature points</b><span class="mono">−3 … +2</span><span class="meta">No-ceiling metal roof +2, makeshift +2, upper floor +1, poor airflow +1, west +1; ceiling −1, shade −1, cross-ventilation −1, aircon −3 · <code>FEATURES</code></span></li>
+          <li><b>Building flag</b><span class="mono">≤−2 · ≤2 · 3+</span><span class="meta">Cooler / typical / hot · <code>BAND_RULE</code></span></li>
+          <li><b>Hinay hours</b><span class="mono">06–10 · 14–18</span><span class="meta">DM 064's example shortened day · <code>HINAY_SLOTS</code></span></li>
+          <li><b>F2F request threshold</b><span class="mono">≥ ½ sections</span><span class="meta">Cooler rooms × 2 slots must hold half the sections</span></li>
+          <li><b>Calibration</b><span class="mono">+3.7 ±2°C</span><span class="meta">Fitted on 4 PAGASA days, April 2024 · replay only · <code>CALIBRATION</code></span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
+
+    <div class="col">
+      <div class="eyebrow">Engine · intermediate variables</div>
+      <div class="engine">
+        <div class="estep"><span class="n">1</span><div><h3>Note → features</h3><p>Claude reads each note into 9 true/false features with quoted evidence; a keyword fallback runs without AI. Never a temperature.</p></div></div>
+        <div class="estep"><span class="n">2</span><div><h3>Features → building flag</h3><p>Points summed per building, then cooler / typical / hot. Each room inherits its building's flag.</p><div class="formula">points = Σ FEATURES[f] · flag = BAND_RULE(points)</div></div></div>
+        <div class="estep"><span class="n">3</span><div><h3>Forecast → 4H level</h3><p>From PAGASA's forecast, raised to Hinga if there is no water.</p>
+          <div class="levels"><span class="l-hayo">HAYO<small>&lt;27°C</small></span><span class="l-hinay">HINAY<small>27–32</small></span><span class="l-hinga">HINGA<small>33–41</small></span><span class="l-hinto">HINTO<small>≥42</small></span></div></div></div>
+        <div class="estep"><span class="n">4</span><div><h3>Readings → building and school level</h3><p>Each building with an 8:00 reading takes the worse of forecast and reading. The school takes its coolest building. Buildings hotter than that are emptied.</p><div class="formula">level_b = worse(forecast, reading_b)
+recommended = min over buildings(level_b)</div></div></div>
+        <div class="estep"><span class="n">5</span><div><h3>Decision → effective level</h3><p>The head's recorded level replaces the recommendation for that forecast. A forecast change makes it stale.</p><div class="formula">effective = decided ?? recommended</div></div></div>
+        <div class="estep"><span class="n">6</span><div><h3>Level + rooms + timetable → plan</h3><p>Hayo: usual timetable, all open rooms. Hinay: non-hot rooms, 06–10 then 14–18. Hinga: home-based, plus a draft F2F request if cooler rooms qualify. Hinto: nothing.</p><div class="formula">section → (room, slot) | home | none</div></div></div>
+        <div class="estep"><span class="n">7</span><div><h3>Independent check</h3><p>Re-derives the level from the inputs and tests every assignment: nobody 10:00–14:00 on Hinay, no hot rooms on Hinay, no F2F on Hinga without approval, nothing on Hinto, no emptied building used, no double-booking, every section once.</p></div></div>
+        <div class="estep"><span class="n">8</span><div><h3>Decision status</h3><p>none → recorded → (if less protective) awaiting SDO → official, or returned. Only official messages are marked ready to send.</p></div></div>
+      </div>
+      <p class="mono" style="color:var(--muted)">Replay only: hourly T, RH → NWS heat index → max 11:00–16:00 → +3.7°C</p>
+    </div>
+
+    <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
+
+    <div class="col">
+      <div class="eyebrow">Outputs</div>
+      <div class="box out">
+        <header><h2>To the school head</h2></header>
+        <ul class="vars">
+          <li><b>4H level and plan type</b><span class="meta">Regular · shortened · shortened + home · home-based · home-based with grounds for F2F · no classes</span></li>
+          <li><b>One-line reason</b><span class="meta">Includes "8:00 readings moved the school…" and "head chose X (rule: Y)" when they apply</span></li>
+          <li><b>Rooms to check first at 8:00</b><span class="meta">Hot rooms with no reading yet</span></li>
+          <li><b>Flags</b><span class="meta">Afternoon shift in peak heat · temporary double shift · emptied buildings</span></li>
+          <li><b>Section plan or draft F2F request</b><span class="meta">Room and time per section, for the SDO on Hinga days</span></li>
+          <li><b>Rule conflicts</b><span class="meta">Must be 0</span></li>
+        </ul>
+      </div>
+      <div class="box out">
+        <header><h2>To parents</h2></header>
+        <ul class="vars">
+          <li><b>Message in English, Filipino, Hiligaynon</b><span class="meta">Fixed templates per plan, naming the head, SDO Iloilo City and PAGASA's figure; "draft" until the decision is official. Hiligaynon needs a native-speaker check.</span></li>
+        </ul>
+      </div>
+      <div class="box out">
+        <header><h2>To the division</h2></header>
+        <ul class="vars">
+          <li><b>Schools per plan type, map</b><span class="meta">Colour per school</span></li>
+          <li><b>Hayo/Hinay: learner-hours kept, hot rooms to check</b></li>
+          <li><b>Hinga: schools and sections with grounds for F2F</b></li>
+          <li><b>Decisions: official · awaiting SDO · returned · not yet · overrides</b><span class="meta">Plus how many schools sent 8:00 readings</span></li>
+          <li><b>Decision log (CSV)</b><span class="meta">Forecast, readings, recommended, decided, reason, times, SDO status · for the situation report</span></li>
+          <li><b>City banner, replay cards</b></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes" aria-label="Open points">
+    <div class="note"><span class="eyebrow">Assumption to confirm</span><h3>Reading vs forecast</h3><p>We take "whichever is worse". Whether DM 064 binds on the indoor reading or the forecast is unconfirmed until someone reads the memo text with SDO Iloilo City.</p></div>
+    <div class="note"><span class="eyebrow">Not built yet</span><h3>Storage and sign-in</h3><p>Readings and decisions live in the browser tab. A pilot needs a shared store, a login per school head and SDO, and a timestamped audit trail.</p></div>
+    <div class="note"><span class="eyebrow">Data to replace</span><h3>Illustrative inputs</h3><p>Building notes, rooms, sections and timetables come from the week-1 onboarding form. Calibration improves with PAGASA station records (TAMSS request).</p></div>
+  </section>
+</div>
