@@ -117,8 +117,11 @@ td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: 
       <p>The PAGASA forecast heat index for the day sets the tier from DepEd Memorandum 064, s. 2026. The tier is what principals and the division already talk in. The model also keeps the hour-by-hour curve, because heat inside a classroom follows the hours, not the daily peak.</p>
       <div class="tiers" aria-label="DepEd 4H tiers"><div class="t-hayo">Hayo<small>&lt; 27</small></div><div class="t-hinay">Hinay<small>27–32</small></div><div class="t-hinga">Hinga<small>33–41</small></div><div class="t-hinto">Hinto<small>≥ 42</small></div></div>
       <table><tbody>
-        <tr><td>Hinay</td><td>Principal may shorten on-site hours or change the schedule</td></tr>
-        <tr><td>Hinto</td><td>Principal may suspend on-site classes. <b>From here the model must justify keeping each school open.</b></td></tr></tbody></table></div>
+        <tr><td>Hayo</td><td>Regular face-to-face classes, with precautions</td></tr>
+        <tr><td>Hinay</td><td>Shortened day only: 06:00–10:00 and 14:00–18:00, hybrid or home-based</td></tr>
+        <tr><td>Hinga</td><td>No face-to-face (also when the school has no water); light home-based work. <b>The model can give grounds to ask the SDO for classes in rooms that stay cool.</b></td></tr>
+        <tr><td>Hinto</td><td>All academic activity suspended, including home-based</td></tr></tbody></table>
+      <p class="foot">As reported by astig.ph, DepEd Tambayan and PNA (the memo PDF returned 403). The principal chooses with the SDO and informs the SDS; DO 22 s. 2024 replaced DO 37 s. 2022.</p></div>
     <div class="ex"><span class="tag">Worked example</span>
       <p>PAGASA forecast: <b>43 °C → <span class="chip t-hinto">Hinto</span></b></p>
       <div class="tbl"><table><thead><tr><th>Hour</th><th class="n">Outdoor °C</th><th class="n">Humidity</th><th class="n">Heat index</th></tr></thead><tbody>
@@ -239,7 +242,7 @@ indoor                      40.3 °C   → WBGT 32.8</div>
     <div class="tbl"><table><thead><tr><th></th><th class="n">Full day</th><th class="n">One session</th><th class="n">Closed</th></tr></thead><tbody>
       <tr><td>Model, no readings yet (+1 °C margin)</td><td class="n">29</td><td class="n">9</td><td class="n">32</td></tr>
       <tr><td>Model, readings confirm its estimates</td><td class="n">29</td><td class="n">23</td><td class="n">18</td></tr></tbody></table></div>
-    <p class="foot">Of the 70 schools in Presko's demo division (real locations, illustrative buildings). In reality 65 Iloilo City schools closed that day. The model would have kept 38–52 of its 70 open in some form, each with a stated reason for the ones it closed.</p>
+    <p class="foot">This is the safety model on its own (70 demo schools, real locations, illustrative buildings). <b>Under DM 064 the day is Hinto, so the rule closes every school, as 65 Iloilo City schools did.</b> In the app the model works under the rule: it chooses rooms on Hayo and Hinay days, and on Hinga days it finds schools whose rooms stay cool enough to ask the Division for a short face-to-face day (25 of 70 at a 41 °C forecast).</p>
   </section>
 
   <section style="display:grid;gap:12px">

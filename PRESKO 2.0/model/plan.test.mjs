@@ -60,3 +60,40 @@ test("closures carry a documented reason", () => {
 test("replay day matches PAGASA's 43 °C peak", () => {
   assert.ok(Math.abs(peakHeatIndex(REPLAY_NOV3.hours) - 43) < 0.1);
 });
+
+// ---------- DM 064 "4H" rules on top of the safety model ----------
+import { planSchool4H, planDivision4H } from "../engine.js";
+import { level } from "../rules.js";
+
+test("4H level bands and the no-water rule", () => {
+  assert.equal(level(26.9), "HAYO"); assert.equal(level(31), "HINAY"); assert.equal(level(40), "HINGA"); assert.equal(level(42), "HINTO");
+  assert.equal(level(30, { water: false }), "HINGA"); assert.equal(level(45, { water: false }), "HINTO");
+});
+
+test("Hinto: no classes at all, not even home-based", () => {
+  const d = planDivision4H(schools, REPLAY_NOV3.hours, { forecastHI: 43 });
+  assert.equal(d.tally.stop, schools.length);
+});
+
+test("Hinay: never a regular day; classes only 06:00–10:00 or 14:00–18:00", () => {
+  const day = shiftToPeak(cool, 31), d = planDivision4H(schools, day, { forecastHI: 31 });
+  assert.equal(d.tally.full, 0);
+  d.plans.forEach((p, i) => { p.assignments.filter((a) => a.slot !== "adm").forEach((a) => assert.ok(["hinayAM", "hinayPM"].includes(a.slot))); assert.deepEqual(check(schools[i], p), []); });
+});
+
+test("Hinga: home-based; cool rooms give grounds for a request, approval turns it into a short day", () => {
+  const day = shiftToPeak(hot, 41);
+  const d = planDivision4H(schools, day, { forecastHI: 41 });
+  assert.equal(d.tally.full + d.tally.split + d.tally.splitPartial, 0);
+  const i = d.plans.findIndex((p) => p.planType === "request");
+  assert.ok(i >= 0 && d.plans[i].requestSections > 0);
+  const approved = planSchool4H(schools[i], day, { forecastHI: 41, f2fApproved: true });
+  assert.ok(["split", "splitPartial"].includes(approved.planType));
+  assert.deepEqual(check(schools[i], approved), []);
+});
+
+test("No water at school forces Hinga on a Hinay day", () => {
+  const p = planSchool4H(schools[0], shiftToPeak(cool, 31), { forecastHI: 31, water: false });
+  assert.equal(p.level, "HINGA");
+  assert.ok(["home", "request"].includes(p.planType));
+});

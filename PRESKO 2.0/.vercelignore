@@ -1,0 +1,7 @@
+# Only the static app is deployed. Research data, backtests and tests stay in the repo.
+model/data
+model/backtest.mjs
+model/results.json
+model/plan.test.mjs
+.env*
+.vercel

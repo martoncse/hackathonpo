@@ -9,6 +9,25 @@
 
 Run it with `node "PRESKO 2.0/model/backtest.mjs"`.
 
+## How the model sits under the rules (21 Nov 2026)
+
+The regulation decides what is allowed; the model decides which rooms are safe. Rules live in `../rules.js`, sourced from reporting on DM 064 s. 2026, DO 22 s. 2024, EO 130 s. 2026 and Iloilo City EO 24 s. 2025. The primary texts returned 403.
+
+| DM 064 level | What the rule allows | What Presko does with the model |
+|---|---|---|
+| Hayo < 27 °C | Regular face-to-face classes, with precautions | Full day if rooms are safe all day; otherwise a short day or home-based |
+| Hinay 27–32 °C | Shortened day (06:00–10:00 / 14:00–18:00), hybrid or home-based | Fits each section into a safe room for one 4-hour slot; nobody at school at midday |
+| Hinga 33–41 °C, or no water | No face-to-face; light home-based work | Home-based. If rooms stay below the **caution** line (WBGT 28) in a short-day slot, the school gets "grounds for F2F": a request the SDO can approve |
+| Hinto ≥ 42 °C | All academic activity suspended, including home-based | No classes and no homework |
+
+Also enforced:
+- The principal chooses the level with the SDO and informs the SDS.
+- Any change from the level's default plan needs SDO approval ("the school head cannot just decide to send students home").
+- The Iloilo City EO 24 threshold can be set to 40, 41 or 42 °C.
+- DO 37 s. 2022 is repealed (by DO 22 s. 2024) and is no longer cited.
+
+**Consequence for the 3 Nov 2026 replay:** at 43 °C (Hinto), the rule closes every school, and Presko agrees. The figures further down ("would keep 38–52 open") describe the model alone, before these rules were applied.
+
 ## What changed from v2 (and why)
 
 | New evidence | Change in the model |

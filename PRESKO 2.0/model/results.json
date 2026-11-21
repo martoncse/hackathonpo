@@ -1817,6 +1817,135 @@
       "Building C: estimated indoor WBGT 33.1 at 13:00 (limit 31)"
      ],
      "reason": "no classroom safe"
+    },
+    "hinayAM": {
+     "commuteVeto": false,
+     "worstCommute": 45.607686175053686,
+     "buildings": [
+      {
+       "id": "0-0",
+       "name": "Building A",
+       "usable": false,
+       "unsafeHours": [
+        9
+       ],
+       "cautionHours": [
+        8
+       ],
+       "peakWBGT": 31.889980236311025,
+       "peakT": 38.27473311740039,
+       "peakAt": 9,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-1",
+       "name": "Building B",
+       "usable": false,
+       "unsafeHours": [
+        8,
+        9
+       ],
+       "cautionHours": [
+        7
+       ],
+       "peakWBGT": 32.43652953613827,
+       "peakT": 39.36248311740039,
+       "peakAt": 9,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-2",
+       "name": "Building C",
+       "usable": false,
+       "unsafeHours": [
+        9
+       ],
+       "cautionHours": [
+        8
+       ],
+       "peakWBGT": 31.586953082348593,
+       "peakT": 37.674733117400386,
+       "peakAt": 9,
+       "margin": 1,
+       "learned": false
+      }
+     ],
+     "safe": false,
+     "evidence": [
+      "Building A: estimated indoor WBGT 31.9 at 09:00 (limit 31)",
+      "Building B: estimated indoor WBGT 32.4 at 09:00 (limit 31)",
+      "Building C: estimated indoor WBGT 31.6 at 09:00 (limit 31)"
+     ],
+     "reason": "no classroom safe"
+    },
+    "hinayPM": {
+     "commuteVeto": false,
+     "worstCommute": 47.04564629240329,
+     "buildings": [
+      {
+       "id": "0-0",
+       "name": "Building A",
+       "usable": false,
+       "unsafeHours": [
+        14,
+        15,
+        16
+       ],
+       "cautionHours": [
+        17
+       ],
+       "peakWBGT": 33.48013750366983,
+       "peakT": 42.66129123022368,
+       "peakAt": 14,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-1",
+       "name": "Building B",
+       "usable": false,
+       "unsafeHours": [
+        14,
+        15,
+        16
+       ],
+       "cautionHours": [
+        17
+       ],
+       "peakWBGT": 33.28985986847421,
+       "peakT": 42.27316623022368,
+       "peakAt": 14,
+       "margin": 1,
+       "learned": false
+      },
+      {
+       "id": "0-2",
+       "name": "Building C",
+       "usable": false,
+       "unsafeHours": [
+        14,
+        15
+       ],
+       "cautionHours": [
+        16,
+        17
+       ],
+       "peakWBGT": 32.47756665280002,
+       "peakT": 40.63079123022368,
+       "peakAt": 14,
+       "margin": 1,
+       "learned": false
+      }
+     ],
+     "safe": false,
+     "evidence": [
+      "Building A: estimated indoor WBGT 33.5 at 14:00 (limit 31)",
+      "Building B: estimated indoor WBGT 33.3 at 14:00 (limit 31)",
+      "Building C: estimated indoor WBGT 32.5 at 14:00 (limit 31)"
+     ],
+     "reason": "no classroom safe"
     }
    },
    "decision": "closed"

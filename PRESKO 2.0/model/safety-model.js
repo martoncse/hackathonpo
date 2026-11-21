@@ -132,6 +132,9 @@ export const SESSIONS = {
   morning:   { hours: [6, 7, 8, 9, 10],      commute: [6, 7, 11] },   // arrive 06:00–07:00, leave ~11:00
   afternoon: { hours: [12, 13, 14, 15, 16],  commute: [11, 12, 17] }, // arrive ~12:00, leave ~17:00
   fullDay:   { hours: [7, 8, 9, 10, 11, 12, 13, 14, 15], commute: [7, 15] },
+  // DM 064 Hinay shortened day: 06:00–10:00 and 14:00–18:00 (no one at school over midday).
+  hinayAM:   { hours: [6, 7, 8, 9],          commute: [6, 10] },
+  hinayPM:   { hours: [14, 15, 16, 17],      commute: [13, 18] },
 };
 
 const commuteHI = (x) => heatIndex(x.t, x.rh) + LIMITS.hiBias + 8 * LIMITS.commuteSunExposure * Math.max(0, Math.min(1, (x.sw ?? 0) / 800));
