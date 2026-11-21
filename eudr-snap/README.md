@@ -67,6 +67,16 @@ Without `EUDR_PROFILE` the app is the Colombian demo above, unchanged. With it, 
 
 `test/e2e-server.test.js` runs this whole path over HTTP against the real server for both profiles, using a temporary data folder and a recorded Whisp result. No live calls are made.
 
+## From the cooperative to the EU buyer (the handoff)
+
+The importer files the due diligence statement and carries the liability; the cooperative holds the evidence. The app models that handoff:
+
+- **Cooperative, step 3 · Send a lot to an EU buyer:** name the importer. The lot takes the cleared plots' purchases from the checked season that aren't in another lot yet. **Each receipt can go into one EU lot only**, so the same volume can't be sold twice under the same evidence. Plots on one producer card travel together. The pack is built for that buyer (named in the DDS data and the report as "named by the supplier; operator confirms"), frozen and hashed, and stored in `data/lots[-<profile>].json`.
+- **Importer, `/buyer.html#<private token>`:** sees supplier, volume, plots and the checks; the browser recomputes every file's SHA-256 against the recorded one; downloads the files. After filing in the EU Information System, the importer enters the reference and verification numbers and gets a **downstream handoff note**: since Reg. 2025/2650, processors and traders after the first placer keep that reference number instead of filing their own.
+- **Cooperative, step 4 · Lots and buyers:** the register of which receipts went to which buyer, and whether each buyer has filed.
+
+The link is the only access control: anyone with it can open that lot. **Reset demo** clears purchases, decisions and lots. `test/e2e-lots.test.js` runs this whole path.
+
 ## Stage fallback
 
 Every successful live check of the demo batch overwrites `whisp-cache.json`. If the live call fails (no internet, Whisp slow, bad key), the page shows the saved result. The badge says **"Saved Whisp result from …"**, so it's never passed off as live.

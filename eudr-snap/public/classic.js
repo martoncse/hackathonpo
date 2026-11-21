@@ -193,13 +193,15 @@ $("exclude").onchange = render;
 daysLeft();
 refreshKeyState();
 loadFarms().then(async () => {
-  // Show the saved Whisp result straight away if there is one (no live call on page load).
+  // Show the saved Whisp result straight away so the page isn't empty while Whisp works...
   const cache = await fetch("/api/risk/saved").then((r) => (r.ok ? r.json() : null)).catch(() => null);
   if (cache?.results?.length && !results.size) {
     results = new Map(cache.results.map((r) => [r.id, r]));
     setBadge(cache);
     render();
   }
+  // ...then call Whisp live on every page load. The server falls back to the saved result if the call fails.
+  await check();
 });
 
 // ---------- 1. record a purchase ----------
@@ -297,9 +299,10 @@ $("record").onclick = async () => {
 };
 
 $("reset-deliveries").onclick = async () => {
-  if (!confirm("Reset the demo: remove every purchase recorded in the app AND every review decision? The sample data stays.")) return;
+  if (!confirm("Reset the demo: remove every purchase recorded in the app, every review decision and every lot sent to a buyer? The sample data stays.")) return;
   await postJson("/api/deliveries", undefined, "DELETE");
-  msg("d-msg", "Demo reset: recorded purchases and review decisions removed.");
+  msg("d-msg", "Demo reset: recorded purchases, review decisions and lots removed.");
+  refreshRegister();
   await refreshResults();
 };
 
@@ -325,18 +328,27 @@ document.addEventListener("click", async (e) => {
   await refreshResults();
 });
 
-// ---------- 3. importer pack ----------
+// ---------- 3. send a lot to an EU buyer ----------
 
 $("make-pack").onclick = async () => {
   const cleared = farms.filter((f) => results.get(f.id)?.eligible);
   const left = farms.filter((f) => !results.get(f.id)?.eligible);
   for (const a of document.querySelectorAll("#docs a")) URL.revokeObjectURL(a.href);
   $("docs").innerHTML = "";
+  $("share").classList.add("hidden");
+  const name = $("buyer-name").value.trim();
+  if (!name) return msg("pack-msg", "Name the EU buyer first: they file the due diligence statement.", false);
   if (!cleared.length) return msg("pack-msg", "No plot is cleared yet. Check with Whisp and review the flagged plots first.", false);
-  const lotId = `EU-${profile.country_iso2 || "CO"}-${new Date().toISOString().slice(0, 10)}`;
-  const res = await postJson("/api/export", { lot: { id: lotId, market: "EU", plot_ids: cleared.map((f) => f.id) } });
-  if (!res.ok) return msg("pack-msg", (res.body.blocking || [res.body.error]).join(" · "), false);
-  msg("pack-msg", `Lot ${lotId}: ${cleared.length} plot(s).${left.length ? ` Left out: ${left.map((f) => f.farm + " (" + (results.get(f.id)?.card_blocked_by ? "shares a card with " + results.get(f.id).card_blocked_by.join(", ") : LABELS[statusOf(f.id)] || "not cleared") + ")").join(", ")}.` : ""}`, true);
+  const res = await postJson("/api/lots/create", { buyer: { name, email: $("buyer-email").value.trim() } });
+  if (!res.ok) return msg("pack-msg", res.body.error || "The lot couldn't be prepared.", false);
+  const lot = res.body.lot;
+  const lotId = lot.id;
+  const link = location.origin + lot.share_path;
+  $("share-link").value = link;
+  $("open-link").href = link;
+  $("share").classList.remove("hidden");
+  refreshRegister();
+  msg("pack-msg", `Lot ${lotId} for ${lot.buyer.name}: ${lot.plot_ids.length} plot(s), ${lot.receipts.length} receipt(s), ${Number(lot.kg).toLocaleString("en")} ${lot.kg_unit}.${left.length ? ` Left out: ${left.map((f) => f.farm + " (" + (results.get(f.id)?.card_blocked_by ? "shares a card with " + results.get(f.id).card_blocked_by.join(", ") : LABELS[statusOf(f.id)] || "not cleared") + ")").join(", ")}.` : ""}`, true);
   $("docs").innerHTML =
     res.body.documents
       .map((d) => {
@@ -344,5 +356,29 @@ $("make-pack").onclick = async () => {
         const open = d.mime === "text/html" ? ` target="_blank" rel="noopener"` : ` download="${esc(d.filename)}"`;
         return `<a class="${d.id === "report" ? "report" : ""}" href="${url}"${open}><b>${esc(d.title)}</b><small>${esc(d.filename)} · ${esc(d.subtitle)} · sha256 ${esc(d.sha256.slice(0, 12))}…</small></a>`;
       })
-      .join("") + `<p class="hint">Open the report and use Print → Save as PDF. The operator completes the statement and signs it.</p>`;
+      .join("") + `<p class="hint">Your copy of what the buyer receives. Open the report and use Print → Save as PDF. The operator completes the statement and signs it.</p>`;
 };
+
+$("copy-link").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($("share-link").value);
+    $("copy-link").textContent = "Copied";
+  } catch {
+    $("share-link").select();
+  }
+  setTimeout(() => ($("copy-link").textContent = "Copy"), 1500);
+};
+
+// ---------- 4. lots and buyers ----------
+
+async function refreshRegister() {
+  const { lots = [] } = await fetch("/api/lots/register").then((r) => r.json()).catch(() => ({}));
+  $("register").innerHTML = lots.length
+    ? lots
+        .slice()
+        .reverse()
+        .map((l) => `<tr><td><b>${esc(l.id)}</b><span class="reason">${esc(new Date(l.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))}</span></td><td>${esc(l.buyer.name)}${l.buyer.email ? `<span class="reason">${esc(l.buyer.email)}</span>` : ""}</td><td>${esc(l.plot_ids.join(", "))}<span class="reason">${l.receipts.length} receipt(s)</span></td><td>${esc(Number(l.kg).toLocaleString("en"))} ${esc(l.kg_unit)}</td><td><span class="status ${l.status === "filed" ? "filed" : "sent"}">${l.status === "filed" ? "Filed by buyer" : "Sent, awaiting filing"}</span>${l.filing ? `<span class="reason">DDS ref. ${esc(l.filing.reference)}</span>` : ""}</td><td><a href="${esc(l.share_path)}" target="_blank" rel="noopener">Buyer view</a></td></tr>`)
+        .join("")
+    : '<tr><td colspan="6" class="hint">No lot sent yet.</td></tr>';
+}
+refreshRegister();

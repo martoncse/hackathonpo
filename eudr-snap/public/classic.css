@@ -81,4 +81,11 @@ tr.excluded td:last-child { text-decoration: none; }
 .status.review, .status.mitigating, .status.blocked { background: var(--amber); }
 .status.excluded { background: var(--red); }
 .status.accepted { background: var(--green); }
+.steps.one { grid-template-columns: 1fr; }
+.scroll { overflow-x: auto; }
+.register { min-width: 640px; }
+#share input { flex: 1 1 280px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: 13px ui-monospace, Consolas, monospace; }
+.btn-link { align-self: center; color: var(--accent); font-weight: 600; }
+.status.sent { background: var(--amber); }
+.status.filed { background: var(--green); }
 @media (max-width: 800px) { main, .steps { grid-template-columns: 1fr; } #map { height: 360px; } }

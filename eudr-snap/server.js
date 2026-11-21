@@ -15,14 +15,23 @@
 //   GET  /api/deliveries       -> purchases recorded in the app (receipts typed in or read from a photo)
 //   POST /api/deliveries       { plot_id, date, season, kg, receipt, source? } -> records one purchase, re-runs the rules
 //   DELETE /api/deliveries     -> removes the recorded purchases (demo reset)
+//   POST /api/lots/create      { buyer: { name, email? }, plot_ids? } -> frozen pack for a named EU buyer + private share link
+//   GET  /api/lots/register    -> the cooperative's lots, buyers and filing status
+//   GET  /api/share/:token     -> the buyer's view of one lot (pack, checks, filing)
+//   POST /api/share/:token/filing { reference, verification } -> the importer records its filed DDS
 //   POST /api/extract          { imageBase64, mediaType } -> live Claude extraction of a receipt / land document
+//   GET  /api/passport/key     -> the cooperative's public signing key and fingerprint
+//   GET  /api/passports        -> passports issued so far (summaries, newest last)
+//   GET  /api/passports/:id    -> one signed passport (what /verify.html checks)
 import http from "node:http";
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { analysePlots, testKey, findDemoPlots, WhispError } from "./whisp.js";
 import { classify, checkLot, applyRuleOverrides } from "./shared/rules.js";
 import { buildPack } from "./shared/export.js";
+import { buildPassportPayload, signPassport, generateSigningKey, publicJwkOf, keyFingerprint, sha256Hex, canonicalize } from "./shared/passport.js";
 import { extractDocument, friendlyExtractError, ExtractError } from "./extract.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -45,7 +54,10 @@ applyRuleOverrides(profile.rules);
 const FARMS_FILE = path.join(PROFILE_DIR || PUBLIC_DIR, "sample-farms.json");
 const CACHE_FILE = process.env.EUDR_WHISP_CACHE ? path.resolve(process.env.EUDR_WHISP_CACHE) : path.join(PROFILE_DIR || PUBLIC_DIR, "whisp-cache.json");
 const DELIVERIES_FILE = path.join(DATA_DIR, PROFILE_ID ? `deliveries-${PROFILE_ID}.json` : "deliveries.json");
+const LOTS_FILE = path.join(DATA_DIR, PROFILE_ID ? `lots-${PROFILE_ID}.json` : "lots.json");
 const DECISIONS_FILE = path.join(DATA_DIR, PROFILE_ID ? `decisions-${PROFILE_ID}.json` : "decisions.json");
+const PASSPORTS_FILE = path.join(DATA_DIR, PROFILE_ID ? `passports-${PROFILE_ID}.json` : "passports.json");
+const PASSPORT_KEY_FILE = path.join(DATA_DIR, PROFILE_ID ? `passport-key-${PROFILE_ID}.json` : "passport-key.json");
 const PORT = Number(process.env.PORT) || 5174;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 const MAX_IMAGE_BODY_BYTES = 10 * 1024 * 1024;
@@ -95,6 +107,38 @@ async function loadDecisions() {
 async function saveDecisions() {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(DECISIONS_FILE, JSON.stringify(decisions, null, 2));
+}
+
+// The cooperative's signing key (ECDSA P-256). EUDR_PASSPORT_KEY (a private JWK) keeps it stable
+// on a host; otherwise it is created once and kept in the data folder. Prototype: in production the
+// key belongs to the cooperative (its own device or a key service), not to whoever runs the server.
+let signingKey = null;
+async function passportKey() {
+  if (signingKey) return signingKey;
+  if (process.env.EUDR_PASSPORT_KEY) signingKey = JSON.parse(process.env.EUDR_PASSPORT_KEY);
+  else signingKey = await readJsonFile(PASSPORT_KEY_FILE);
+  if (!signingKey?.d) {
+    signingKey = await generateSigningKey();
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(PASSPORT_KEY_FILE, JSON.stringify(signingKey));
+  }
+  return signingKey;
+}
+
+// Signs a passport for a pack that passed every check, chains it to the cooperative's previous one.
+function issuePassport(args) {
+  return serial(async () => {
+    const key = await passportKey();
+    const ledger = (await readJsonFile(PASSPORTS_FILE)) || [];
+    const prev = ledger.at(-1) || null;
+    const payload = await buildPassportPayload({ ...args, profile, publicJwk: publicJwkOf(key), previous: prev && { id: prev.id, sha256: prev.sha256, sequence: prev.sequence } });
+    const passport = await signPassport(payload, key);
+    const sha256 = await sha256Hex(canonicalize(passport));
+    ledger.push({ id: payload.passport_id, sha256, sequence: payload.history.sequence, issued_at: payload.issued_at, lot_id: payload.shipment.lot_id, plots: payload.shipment.plots, passport });
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(PASSPORTS_FILE, JSON.stringify(ledger, null, 2));
+    return passport;
+  });
 }
 
 function friendly(error) {
@@ -177,6 +221,153 @@ async function addDelivery(b, res) {
   return sendJson(res, 201, { delivery: entry, reopened, result: (await currentResults(plots)).find((r) => r.id === plot.id) });
 }
 
+// ---------- lots for named buyers ----------
+// A lot is the handoff from the cooperative (data custodian) to one EU importer (operator).
+// Its pack is frozen when created: buyer and cooperative keep the same hashed evidence.
+// Each purchase receipt can go into one EU lot only, so the same volume can't be sold twice.
+
+const BUYER_NAME_MAX = 120;
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}$/;
+const REF_RE = /^[A-Za-z0-9][A-Za-z0-9-]{3,39}$/;
+
+async function readLots() {
+  return (await readJsonFile(LOTS_FILE)) || [];
+}
+
+async function writeLots(lots) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(LOTS_FILE, JSON.stringify(lots, null, 2));
+}
+
+function lotSummary(l) {
+  return { id: l.id, buyer: l.buyer, plot_ids: l.plot_ids, receipts: l.receipts, kg: l.kg, kg_unit: l.kg_unit, created_at: l.created_at, status: l.status, filing: l.filing, left_out: l.left_out, share_path: `/buyer.html#${l.token}` };
+}
+
+// Picks the receipts of the season each plot was checked on, minus receipts already in a lot.
+// Plots on the same producer card travel together (the card's sales can't be split).
+export function allocateReceipts(plots, results, plotIds, usedReceipts) {
+  const res = new Map(results.map((r) => [r.id, r]));
+  const chosen = new Set(plotIds);
+  for (const p of plots) {
+    if (!chosen.has(p.id) || !p.producer_card) continue;
+    for (const q of plots) if (q.producer_card === p.producer_card && q.crop === p.crop) chosen.add(q.id);
+  }
+  const receipts = [];
+  const withGoods = new Set();
+  for (const p of plots) {
+    if (!chosen.has(p.id)) continue;
+    const season = res.get(p.id)?.yield?.season;
+    for (const d of p.deliveries || []) {
+      if ((!season || d.season === season) && !usedReceipts.has(d.receipt)) {
+        receipts.push(d.receipt);
+        withGoods.add(p.id);
+      }
+    }
+  }
+  const cardsWithGoods = new Set(plots.filter((p) => withGoods.has(p.id) && p.producer_card).map((p) => p.producer_card));
+  const include = plots.filter((p) => chosen.has(p.id) && (withGoods.has(p.id) || (p.producer_card && cardsWithGoods.has(p.producer_card)))).map((p) => p.id);
+  const exhausted = [...chosen].filter((id) => !include.includes(id));
+  return { receipts, plot_ids: include, exhausted };
+}
+
+async function handleCreateLot(req, res) {
+  const body = await readJsonBody(req);
+  return serial(() => createLot(body, res));
+}
+
+async function createLot(body, res) {
+  const name = String(body.buyer?.name || "").trim();
+  if (!name) return sendJson(res, 400, { error: "Name the EU buyer (the importer that will file the due diligence statement)." });
+  if (name.length > BUYER_NAME_MAX) return sendJson(res, 400, { error: "Buyer name is too long." });
+  const email = String(body.buyer?.email || "").trim();
+  if (email && !EMAIL_RE.test(email)) return sendJson(res, 400, { error: "That contact email doesn't look right." });
+  const doc = await farmsDoc();
+  const plots = doc.farms;
+  const saved = await savedResult(plots);
+  const results = saved?.results || classify(plots, null, decisions);
+  const eligible = new Set(results.filter((r) => r.eligible).map((r) => r.id));
+  const requested = Array.isArray(body.plot_ids) && body.plot_ids.length ? body.plot_ids.map(String) : [...eligible];
+  if (!requested.length) return sendJson(res, 422, { error: "No plot is cleared yet. Check with Whisp and review the flagged plots first." });
+  const notCleared = requested.filter((pid) => !eligible.has(pid));
+  if (notCleared.length) return sendJson(res, 422, { error: `Not cleared, so it can't go into an EU lot: ${notCleared.join(", ")}.` });
+  const lots = await readLots();
+  const used = new Set(lots.flatMap((l) => l.receipts));
+  const alloc = allocateReceipts(plots, results, requested, used);
+  if (!alloc.receipts.length) return sendJson(res, 409, { error: "Every purchase from these plots is already in another lot. Record new purchases first." });
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const id = `${profile.country_iso2}-${date}-${String(lots.filter((l) => l.id.includes(date)).length + 1).padStart(2, "0")}`;
+  const lot = { id, market: "EU", plot_ids: alloc.plot_ids, receipts: alloc.receipts, buyer: { name, email: email || null } };
+  const pack = await buildPack({ plots, results, lot, cooperative: doc.cooperative, whisp: saved?.whisp, profile });
+  if (pack.blocking.length) return sendJson(res, 422, { error: pack.blocking.join(" · "), blocking: pack.blocking });
+  const dds = JSON.parse(pack.documents.find((d) => d.id === "dds").content);
+  const kg = dds.commodities.reduce((s, c) => s + (Number(c.estimatedKgFromDeliveries) || 0), 0);
+  const stored = {
+    ...lot,
+    token: crypto.randomBytes(18).toString("base64url"),
+    kg,
+    kg_unit: dds.commodities[0]?.estimatedKgUnit || "kg",
+    created_at: new Date().toISOString(),
+    status: "sent",
+    filing: null,
+    left_out: [...eligible].filter((pid) => !alloc.plot_ids.includes(pid)),
+    exhausted: alloc.exhausted,
+    documents: pack.documents,
+  };
+  lots.push(stored);
+  await writeLots(lots);
+  return sendJson(res, 201, { lot: lotSummary(stored), documents: pack.documents });
+}
+
+async function handleShare(req, res, pathname) {
+  const [, , , token, action] = pathname.split("/");
+  const lots = await readLots();
+  const lot = lots.find((l) => l.token && l.token === token);
+  if (!lot) return sendJson(res, 404, { error: "This link doesn't match a lot. Ask the cooperative for a new one." });
+  if (req.method === "GET" && !action) {
+    const doc = await farmsDoc();
+    return sendJson(res, 200, {
+      lot: lotSummary(lot),
+      supplier: doc.cooperative,
+      profile: { name: profile.name, country_iso2: profile.country_iso2 },
+      documents: lot.documents,
+      handoff: lot.filing ? downstreamHandoff(lot, doc.cooperative) : null,
+    });
+  }
+  if (req.method === "POST" && action === "filing") {
+    const b = await readJsonBody(req);
+    const reference = String(b.reference || "").trim();
+    const verification = String(b.verification || "").trim();
+    if (!REF_RE.test(reference) || !REF_RE.test(verification)) {
+      return sendJson(res, 400, { error: "Enter the reference and verification numbers exactly as the EU Information System shows them (letters, digits and dashes)." });
+    }
+    return serial(async () => {
+      const all = await readLots();
+      const l = all.find((x) => x.token === token);
+      l.status = "filed";
+      l.filing = { reference, verification, recorded_at: new Date().toISOString() };
+      await writeLots(all);
+      const doc = await farmsDoc();
+      return sendJson(res, 200, { lot: lotSummary(l), handoff: downstreamHandoff(l, doc.cooperative) });
+    });
+  }
+  return sendJson(res, 405, { error: "Method not allowed" });
+}
+
+// What the importer passes on: since Reg. 2025/2650, downstream operators and traders keep the
+// reference number of the first due diligence statement instead of filing their own.
+function downstreamHandoff(lot, cooperative) {
+  return {
+    _status: "Prepared by EUDR-Snap from the operator's own entry. Check against the EU Information System.",
+    lot: lot.id,
+    referenceNumber: lot.filing.reference,
+    verificationNumber: lot.filing.verification,
+    operator: lot.buyer.name,
+    supplier: cooperative?.name || null,
+    recordedAt: lot.filing.recorded_at,
+    forDownstream: "Downstream operators and traders keep this reference number with their records (Reg. (EU) 2023/1115 as amended by 2025/2650).",
+  };
+}
+
 function whispMeta(fc, checkedAt) {
   return { version: fc?.features?.[0]?.properties?.whisp_processing_metadata?.whisp_version || null, checked_at: checkedAt };
 }
@@ -245,7 +436,12 @@ async function handleExport(req, res) {
   const saved = await savedResult(plots);
   const results = saved?.results || classify(plots, null, decisions);
   const pack = await buildPack({ plots, results, lot: body.lot, cooperative: doc.cooperative, whisp: saved?.whisp, profile });
-  return sendJson(res, pack.blocking.length ? 422 : 200, pack);
+  if (pack.blocking.length) return sendJson(res, 422, pack);
+  const passport = await issuePassport({ pack, lot: body.lot, plots, results, cooperative: doc.cooperative, whisp: saved?.whisp });
+  const content = JSON.stringify(passport, null, 2);
+  pack.passport = { id: passport.payload.passport_id, key_fingerprint: passport.payload.issuer.key_fingerprint, sequence: passport.payload.history.sequence, verify_url: `/verify.html?id=${encodeURIComponent(passport.payload.passport_id)}` };
+  pack.documents.unshift({ id: "passport", title: "Shipment Evidence Passport (signed)", subtitle: `${passport.payload.passport_id} · signed by the cooperative · key ${passport.payload.issuer.key_fingerprint}`, filename: `passport-${passport.payload.passport_id}.json`, mime: "application/json", content, sha256: await sha256Hex(content) });
+  return sendJson(res, 200, pack);
 }
 
 async function handleExtract(req, res) {
@@ -346,6 +542,8 @@ async function route(req, res) {
     // Demo reset: recorded purchases AND review decisions, so rehearsals don't carry onto the stage.
     await serial(async () => {
       await fs.rm(DELIVERIES_FILE, { force: true });
+      await fs.rm(PASSPORTS_FILE, { force: true });
+      await fs.rm(LOTS_FILE, { force: true });
       decisions = {};
       await saveDecisions();
     });
@@ -360,7 +558,25 @@ async function route(req, res) {
   if (pathname === "/api/review" && req.method === "POST") return handleReview(req, res);
   if (pathname === "/api/lots" && req.method === "POST") return handleLots(req, res);
   if (pathname === "/api/export" && req.method === "POST") return handleExport(req, res);
+  if (pathname === "/api/lots/create" && req.method === "POST") return handleCreateLot(req, res);
+  if (pathname === "/api/lots/register" && req.method === "GET") return sendJson(res, 200, { lots: (await readLots()).map(lotSummary) });
+  if (pathname.startsWith("/api/share/")) return handleShare(req, res, pathname);
   if (pathname === "/api/extract" && req.method === "POST") return handleExtract(req, res);
+  if (pathname === "/api/passport/key" && req.method === "GET") {
+    const key = publicJwkOf(await passportKey());
+    return sendJson(res, 200, { cooperative: (await farmsDoc()).cooperative?.name || null, key_fingerprint: await keyFingerprint(key), public_key: key });
+  }
+  if (pathname === "/api/passports" && req.method === "GET") {
+    const ledger = (await readJsonFile(PASSPORTS_FILE)) || [];
+    return sendJson(res, 200, { passports: ledger.map(({ passport, ...summary }) => summary) });
+  }
+  if (pathname.startsWith("/api/passports/") && req.method === "GET") {
+    const id = decodeURIComponent(pathname.slice("/api/passports/".length));
+    const hit = ((await readJsonFile(PASSPORTS_FILE)) || []).find((e) => e.id === id);
+    if (!hit) return sendJson(res, 404, { error: `No passport ${id} on this server. It may have been issued elsewhere: drop the passport file in instead.` });
+    const latest = ((await readJsonFile(PASSPORTS_FILE)) || []).at(-1);
+    return sendJson(res, 200, { passport: hit.passport, sha256: hit.sha256, sequence: hit.sequence, latest_sequence: latest?.sequence });
+  }
   if (pathname === "/api/find-plots" && req.method === "POST") {
     if (HOSTED) return sendJson(res, 400, { error: "The plot finder rewrites the demo files, so it only runs locally." });
     if (PROFILE_ID) return sendJson(res, 400, { error: "The plot finder only exists for the Colombian demo." });

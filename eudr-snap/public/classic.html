@@ -80,11 +80,24 @@
     <div class="step" id="export">
       <h2>2 · Review flagged plots</h2>
       <p class="hint">Plots that need review have <b>Accept</b> (a written reason is required) and <b>Exclude</b> buttons in the table. Each decision is logged with a name and time and goes into the Art 10 and Art 11 files.</p>
-      <h2>3 · Importer pack</h2>
-      <p class="hint">The EU lot takes every cleared plot. Anything not cleared stays out of it: one uncleared input would taint the whole lot.</p>
-      <button id="make-pack" class="primary">Generate importer pack</button>
+      <h2>3 · Send a lot to an EU buyer</h2>
+      <p class="hint">The importer files the due diligence statement and carries the liability, so the pack goes to them. The lot takes the cleared plots' purchases that aren't in another lot yet: the same cocoa or coffee can't be sold twice under the same evidence. The pack is frozen and hashed when you send it.</p>
+      <div class="form">
+        <label>EU buyer (importer)<input id="buyer-name" placeholder="e.g. Hamburg Specialty Imports GmbH" /></label>
+        <label>Buyer contact (optional)<input id="buyer-email" type="email" placeholder="compliance@buyer.example" /></label>
+      </div>
+      <button id="make-pack" class="primary">Prepare the lot and buyer link</button>
       <p id="pack-msg" class="msg"></p>
+      <div id="share" class="hidden"><label class="hint" for="share-link">Private link for the buyer (anyone with it can open this lot):</label><div class="row"><input id="share-link" readonly /><button id="copy-link" class="secondary">Copy</button><a id="open-link" class="btn-link" target="_blank" rel="noopener">Open as the buyer</a></div></div>
       <div id="docs"></div>
+    </div>
+  </section>
+
+  <section class="steps one">
+    <div class="step">
+      <h2>4 · Lots and buyers</h2>
+      <p class="hint">Your register: which purchases went to which buyer, and whether the buyer has filed. Once filed, the buyer's reference number is what processors further down the chain keep.</p>
+      <div class="scroll"><table class="register"><thead><tr><th>Lot</th><th>Buyer</th><th>Plots</th><th>Volume</th><th>Status</th><th></th></tr></thead><tbody id="register"><tr><td colspan="6" class="hint">No lot sent yet.</td></tr></tbody></table></div>
     </div>
   </section>
 

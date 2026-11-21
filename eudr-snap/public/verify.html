@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Verify a passport · EUDR-Snap</title>
+  <link rel="stylesheet" href="classic.css" />
+  <style>
+    main { max-width: 980px; margin: 0 auto; padding: 16px 20px 40px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 12px 0; }
+    #drop { border: 2px dashed var(--line); border-radius: 10px; padding: 26px; text-align: center; background: #fff; cursor: pointer; }
+    #drop.over { border-color: var(--accent); background: #eef7f0; }
+    .verdict { font-size: 20px; font-weight: 700; padding: 14px 16px; border-radius: 10px; margin: 12px 0; }
+    .verdict.ok { background: #dcf3e4; color: var(--green); border: 1px solid #a8dcb9; }
+    .verdict.bad { background: #fde4e4; color: var(--red); border: 1px solid #f3b2b2; }
+    .verdict.part { background: #fff6dd; color: #7a5600; border: 1px solid #f0d78a; }
+    ul.checks { list-style: none; padding: 0; margin: 8px 0; }
+    ul.checks li { padding: 4px 0; }
+    .t { display: inline-block; width: 1.4em; font-weight: 700; }
+    .t.ok { color: var(--green); } .t.bad { color: var(--red); } .t.na { color: var(--grey); }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    code { font-size: 12px; word-break: break-all; }
+    .fp { font: 600 18px ui-monospace, Consolas, monospace; letter-spacing: .04em; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+    .grid div small { display: block; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Verify a Shipment Evidence Passport</h1>
+      <p class="sub">For buyers, banks and inspectors · everything is checked in your browser, nothing is uploaded</p>
+    </div>
+    <a href="classic.html" style="color:#fff">← EUDR-Snap</a>
+  </header>
+  <main>
+    <div id="drop" tabindex="0">
+      <b>Drop the passport file here</b> (<code>passport-….json</code>)<br />
+      <span class="hint">Add the pack files too (GeoJSON, Art 9/10/11, report…) to check that none was changed. Or click to choose files.</span>
+      <input id="files" type="file" multiple class="hidden" />
+    </div>
+    <p id="status" class="msg"></p>
+    <div id="out"></div>
+  </main>
+  <script type="module" src="verify.js"></script>
+</body>
+</html>

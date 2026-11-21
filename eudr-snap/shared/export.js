@@ -134,6 +134,12 @@ export function productionPeriod(plot, season) {
   return dates.length ? { from: dates[0], to: dates.at(-1), basis: "first to last purchase date in the season" } : null;
 }
 
+// Delivered kg in the unit the volume rule compares (coffee: green equivalent of dry parchment).
+export function comparableKg(plot) {
+  const kg = (plot.deliveries || []).reduce((s, d) => s + Number(d.kg || 0), 0);
+  return String(plot.crop || "").toLowerCase() === "coffee" ? Math.round(kg / CONFIG.coffee.parchmentToGreen) : kg;
+}
+
 // ---------- human-readable report ----------
 
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -141,7 +147,7 @@ const COUNTRY_NAMES = { CO: "Colombia", CI: "Côte d'Ivoire", GH: "Ghana" };
 
 // One printable document a person can read, check and sign (browser: Print -> Save as PDF).
 // Same facts as the JSON files, which stay the machine-readable source.
-export function buildReportHtml({ lotCheck, lotPlots, res, dds, rows, log, cooperative, country, whisp, files, now }) {
+export function buildReportHtml({ lotCheck, lotPlots, res, dds, rows, log, cooperative, country, whisp, files, now, buyer = null }) {
   const table = (head, body) => `<table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${body.join("")}</tbody></table>`;
   const plotRows = lotPlots.map((p) => {
     const r = res.get(p.id);
@@ -168,7 +174,7 @@ code{font-size:11px;word-break:break-all}@media print{body{margin:0}}
 
 <h2>1. Operator, supplier and customer (Annex II; Art 9(1)(e)-(f))</h2>
 ${table(["", "Details"], [
-  `<tr><td>Operator (EU importer)</td><td>[Operator fills: name, address, EORI]</td></tr>`,
+  `<tr><td>Operator (EU importer)</td><td>${buyer ? `${esc(buyer.name)}${buyer.email ? " · " + esc(buyer.email) : ""} <small>(named by the supplier)</small>. ` : ""}[Operator confirms: name, address, EORI]</td></tr>`,
   `<tr><td>Customer (Art 9(1)(f))</td><td>[Operator fills: name, postal address, email of the business it supplies]</td></tr>`,
   `<tr><td>Activity</td><td>${esc(dds.activityType)} into ${esc(dds.countryOfActivity)}</td></tr>`,
   `<tr><td>Supplier</td><td>${esc(cooperative?.name)}${cooperative?.municipality ? ", " + esc(cooperative.municipality) : ""}${cooperative?.nit ? " · NIT " + esc(cooperative.nit) : ""}${cooperative?.registration ? " · " + esc(cooperative.registration) : ""}</td></tr>`,
@@ -211,8 +217,14 @@ ${table(["File", "SHA-256"], files.map((f) => `<tr><td>${esc(f.filename)}</td><t
 export async function buildPack({ plots, results, lot, cooperative, whisp, profile }) {
   const country = profile?.country_iso2 || "CO";
   const res = new Map(results.map((r) => [r.id, r]));
-  const lotPlots = plots.filter((p) => lot.plot_ids.includes(p.id));
+  const receiptSet = Array.isArray(lot.receipts) ? new Set(lot.receipts) : null;
+  // With receipts given, the pack covers exactly those purchases (no other lot can reuse them).
+  const lotPlots = plots
+    .filter((p) => lot.plot_ids.includes(p.id))
+    .map((p) => (receiptSet ? { ...p, deliveries: (p.deliveries || []).filter((d) => receiptSet.has(d.receipt)) } : p));
   const lotCheck = checkLot(lot, plots, results);
+  const kgOf = (ps) => (receiptSet ? ps.reduce((s, p) => s + comparableKg(p), 0) : ps.reduce((s, p) => s + (res.get(p.id)?.yield?.kg_comparable || 0), 0));
+  const buyer = lot.buyer?.name ? lot.buyer : null;
   const blocking = [];
   if (lot.market !== "EU") blocking.push("Only the EU lot needs an EUDR pack");
   if (!lotPlots.length) blocking.push("The EU lot is empty");
@@ -230,14 +242,14 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
   const dds = {
     _status: DISCLAIMER,
     activityType: "IMPORT",
-    operator: { name: "[Importer fills]", eori: "[Importer fills]" },
+    operator: { name: buyer ? `${buyer.name} [named by the supplier; operator confirms]` : "[Importer fills]", eori: "[Importer fills]" },
     countryOfActivity: "[EU member state]",
     supplier: cooperative,
     commodities: Object.entries(byCrop).map(([crop, ps]) => ({
       hsHeading: HS[crop]?.hsHeading,
       descriptionOfGoods: HS[crop]?.description,
       netWeightKg: "[Importer fills: net mass actually shipped]",
-      estimatedKgFromDeliveries: ps.reduce((s, p) => s + (res.get(p.id)?.yield?.kg_comparable || 0), 0),
+      estimatedKgFromDeliveries: kgOf(ps),
       estimatedKgUnit: (res.get(ps[0]?.id)?.yield?.unit || "").replace("/ha", "") || null,
       producers: ps.map((p) => ({ country, name: p.farmer_name })),
       geolocation: { file: "traces-geolocation.geojson", geometryGeojsonBase64: utf8ToBase64(stringifyGeoJSON(buildTracesGeoJSON(ps, country), 0)) },
@@ -251,7 +263,9 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
     _status: DISCLAIMER,
     article: "Art 9(1)(a)-(h)",
     lot: lot.id,
-    products: Object.entries(byCrop).map(([crop, ps]) => ({ crop, hs: HS[crop]?.hsHeading, estimatedKgFromDeliveries: ps.reduce((s, p) => s + (res.get(p.id)?.yield?.kg_comparable || 0), 0) })),
+    products: Object.entries(byCrop).map(([crop, ps]) => ({ crop, hs: HS[crop]?.hsHeading, estimatedKgFromDeliveries: kgOf(ps) })),
+    buyer: buyer ? { name: buyer.name, contact: buyer.email || null } : null,
+    receiptsInLot: receiptSet ? [...receiptSet] : null,
     countryOfProduction: country,
     plots: lotPlots.map((p) => {
       const r = res.get(p.id);
@@ -289,7 +303,7 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
     { id: "art11", title: "Art 11 mitigation log", subtitle: `${log.length} reviewer decision(s)`, filename: "art11-mitigation-log.json", mime: "application/json", content: art11Text },
   ];
   for (const d of docs) d.sha256 = await sha256(d.content);
-  const reportText = buildReportHtml({ lotCheck, lotPlots, res, dds, rows, log, cooperative, country, whisp, files: docs, now });
+  const reportText = buildReportHtml({ lotCheck, lotPlots, res, dds, rows, log, cooperative, country, whisp, files: docs, now, buyer });
   docs.push({ id: "report", title: "Due diligence report (readable, printable)", subtitle: "Arts 9-11 in one document · print to PDF · operator signs", filename: `due-diligence-report-${String(lot.id).replace(/[^A-Za-z0-9_-]/g, "_")}.html`, mime: "text/html", content: reportText, sha256: await sha256(reportText) });
 
   const keepUntil = "5 years from the date the products are placed on the market or exported (operator records that date)";
