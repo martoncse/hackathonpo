@@ -44,6 +44,19 @@ If you change volumes or hectares in `sample-farms.json`, the saved Whisp result
 
 Farmer names, volumes and hectares are synthetic. Coordinates and risk ratings are real Whisp outputs.
 
+## Country profiles: cocoa from Côte d'Ivoire
+
+```powershell
+$env:EUDR_PROFILE = "cocoa-ci"; npm start
+```
+
+Without `EUDR_PROFILE` the app is the Colombian demo above, unchanged. With it, the server loads `profiles/cocoa-ci/` (profile, farms, and `whisp-cache.json` once a live check has run) and the home page redirects to the 2D classic view: the 3D story is scripted for Colombia.
+
+- **Positioning:** a **verification layer on top of the national traceability system** (CCC, launched 12 June 2026; producer card mandatory for every sale from 1 Sep 2026). The card ties a sale to a registered producer. EUDR-Snap checks whether the volume sold under one card is plausible for **all** that producer's mapped plots, and drafts the importer's Art 9/10/11 file. Côte d'Ivoire is standard risk. Research and sources: `commodities/cocoa-ci/ARCHITECTURE.md`.
+- **Volume rule:** sales are pooled per producer card per season and divided by the measured area of all the card's plots. Review threshold **870 kg dry beans/ha**, 2× the 435 kg/ha average (AFD 2016; Barry Callebaut/Agri-Logic 2023: top fifth ~620 kg/ha). The data is old: verify. Like the Colombian rule, it's a trigger for review, not proof.
+- **Demo data is fully synthetic**, coordinates included (near Soubré, Nawa). It has **not** been checked with Whisp, and the page says so. No Ivorian national layers are requested from Whisp (`nationalCodes`) because we couldn't confirm that any exist.
+- **Not built:** reading producer cards or SNT records (no data access for importers was found), Ivorian document extraction, and the indigenous-peoples overlay (Art 10 rows c–e are marked as gaps).
+
 ## Stage fallback
 
 Every successful live check of the demo batch overwrites `whisp-cache.json`. If the live call fails (no internet, Whisp slow, bad key), the page shows the saved result. The badge says **"Saved Whisp result from …"**, so it's never passed off as live.

@@ -2,7 +2,7 @@
 
 *Pipeline run of 21 Nov 2026. Every figure has a source link or the tag **verify**. "Not found" is allowed; a guess is not.*
 
-**Status:** research. Stop condition 2 fired: a national traceability system exists. **Awaiting the user's decision** on positioning before any app change.
+**Status:** built as a profile (`EUDR_PROFILE=cocoa-ci`). Stop condition 2 fired (a national traceability system exists). The user chose to reposition EUDR-Snap as a **verification layer** on top of it: a volume-plausibility check per producer card, plus the importer's Art 9/10/11 draft. Review loop: pending.
 
 ---
 
@@ -48,9 +48,12 @@ Verification limit: an EFI case study (2026) says there is no mechanism for veri
 - **Volume ceiling:** with an average of 435 kg/ha and the top fifth at ~620, a review threshold near 2× the average (~870 kg dry beans/ha) would sit well above good farms. Pending current data.
 - **Whisp:** the BNETD 2020 land cover map (10 m, with a cocoa class, CC-BY-4.0) and a national cocoa probability layer exist ([Earth Engine catalog](https://developers.google.com/earth-engine/datasets/catalog/BNETD_land_cover_v1)). Whether Whisp uses them through `nationalCodes: ["ci"]`: **not found, verify**.
 
-## 6–9. Legality, intake, outputs
+## 6–9. Legality, intake, outputs (as built)
 
-Not started.
+- **Intake:** plots keyed by producer card (`producer_card`); one card can hold several plots. Deliveries are cooperative purchase records in kg of dry beans, season `2025-26` (main and mid crop pooled). Reading producer cards or SNT records isn't built: no importer data access found.
+- **Rules:** `checkProducerVolumes` pools a season's sales per card over the measured area of all its plots; threshold 870 kg/ha (profile `rules.cocoa`). The 4 ha point/polygon rule is unchanged (Art 2(28)). Whisp field: `risk_pcrop` (cocoa is a perennial crop). `nationalCodes` isn't sent.
+- **Outputs:** the same pack as Colombia, with `ProducerCountry: CI`, HS 1801 (`180100`), the producer card on each Art 9 plot, and Art 10 rows a, c, d, e, f, h replaced by Ivorian text from `profiles/cocoa-ci/profile.json`.
+- **Demo data:** fully synthetic (names, cards, receipts, coordinates near Soubré); not checked with Whisp.
 
 **Data protection:** Law 2013-450, administered by ARTCI. Every processing of personal data needs prior declaration or authorisation, which extends to geolocation systems and transfers abroad. A "third country" means outside ECOWAS. Transfer criteria: **not found** ([ARTCI via CIO Mag](https://cio-mag.com/?p=38189), [Journal officiel](https://cms21.anac.ci/uploads/748534/LOI_2013-450.pdf)).
 
