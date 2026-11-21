@@ -18,8 +18,8 @@ const fc = {
 };
 
 test("profile overrides the cocoa yield and keeps the 4 ha rule", () => {
-  assert.equal(CONFIG.cocoa.nationalAvgKgPerHa, 435);
-  assert.equal(CONFIG.cocoa.maxKgPerHa, 870);
+  assert.equal(CONFIG.cocoa.nationalAvgKgPerHa, 462);
+  assert.equal(CONFIG.cocoa.maxKgPerHa, 924);
   assert.equal(CONFIG.pointMaxHa, 4);
 });
 
@@ -32,8 +32,8 @@ test("declared hectares match the mapped boundaries", () => {
   for (const f of farms) assert.deepEqual(checkGeometry(f).notes, [], f.id);
 });
 
-test("sales are pooled per producer card: 3,400 kg over 3.2 ha = 1,063 kg/ha > 870", () => {
-  const v = checkProducerVolumes(farms).get("CP-DEMO-0003");
+test("sales are pooled per producer card: 3,400 kg over 3.2 ha = 1,063 kg/ha > 924", () => {
+  const v = checkProducerVolumes(farms).get("CP-DEMO-0003|cocoa");
   assert.equal(v.plots, 2);
   assert.equal(v.kg_delivered, 3400);
   assert.equal(v.ha_used, 3.2);
@@ -69,4 +69,45 @@ test("pack uses CI as the country and the profile's Art 10 rows", async () => {
   assert.doesNotMatch(all, /Colombia|IDEAM|"CO"/);
   assert.match(all, /CP-DEMO-0001/);
   assert.match(all, /180100/);
+});
+
+const pt = (id, card, crop, ha, deliveries) => ({ id, crop, producer_card: card, hectares: ha, geometry: { type: "Point", coordinates: [-6.6, 5.8] }, deliveries });
+
+test("one card selling coffee and cocoa is checked per crop", () => {
+  const v = checkProducerVolumes([pt("A", "CP-M", "Cocoa", 1, [{ season: "2025-26", kg: 800 }]), pt("B", "CP-M", "Coffee", 3, [{ season: "2025-26", kg: 100 }])]);
+  assert.equal(v.get("CP-M|cocoa").ha_used, 1);
+  assert.equal(v.get("CP-M|cocoa").kg_per_ha, 800);
+  assert.equal(v.get("CP-M|coffee").ha_used, 3);
+});
+
+test("a card uses one season for all its plots", () => {
+  const v = checkProducerVolumes([pt("A", "CP-S", "Cocoa", 1, [{ season: "2025-26", kg: 500 }]), pt("B", "CP-S", "Cocoa", 1, [{ season: "2024-25", kg: 900 }])]).get("CP-S|cocoa");
+  assert.equal(v.season, "2025-26");
+  assert.equal(v.kg_delivered, 500);
+});
+
+test("a card with sales but no plot area goes to review", () => {
+  const v = checkProducerVolumes([pt("A", "CP-Z", "Cocoa", 0, [{ season: "2025-26", kg: 300 }])]).get("CP-Z|cocoa");
+  assert.match(v.flag, /no plot area/);
+});
+
+test("the flag names the area basis when points contribute declared area", () => {
+  const plots = [pt("A", "CP-P", "Cocoa", 1, [{ season: "2025-26", kg: 2000 }])];
+  assert.match(checkProducerVolumes(plots).get("CP-P|cocoa").flag, /declared areas/);
+});
+
+test("Art 10 rows b, g and i carry Ivorian text, not Colombian", async () => {
+  const lot = { id: "EU-CI-1", market: "EU", plot_ids: ["C1", "C2"] };
+  const pack = await buildPack({ plots: farms, results: classify(farms, fc), lot, cooperative: doc.cooperative, profile });
+  const art10 = JSON.parse(pack.documents.find((d) => d.id === "art10").content).criteria;
+  const row = (k) => art10.find((r) => r.criterion === `10(2)(${k})`).finding;
+  assert.match(row("b"), /BNETD/);
+  assert.match(row("g"), /producer card/);
+  assert.doesNotMatch(row("g"), /AI extraction/);
+  assert.match(row("i"), /per producer card/);
+});
+
+test("each plot on a card reports the card's season", () => {
+  const r = classify([pt("A", "CP-T", "Cocoa", 1, [{ season: "2025-26", kg: 500 }]), pt("B", "CP-T", "Cocoa", 1, [{ season: "2024-25", kg: 900 }])], null);
+  assert.deepEqual(r.map((x) => x.yield.season), ["2025-26", "2025-26"]);
 });

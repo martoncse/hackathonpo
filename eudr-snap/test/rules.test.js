@@ -119,7 +119,14 @@ test("pack is blocked by the point, then built after walking the boundary", asyn
   const plots = farms.map((f) => (f.id === "F4" ? { ...f, geometry: doc.walked_boundaries.F4 } : f));
   const pack = await buildPack({ plots, results: classify(plots, fc), lot, cooperative: doc.cooperative });
   assert.deepEqual(pack.blocking, []);
-  assert.equal(pack.documents.length, 6);
+  assert.equal(pack.documents.length, 7);
+  const report = pack.documents.find((d) => d.id === "report");
+  assert.equal(report.mime, "text/html");
+  assert.match(report.content, /DRAFT prepared by EUDR-Snap/);
+  assert.match(report.content, /Colombia \(CO\)/);
+  // The report lists the hash of every machine-readable file, and the retention index hashes the report.
+  for (const d of pack.documents.filter((x) => !["report", "retention"].includes(x.id))) assert.ok(report.content.includes(d.sha256), d.id);
+  assert.ok(pack.documents.find((d) => d.id === "retention").content.includes(report.sha256));
   for (const d of pack.documents) assert.match(d.sha256, /^[0-9a-f]{64}$/);
   const dds = JSON.parse(pack.documents.find((d) => d.id === "dds").content);
   assert.equal(dds.commodities[0].hsHeading, "090111");

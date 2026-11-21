@@ -5,6 +5,7 @@ const kgOf = (f) => (f.deliveries || []).reduce((s, d) => s + d.kg, 0);
 
 let farms = [];
 let results = new Map();
+let profile = {};
 const map = L.map("map");
 L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
   attribution: "Imagery © Esri, Maxar, Earthstar Geographics",
@@ -59,7 +60,7 @@ function render() {
       <td><b>${f.farmer_name}</b><span class="reason">${f.farm} · ${f.region}${f.producer_card ? " · card " + f.producer_card : ""}</span></td>
       <td>${f.crop}</td><td>${f.hectares}</td>
       <td>${kgOf(f).toLocaleString("en")}<span class="reason ${r?.yield?.flag ? "yield-bad" : ""}">${(r?.yield?.producer?.kg_per_ha ?? r?.yield?.kg_per_ha ?? Math.round(kgOf(f) / f.hectares)).toLocaleString("en")}/ha${r?.yield?.producer ? " (card total)" : ""}</span></td>
-      <td><span class="status ${st}">${LABELS[st]}</span>${reasons}</td></tr>`);
+      <td><span class="status ${st}">${LABELS[st]}</span>${reasons}${["review", "mitigating"].includes(st) ? `<div class="decide"><button data-decide="accept" data-plot="${f.id}">Accept…</button><button class="secondary" data-decide="exclude" data-plot="${f.id}">Exclude</button></div>` : ""}${r?.decision ? `<div class="decide"><button class="secondary" data-decide="clear" data-plot="${f.id}">Undo decision</button></div>` : ""}</td></tr>`);
   }
   $("rows").innerHTML = rows.join("");
   $("ok-kg").textContent = okKg.toLocaleString("en");
@@ -73,6 +74,7 @@ function render() {
 }
 
 document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-decide]")) return;
   const tr = e.target.closest("tr[data-id]");
   if (!tr) return;
   const f = farms.find((x) => x.id === tr.dataset.id);
@@ -97,6 +99,8 @@ function setBadge(data) {
 async function loadFarms() {
   const doc = await (await fetch("/api/farms")).json();
   farms = doc.farms || [];
+  profile = doc.profile || {};
+  fillPlotSelect();
   if (doc.cooperative?.name) $("coop").textContent = doc.cooperative.name;
   if (doc.profile?.id) {
     // Non-default profile: no plot finder (Colombian setup), no 3D story.
@@ -193,3 +197,143 @@ loadFarms().then(async () => {
     render();
   }
 });
+
+// ---------- 1. record a purchase ----------
+
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+const postJson = async (url, body, method = "POST") => {
+  const res = await fetch(url, { method, headers: { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+  return { ok: res.ok, status: res.status, body: await res.json().catch(() => ({})) };
+};
+let fromPhoto = false;
+
+function fillPlotSelect() {
+  // Card-based sales (Côte d'Ivoire): one entry per producer card, recorded on the card's first plot.
+  const seen = new Set();
+  const opts = [];
+  for (const f of farms) {
+    if (f.producer_card) {
+      if (seen.has(f.producer_card)) continue;
+      seen.add(f.producer_card);
+      const n = farms.filter((x) => x.producer_card === f.producer_card).length;
+      opts.push(`<option value="${esc(f.id)}" data-card="${esc(f.producer_card)}">${esc(f.farmer_name)} · card ${esc(f.producer_card)}${n > 1 ? ` (${n} plots)` : ""}</option>`);
+    } else {
+      opts.push(`<option value="${esc(f.id)}">${esc(f.farmer_name)} · ${esc(f.farm)}</option>`);
+    }
+  }
+  const keep = $("d-plot").value;
+  $("d-plot").innerHTML = opts.join("");
+  if (keep) $("d-plot").value = keep;
+  const seasons = farms.flatMap((f) => (f.deliveries || []).map((d) => d.season)).filter(Boolean).sort();
+  if (!$("d-season").value && seasons.length) $("d-season").value = seasons.at(-1);
+}
+
+async function refreshResults() {
+  await loadFarms();
+  const data = await fetch("/api/risk/saved").then((r) => r.json());
+  results = new Map((data.results || []).map((r) => [r.id, r]));
+  setBadge(data);
+  render();
+}
+
+$("read-photo").onclick = async () => {
+  const file = $("photo").files[0];
+  if (!file) return msg("d-msg", "Choose a photo of the receipt first.", false);
+  $("read-photo").disabled = true;
+  msg("d-msg", "Claude is reading the receipt…");
+  try {
+    const b64 = await new Promise((ok, fail) => {
+      const fr = new FileReader();
+      fr.onload = () => ok(String(fr.result).split(",")[1]);
+      fr.onerror = fail;
+      fr.readAsDataURL(file);
+    });
+    const { ok, body } = await postJson("/api/extract", { imageBase64: b64, mediaType: file.type });
+    if (!ok) return msg("d-msg", body.error || "Couldn't read the photo.", false);
+    const get = (name) => body.fields.find((f) => f.field === name);
+    const set = (id, f) => { if (f?.value != null) $(id).value = f.value; };
+    set("d-receipt", get("receipt_number"));
+    set("d-date", get("date"));
+    set("d-kg", get("kg"));
+    const card = get("producer_card")?.value;
+    const opt = card && [...$("d-plot").options].find((o) => o.dataset.card === card);
+    if (opt) $("d-plot").value = opt.value;
+    $("extracted").innerHTML =
+      "<b>Read from the photo. Check each value against the paper:</b><br>" +
+      body.fields
+        .filter((f) => f.field !== "coordinates")
+        .map((f) => `${esc(f.field)}: <b>${esc(f.value ?? "—")}</b> <small>(“${esc(f.source)}”, confidence ${f.confidence ?? "—"}${f.note ? "; " + esc(f.note) : ""})</small>`)
+        .join("<br>") +
+      (card && !opt ? `<br><b>Card ${esc(card)} is not in the cooperative register: pick the producer by hand.</b>` : "") +
+      (body.warnings?.length ? "<br>Warnings: " + body.warnings.map(esc).join("; ") : "");
+    fromPhoto = true;
+    $("d-checked").checked = false;
+    $("d-checked-wrap").classList.remove("hidden");
+    msg("d-msg", "Fields filled in. Check them, tick the box, then record.", true);
+  } catch (e) {
+    msg("d-msg", "Couldn't send the photo: " + e.message, false);
+  } finally {
+    $("read-photo").disabled = false;
+  }
+};
+
+$("record").onclick = async () => {
+  if (fromPhoto && !$("d-checked").checked) return msg("d-msg", "Tick the box once you've checked the fields against the paper receipt.", false);
+  const body = { plot_id: $("d-plot").value, receipt: $("d-receipt").value.trim(), date: $("d-date").value, season: $("d-season").value.trim(), kg: Number($("d-kg").value), source: fromPhoto ? "photo" : "typed" };
+  const res = await postJson("/api/deliveries", body);
+  if (!res.ok) return msg("d-msg", res.body.error || "Not recorded.", false);
+  const r = res.body.result;
+  const y = r?.yield?.producer || r?.yield;
+  msg("d-msg", `Recorded ${body.kg.toLocaleString("en")} kg on receipt ${body.receipt}. Now ${y?.kg_per_ha?.toLocaleString("en") ?? "—"} ${y?.unit || "kg/ha"} for ${y?.season || "the season"}${r?.yield?.flag ? ": needs review" : ""}.`, !r?.yield?.flag);
+  fromPhoto = false;
+  $("d-checked-wrap").classList.add("hidden");
+  $("extracted").innerHTML = "";
+  $("d-receipt").value = "";
+  $("d-kg").value = "";
+  await refreshResults();
+};
+
+$("reset-deliveries").onclick = async () => {
+  if (!confirm("Remove every purchase recorded in the app? The sample data stays.")) return;
+  await postJson("/api/deliveries", undefined, "DELETE");
+  msg("d-msg", "Recorded purchases removed.");
+  await refreshResults();
+};
+
+// ---------- 2. review ----------
+
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-decide]");
+  if (!b) return;
+  const decision = b.dataset.decide;
+  let reason = "";
+  if (decision === "accept") {
+    reason = prompt("Why is this plot acceptable? This goes into the Art 10 file (e.g. 'Field visit 20 Nov: two extra plots found, to be mapped').") || "";
+    if (!reason.trim()) return;
+  }
+  const reviewer = decision === "clear" ? "" : prompt("Your name (logged with the decision):") || "";
+  const res = await postJson("/api/review", { plot_id: b.dataset.plot, decision, reason, reviewer });
+  if (!res.ok) return alert(res.body.error || "Decision not saved.");
+  await refreshResults();
+});
+
+// ---------- 3. importer pack ----------
+
+$("make-pack").onclick = async () => {
+  const cleared = farms.filter((f) => results.get(f.id)?.eligible);
+  const left = farms.filter((f) => !results.get(f.id)?.eligible);
+  $("docs").innerHTML = "";
+  if (!cleared.length) return msg("pack-msg", "No plot is cleared yet. Check with Whisp and review the flagged plots first.", false);
+  const lotId = `EU-${profile.country_iso2 || "CO"}-${new Date().toISOString().slice(0, 10)}`;
+  const res = await postJson("/api/export", { lot: { id: lotId, market: "EU", plot_ids: cleared.map((f) => f.id) } });
+  if (!res.ok) return msg("pack-msg", (res.body.blocking || [res.body.error]).join(" · "), false);
+  msg("pack-msg", `Lot ${lotId}: ${cleared.length} plot(s).${left.length ? ` Left out: ${left.map((f) => f.farm + " (" + (LABELS[statusOf(f.id)] || "not cleared") + ")").join(", ")}.` : ""}`, true);
+  $("docs").innerHTML =
+    res.body.documents
+      .map((d) => {
+        const url = URL.createObjectURL(new Blob([d.content], { type: d.mime }));
+        const open = d.mime === "text/html" ? ` target="_blank" rel="noopener"` : ` download="${esc(d.filename)}"`;
+        return `<a class="${d.id === "report" ? "report" : ""}" href="${url}"${open}><b>${esc(d.title)}</b><small>${esc(d.filename)} · ${esc(d.subtitle)} · sha256 ${esc(d.sha256.slice(0, 12))}…</small></a>`;
+      })
+      .join("") + `<p class="hint">Open the report and use Print → Save as PDF. The operator completes the statement and signs it.</p>`;
+};

@@ -1,22 +1,50 @@
 {
   "name": "Côte d'Ivoire: cocoa (verification layer on the national system)",
   "country_iso2": "CI",
-  "whisp_national_codes": [],
-  "_whisp_note": "Whether Whisp has Ivorian national layers behind nationalCodes ['ci'] was not found (commodities/cocoa-ci/ARCHITECTURE.md §5). Sent without nationalCodes until verified.",
+  "whisp_national_codes": [
+    "ci"
+  ],
+  "_whisp_note": "Whisp has Ivorian national layers: nCI_Forest_bnetd_2020 and nCI_Cocoa_bnetd (https://github.com/forestdatapartnership/whisp/blob/main/layers_description.md). Requested with nationalCodes ['ci'].",
   "rules": {
     "cocoa": {
-      "nationalAvgKgPerHa": 435,
-      "maxKgPerHa": 870,
-      "_source": "435 kg/ha average (AFD 2016; Barry Callebaut/Agri-Logic 2023, top fifth ~620 kg/ha). Threshold = 2x average, a review trigger, not proof. Old data: verify."
+      "nationalAvgKgPerHa": 462,
+      "maxKgPerHa": 924,
+      "_source": "462 kg/ha average for Côte d'Ivoire, 2023/24 season (Barry Callebaut/Agri-Logic White Paper 2026, p.11, sample incl. 1,340 Ivorian farmers: https://www.barry-callebaut.com/system/files/2026-02/Barry%20Callebaut%20White%20Paper%202026_%20Harvesting%20insights_what%20drives%20farmer%20prosperity.pdf). Threshold = 2x average, a review trigger, not proof: well-managed farms can approach it."
     }
   },
   "art10": {
-    "a": ["Côte d'Ivoire is standard risk (not listed in Impl. Reg. 2025/1093): full due diligence, no Art 13 simplification.", "standard"],
-    "c": ["Indigenous peoples overlay for Côte d'Ivoire: no source found yet. To be assessed by the operator.", "gap"],
-    "d": ["Only required where an overlap with indigenous peoples' land exists. Not assessed yet.", "gap"],
-    "e": ["No claims recorded. Source for claims over the area: not found yet.", "gap"],
-    "f": ["Cocoa is a recognised driver of forest loss in Côte d'Ivoire. National figures for the current year: verify before filing.", "context"],
-    "h": ["Requires narrative assessment. Note the EFI 2026 finding: excluding a farm on paper does not keep its cocoa out of the physical chain. EUDR-Snap's producer-card volume check is the mitigation offered; operator to sign off.", "manual"]
+    "a": [
+      "Côte d'Ivoire is standard risk (not listed in Impl. Reg. 2025/1093): full due diligence, no Art 13 simplification.",
+      "standard"
+    ],
+    "c": [
+      "Indigenous peoples overlay for Côte d'Ivoire: no source found yet. To be assessed by the operator.",
+      "gap"
+    ],
+    "d": [
+      "Only required where an overlap with indigenous peoples' land exists. Not assessed yet.",
+      "gap"
+    ],
+    "e": [
+      "No claims recorded. Source for claims over the area: not found yet.",
+      "gap"
+    ],
+    "f": [
+      "Prevalence of deforestation in the production area: to be assessed by the operator with sourced national figures (none attached yet). Whisp results per plot are in the Art 9 file.",
+      "gap"
+    ],
+    "h": [
+      "Requires narrative assessment. Note the EFI 2026 finding: excluding a farm on paper does not keep its cocoa out of the physical chain. EUDR-Snap's producer-card volume check is the mitigation offered; operator to sign off.",
+      "manual"
+    ],
+    "g": [
+      "Sales come from cooperative purchase records keyed by producer card (entered from the records; no AI document reading for Côte d'Ivoire yet). Reviewer decisions are logged with name and timestamp.",
+      "documented"
+    ],
+    "i": [
+      "Sales are recorded per producer card, not per plot. Volumes are pooled per card, crop and season over all the card's plots before the plausibility check.",
+      "documented"
+    ]
   },
   "story": false
 }

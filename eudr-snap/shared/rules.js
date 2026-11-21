@@ -160,29 +160,39 @@ export function checkYield(plot, season = seasonOf(plot)) {
 }
 
 // Where sales are recorded per producer (a producer card), not per plot, compare everything
-// sold under one card in a season with the measured area of ALL that producer's plots.
-// Returns Map(card -> result shaped like checkYield's).
+// sold under one card for one crop in one season with the area of ALL that producer's plots of
+// that crop. One card can cover coffee and cocoa, so groups are card + crop.
+// Returns Map("card|crop" -> result shaped like checkYield's). Use producerKey() to look up.
+export const producerKey = (p) => `${p.producer_card}|${String(p.crop || "").toLowerCase()}`;
+
 export function checkProducerVolumes(plots) {
   const groups = new Map();
   for (const p of plots) {
     if (!p.producer_card) continue;
-    const g = groups.get(p.producer_card) || { plots: [], crop: String(p.crop || "").toLowerCase() };
-    g.plots.push(p);
-    groups.set(p.producer_card, g);
+    const k = producerKey(p);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(p);
   }
   const out = new Map();
-  for (const [card, g] of groups) {
-    const ys = g.plots.map((p) => checkYield(p));
-    const ha = Math.round(ys.reduce((s, y) => s + (y.ha_used || 0), 0) * 100) / 100;
+  for (const [k, ps] of groups) {
+    const card = ps[0].producer_card;
+    // One season for the whole card: the latest any of its plots sold in.
+    const season = ps.map(seasonOf).filter(Boolean).sort().at(-1) || null;
+    const ys = ps.map((p) => checkYield(p, season));
+    const ha = Math.round(ys.reduce((s, y) => s + (y.ha_used > 0 ? y.ha_used : 0), 0) * 100) / 100;
     const kg = ys.reduce((s, y) => s + (y.kg_comparable || 0), 0);
     const delivered = ys.reduce((s, y) => s + (y.kg_delivered || 0), 0);
     const limit = ys.find((y) => y.limit)?.limit ?? null;
     const unit = ys.find((y) => y.unit)?.unit ?? null;
-    const r = { card, plot_ids: g.plots.map((p) => p.id), plots: g.plots.length, ha_used: ha, kg_delivered: delivered, kg_comparable: kg, kg_per_ha: ha > 0 ? Math.round(kg / ha) : null, limit, unit, flag: null };
-    if (limit && ha > 0 && r.kg_per_ha > limit) {
-      r.flag = `Needs review: producer card ${card} sold ${delivered.toLocaleString("en")} kg this season across ${g.plots.length} mapped plot(s) totalling ${ha} ha = ${r.kg_per_ha.toLocaleString("en")} ${unit}, above the review threshold of ${limit.toLocaleString("en")}. Could be produce from unregistered plots, or a very productive farm: ask before accepting`;
+    const mapped = ys.filter((y) => y.area_basis === "measured boundary").length;
+    const basis = mapped === ps.length ? "all mapped boundaries" : mapped ? `${mapped} mapped boundary(ies), ${ps.length - mapped} declared area(s)` : "declared areas";
+    const r = { card, season, plot_ids: ps.map((p) => p.id), plots: ps.length, ha_used: ha, area_basis: basis, kg_delivered: delivered, kg_comparable: kg, kg_per_ha: ha > 0 ? Math.round(kg / ha) : null, limit, unit, flag: null };
+    if (delivered > 0 && !(ha > 0)) {
+      r.flag = `Needs review: producer card ${card} sold ${delivered.toLocaleString("en")} kg in ${season} but has no plot area to check it against`;
+    } else if (limit && ha > 0 && r.kg_per_ha > limit) {
+      r.flag = `Needs review: producer card ${card} sold ${delivered.toLocaleString("en")} kg in ${season} across ${ps.length} plot(s) totalling ${ha} ha (${basis}) = ${r.kg_per_ha.toLocaleString("en")} ${unit}, above the review threshold of ${limit.toLocaleString("en")}. Could be produce from unregistered plots, stock carried over from an earlier season, or a very productive farm: ask before accepting`;
     }
-    out.set(card, r);
+    out.set(k, r);
   }
   return out;
 }
@@ -210,8 +220,9 @@ export function classify(plots, fc, decisions = {}) {
     const geometry = checkGeometry(plot);
     let yieldCheck = checkYield(plot);
     // Card-based sales: the plausibility flag comes from the producer's total, not the single plot.
-    const producer = plot.producer_card ? producerVolumes.get(plot.producer_card) : null;
-    if (producer) yieldCheck = { ...yieldCheck, flag: producer.flag, producer };
+    const producer = plot.producer_card ? producerVolumes.get(producerKey(plot)) : null;
+    // Same season as the card group, so per-plot figures and labels match the pooled check.
+    if (producer) yieldCheck = { ...checkYield(plot, producer.season), flag: producer.flag, producer };
     const decision = decisions[plot.id] || null;
     const colour = w ? whispColour(w.risk_pcrop) : null;
     const reasons = [];

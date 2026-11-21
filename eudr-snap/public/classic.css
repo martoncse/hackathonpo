@@ -65,3 +65,20 @@ tr.excluded td:last-child { text-decoration: none; }
   header, .toolbar { padding-left: 16px; padding-right: 16px; }
   .panel, .banner { margin-left: 16px; margin-right: 16px; }
 }
+
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 20px 24px; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.step h2 { font-size: 17px; margin: 6px 0; }
+.form { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
+.form label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; }
+.form input, .form select { font: inherit; color: var(--ink); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; }
+.check { display: block; margin: 6px 0 10px; font-size: 14px; }
+.decide { margin-top: 6px; display: flex; gap: 6px; }
+.decide button { padding: 3px 8px; font-size: 12px; }
+#docs a { display: block; padding: 8px 10px; margin: 6px 0; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
+#docs a small { display: block; color: var(--muted); }
+#docs a.report { border-color: var(--accent); background: #eef6f0; }
+.status.review, .status.mitigating, .status.blocked { background: var(--amber); }
+.status.excluded { background: var(--red); }
+.status.accepted { background: var(--green); }
+@media (max-width: 800px) { main, .steps { grid-template-columns: 1fr; } #map { height: 360px; } }

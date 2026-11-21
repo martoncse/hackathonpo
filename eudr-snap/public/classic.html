@@ -60,6 +60,34 @@
     </div>
   </main>
 
+  <section class="steps">
+    <div class="step" id="intake">
+      <h2>1 · Record a purchase</h2>
+      <p class="hint">From the cooperative's paper receipt. Type it in, or read a photo with Claude (live, needs <code>ANTHROPIC_API_KEY</code> on the server). Coordinates never come from the photo.</p>
+      <div class="row"><input type="file" id="photo" accept="image/jpeg,image/png,image/webp" /><button id="read-photo" class="secondary">Read photo (live)</button></div>
+      <div id="extracted" class="hint"></div>
+      <div class="form">
+        <label>Producer / plot<select id="d-plot"></select></label>
+        <label>Receipt no.<input id="d-receipt" placeholder="BA-601" /></label>
+        <label>Date<input id="d-date" type="date" /></label>
+        <label>Season<input id="d-season" placeholder="2025-26" /></label>
+        <label>kg (as weighed)<input id="d-kg" type="number" min="0" step="0.1" /></label>
+      </div>
+      <label class="check hidden" id="d-checked-wrap"><input type="checkbox" id="d-checked" /> I checked every field against the paper receipt</label>
+      <div class="row"><button id="record">Record purchase</button><button id="reset-deliveries" class="secondary">Remove recorded purchases</button></div>
+      <p id="d-msg" class="msg"></p>
+    </div>
+    <div class="step" id="export">
+      <h2>2 · Review flagged plots</h2>
+      <p class="hint">Plots that need review have <b>Accept</b> (a written reason is required) and <b>Exclude</b> buttons in the table. Each decision is logged with a name and time and goes into the Art 10 and Art 11 files.</p>
+      <h2>3 · Importer pack</h2>
+      <p class="hint">The EU lot takes every cleared plot. Anything not cleared stays out of it: one uncleared input would taint the whole lot.</p>
+      <button id="make-pack" class="primary">Generate importer pack</button>
+      <p id="pack-msg" class="msg"></p>
+      <div id="docs"></div>
+    </div>
+  </section>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="classic.js"></script>
 </body>

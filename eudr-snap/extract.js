@@ -11,6 +11,7 @@ export const MODEL = "claude-opus-5-5";
 export const FIELD_NAMES = [
   "farmer_name",
   "cedula",
+  "producer_card",
   "farm",
   "vereda",
   "municipality",
@@ -24,7 +25,7 @@ export const FIELD_NAMES = [
 ];
 
 // Fields that are legally material: a person must accept them with a click (architecture §Intake).
-export const MATERIAL_FIELDS = ["farmer_name", "cedula", "date", "kg", "hectares"];
+export const MATERIAL_FIELDS = ["farmer_name", "cedula", "producer_card", "date", "kg", "hectares"];
 
 const Field = z.object({
   field: z.enum(FIELD_NAMES),
@@ -35,7 +36,7 @@ const Field = z.object({
 });
 
 const Extraction = z.object({
-  document_type: z.enum(["purchase_receipt", "land_certificate", "cedula_cafetera", "rut", "other"]),
+  document_type: z.enum(["purchase_receipt", "land_certificate", "cedula_cafetera", "rut", "producer_card", "other"]),
   language: z.string().describe("ISO 639-1 code, e.g. es"),
   fields: z.array(Field),
   transcribed_coordinates: z
@@ -53,6 +54,18 @@ Rules:
 - Dates: copy as written in "evidence"; in "value" give ISO yyyy-mm-dd only if the date is unambiguous, otherwise null.
 - Never produce coordinates, plot areas or ID numbers that are not printed on the document. Coordinates go only in transcribed_coordinates, verbatim.`;
 
+const SYSTEM_CI = `You read photos of documents from cocoa and coffee cooperatives in Côte d'Ivoire: purchase receipts (bons d'achat, reçus, fiches de pesée) and the producer card (carte du producteur) issued by the Conseil du Café-Cacao. Documents are usually in French.
+Extract only what is written. For each field you report, give the verbatim source text in "evidence".
+Rules:
+- If a value is illegible or absent, return null for it (or leave the field out). Never guess names, card numbers, dates, quantities or areas.
+- The producer card number goes in "producer_card", copied exactly as printed. Do not use "cedula" for Ivorian documents.
+- Copy quantities as written, including the unit (e.g. "1 250 kg", "12 sacs"). French uses a space or "." as the thousands separator and "," for decimals.
+- Dates: copy as written in "evidence"; in "value" give ISO yyyy-mm-dd only if the date is unambiguous (French order is day/month/year), otherwise null.
+- Never produce coordinates, plot areas or ID numbers that are not printed on the document. Coordinates go only in transcribed_coordinates, verbatim.`;
+
+// One prompt per producing country; unknown countries get the Colombian one.
+const SYSTEMS = { CO: SYSTEM, CI: SYSTEM_CI };
+
 export class ExtractError extends Error {
   constructor(status, message) {
     super(message);
@@ -68,18 +81,20 @@ const UNIT_KG = [
 ];
 
 // "2.100 kg" -> 2100; "8 @" -> 100 (factor noted); "1.200,5 kg" -> 1200.5
-export function normaliseKg(text) {
+// Côte d'Ivoire: "1 250 kg" -> 1250; bags (sacs) are NOT converted: no sourced bag weight.
+export function normaliseKg(text, country = "CO") {
   if (text == null) return { kg: null, note: null };
   const s = String(text);
-  const m = s.match(/(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d+))?/);
+  if (country === "CI" && /\bsacs?\b/i.test(s)) return { kg: null, note: "Bags (sacs) are not converted to kg: enter the weighed kg" };
+  const m = country === "CI" ? s.match(/(\d{1,3}(?:[   .]\d{3})+|\d+)(?:,(\d+))?/) : s.match(/(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d+))?/);
   if (!m) return { kg: null, note: "No number found" };
-  const n = Number(m[1].replace(/\./g, "") + (m[2] ? "." + m[2] : ""));
-  for (const [re, factor, note] of UNIT_KG) if (re.test(s)) return { kg: Math.round(n * factor * 10) / 10, note };
+  const n = Number(m[1].replace(/[   .]/g, "") + (m[2] ? "." + m[2] : ""));
+  if (country === "CO") for (const [re, factor, note] of UNIT_KG) if (re.test(s)) return { kg: Math.round(n * factor * 10) / 10, note };
   return { kg: n, note: /kg|kilo/i.test(s) ? null : "Unit not stated: assumed kg, check" };
 }
 
 // Deterministic post-checks on the model output (no model involved).
-export function postProcess(ex) {
+export function postProcess(ex, country = "CO") {
   const fields = [];
   for (const f of ex.fields) {
     const out = { field: f.field, value: f.value, confidence: f.confidence, source: f.evidence ?? "", illegible: f.illegible, note: null };
@@ -88,7 +103,7 @@ export function postProcess(ex) {
       out.note = "Illegible or absent: a person must fill this in";
     }
     if (f.field === "kg" && out.value != null) {
-      const { kg, note } = normaliseKg(f.value);
+      const { kg, note } = normaliseKg(f.value, country);
       out.value = kg;
       out.note = note;
     }
@@ -112,7 +127,7 @@ export function postProcess(ex) {
 
 let client = null;
 
-export async function extractDocument(imageBase64, mediaType) {
+export async function extractDocument(imageBase64, mediaType, country = "CO") {
   client ??= new Anthropic();
   const response = await client.beta.messages.parse({
     model: MODEL,
@@ -120,7 +135,7 @@ export async function extractDocument(imageBase64, mediaType) {
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
     output_config: { effort: "low", format: betaZodOutputFormat(Extraction) },
-    system: SYSTEM,
+    system: SYSTEMS[country] || SYSTEM,
     messages: [
       {
         role: "user",
@@ -134,7 +149,7 @@ export async function extractDocument(imageBase64, mediaType) {
   if (response.stop_reason === "refusal") throw new ExtractError(422, "The model declined to read this image.");
   if (response.stop_reason === "max_tokens") throw new ExtractError(422, "The output was cut off. Try a photo of a single document.");
   if (!response.parsed_output) throw new ExtractError(502, "Couldn't read structured fields from this photo. Try a clearer photo.");
-  return { model: response.model, ...postProcess(response.parsed_output) };
+  return { model: response.model, country, ...postProcess(response.parsed_output, country) };
 }
 
 export function friendlyExtractError(error) {

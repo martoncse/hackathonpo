@@ -37,3 +37,24 @@ test("post-processing: illegible stays null, material fields need a person, coor
   assert.equal(by.coordinates.value, null);
   assert.match(by.coordinates.note, /GPS/);
 });
+
+test("Côte d'Ivoire: French thousands separators, no bag conversion", () => {
+  assert.equal(normaliseKg("1 250 kg", "CI").kg, 1250);
+  assert.equal(normaliseKg("1 250,5 kg", "CI").kg, 1250.5);
+  assert.equal(normaliseKg("12 sacs", "CI").kg, null);
+  assert.match(normaliseKg("12 sacs", "CI").note, /not converted/);
+  // Colombian units stay Colombian.
+  assert.equal(normaliseKg("8 @", "CI").kg, 8);
+  assert.equal(normaliseKg("8 @").kg, 100);
+});
+
+test("Côte d'Ivoire: the producer card is a material field a person must accept", () => {
+  const out = postProcess({ document_type: "purchase_receipt", language: "fr", transcribed_coordinates: null, warnings: [], fields: [
+    { field: "producer_card", value: "CP-DEMO-0001", confidence: 0.99, evidence: "N° carte: CP-DEMO-0001", illegible: false },
+    { field: "kg", value: "1 250 kg", confidence: 0.95, evidence: "Poids net: 1 250 kg", illegible: false },
+  ] }, "CI");
+  const card = out.fields.find((f) => f.field === "producer_card");
+  assert.equal(card.material, true);
+  assert.equal(card.needs_check, true);
+  assert.equal(out.fields.find((f) => f.field === "kg").value, 1250);
+});

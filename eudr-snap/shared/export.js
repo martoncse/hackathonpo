@@ -84,7 +84,7 @@ function art10Rows(lotPlots, results, lotCheck, overrides = {}, country = "CO") 
   const yieldFlags = rs.filter((r) => r?.yield?.flag).length;
   const auto = {
     a: ["Colombia is standard risk (Impl. Reg. 2025/1093): full due diligence, no Art 13 simplification.", "standard"],
-    b: [`${whispRuns}/${lotPlots.length} plots checked with FAO Whisp (JRC GFC2020, TMF, Hansen, RADD/GLAD${country === "CO" ? ", IDEAM" : ""} layers). ${afterHigh} flagged high risk and handled by review. Whisp supports due diligence; it does not replace it, and no single map gives the full picture (FAO). The operator should confirm with its own sources.`, afterHigh ? "mitigated" : "supported"],
+    b: [`${whispRuns}/${lotPlots.length} plots checked with FAO Whisp (JRC GFC2020, TMF, Hansen, RADD/GLAD${country === "CO" ? ", IDEAM" : country === "CI" ? ", BNETD 2020 forest and cocoa" : ""} layers). ${afterHigh} flagged high risk and handled by review. Whisp supports due diligence; it does not replace it, and no single map gives the full picture (FAO). The operator should confirm with its own sources.`, afterHigh ? "mitigated" : "supported"],
     c: ["Overlap with ANT resguardos and consejos comunitarios: overlay planned (next phase). No overlap declared in questionnaire.", "gap"],
     d: ["Only required where an ethnic-territory overlap exists. None detected yet (overlay planned).", "gap"],
     e: ["No claims recorded. Overlay with ANT and land-restitution register planned.", "gap"],
@@ -98,8 +98,8 @@ function art10Rows(lotPlots, results, lotCheck, overrides = {}, country = "CO") 
     m: ["None recorded.", "manual"],
     n: ["Certifications support but do not replace due diligence. None attached.", "manual"],
   };
-  // A country profile replaces the country-specific rows (a, c, d, e, f, h); computed rows stay computed.
-  for (const [k, row] of Object.entries(overrides)) if (["a", "c", "d", "e", "f", "h"].includes(k)) auto[k] = row;
+  // A country profile replaces the country-specific rows (a, c-i except b); computed rows stay computed.
+  for (const [k, row] of Object.entries(overrides)) if (["a", "c", "d", "e", "f", "g", "h", "i"].includes(k)) auto[k] = row;
   return ART10.map(([k, criterion]) => ({ criterion: `10(2)(${k})`, text: criterion, finding: auto[k][0], rating: auto[k][1] }));
 }
 
@@ -117,6 +117,76 @@ function art11Log(lotPlots, results) {
       reviewer: r.decision.reviewer || "",
       at: r.decision.at,
     }));
+}
+
+// ---------- human-readable report ----------
+
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const COUNTRY_NAMES = { CO: "Colombia", CI: "Côte d'Ivoire", GH: "Ghana" };
+
+// One printable document a person can read, check and sign (browser: Print -> Save as PDF).
+// Same facts as the JSON files, which stay the machine-readable source.
+export function buildReportHtml({ lotCheck, lotPlots, res, dds, rows, log, cooperative, country, whisp, files, now }) {
+  const table = (head, body) => `<table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${body.join("")}</tbody></table>`;
+  const plotRows = lotPlots.map((p) => {
+    const r = res.get(p.id);
+    const kg = (p.deliveries || []).filter((d) => !r?.yield?.season || d.season === r.yield.season).reduce((a, d) => a + Number(d.kg || 0), 0);
+    return `<tr><td>${esc(p.id)}</td><td>${esc(p.farmer_name)}${p.producer_card ? `<br><small>card ${esc(p.producer_card)}</small>` : ""}</td><td>${esc(p.farm)}<br><small>${esc(p.municipality || p.region)}</small></td><td>${esc(p.hectares)}</td><td>${esc(p.geometry?.type)}</td><td>${esc(kg.toLocaleString("en"))} ${esc(p.deliveries?.[0]?.unit || "kg")}<br><small>season ${esc(r?.yield?.season)}</small></td><td>${esc(r?.whisp_risk || "not checked")}</td><td>${esc(STATUS_LABELS[r?.status] || r?.status)}</td></tr>`;
+  });
+  const receipts = lotPlots.flatMap((p) => (p.deliveries || []).map((d) => `<tr><td>${esc(d.receipt)}</td><td>${esc(d.date)}</td><td>${esc(p.id)}</td><td>${esc(Number(d.kg).toLocaleString("en"))} ${esc(d.unit || "kg")}</td><td>${esc(d.source || "cooperative record")}</td></tr>`));
+  const art10 = rows.map((r) => `<tr><td>${esc(r.criterion)}</td><td>${esc(r.text)}</td><td>${esc(r.finding)}</td><td class="rating ${esc(r.rating)}">${esc(r.rating)}</td></tr>`);
+  const art11 = log.length ? log.map((e) => `<tr><td>${esc(e.plot)}</td><td>${esc(e.trigger)}</td><td>${esc(e.action)}</td><td>${esc(e.reason)}</td><td>${esc(e.reviewer)}</td><td>${esc(e.at)}</td></tr>`) : ['<tr><td colspan="6">No reviewer decisions recorded.</td></tr>'];
+  const goods = dds.commodities.map((c) => `<tr><td>${esc(c.hsHeading)}</td><td>${esc(c.descriptionOfGoods)}</td><td>${esc(c.estimatedKgFromDeliveries.toLocaleString("en"))} ${esc(c.estimatedKgUnit || "kg")}</td><td>[Importer fills: net mass shipped]</td></tr>`);
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Due diligence report ${esc(lotCheck.id)} (draft)</title>
+<style>
+body{font:13px/1.45 Georgia,serif;color:#111;max-width:960px;margin:24px auto;padding:0 16px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:28px 0 8px;border-bottom:1px solid #999;padding-bottom:3px}
+.draft{border:2px solid #b00;color:#b00;padding:8px 12px;font-weight:bold;margin:12px 0}
+table{border-collapse:collapse;width:100%;margin:6px 0}th,td{border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}th{background:#eee}
+small{color:#555}.rating.gap,.rating.manual,.rating.fail{background:#fff3cd}.sign{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px}.sign div{border-top:1px solid #111;padding-top:4px;margin-top:40px}
+code{font-size:11px;word-break:break-all}@media print{body{margin:0}}
+</style></head><body>
+<h1>EUDR due diligence report: lot ${esc(lotCheck.id)}</h1>
+<p>Regulation (EU) 2023/1115 as amended by 2025/2650 · prepared ${esc(now.slice(0, 10))} · country of production: ${esc(COUNTRY_NAMES[country] || country)} (${esc(country)})</p>
+<div class="draft">${esc(DISCLAIMER)}</div>
+
+<h2>1. Operator and supplier (Art 9(1)(e)-(f))</h2>
+${table(["", "Details"], [
+  `<tr><td>Operator (EU importer)</td><td>[Operator fills: name, address, EORI]</td></tr>`,
+  `<tr><td>Activity</td><td>${esc(dds.activityType)} into ${esc(dds.countryOfActivity)}</td></tr>`,
+  `<tr><td>Supplier</td><td>${esc(cooperative?.name)}${cooperative?.municipality ? ", " + esc(cooperative.municipality) : ""}${cooperative?.nit ? " · NIT " + esc(cooperative.nit) : ""}${cooperative?.registration ? " · " + esc(cooperative.registration) : ""}</td></tr>`,
+])}
+
+<h2>2. Goods (Art 9(1)(a)-(c))</h2>
+${table(["HS heading", "Description", "Estimated from deliveries", "Net mass"], goods)}
+
+<h2>3. Plots of land and geolocation (Art 9(1)(d))</h2>
+<p>${esc(lotPlots.length)} plot(s). Coordinates are in <code>traces-geolocation.geojson</code> (WGS84, 6 decimals) for upload to the EU Information System. Plots over 4 ha are polygons (Art 2(28)).</p>
+${table(["Plot", "Producer", "Farm", "ha", "Geolocation", "Season volume", "Whisp risk", "Status"], plotRows)}
+<p>Lot check: ${esc(lotCheck.message)}.</p>
+
+<h2>4. Purchase records</h2>
+${table(["Receipt", "Date", "Plot", "Quantity", "Source"], receipts)}
+
+<h2>5. Deforestation-free and legality evidence (Art 9(1)(g)-(h))</h2>
+<p>Deforestation risk per plot from FAO Whisp${whisp?.version ? " " + esc(whisp.version) : ""}${whisp?.checked_at ? ", checked " + esc(whisp.checked_at) : ""}. Whisp supports due diligence; it does not replace it. Legality evidence per plot: see <code>art9-evidence.json</code> (questionnaire pending where not supplied).</p>
+
+<h2>6. Risk assessment (Art 10)</h2>
+${table(["Criterion", "Art 10(2)", "Finding", "Rating"], art10)}
+<p><b>Draft conclusion:</b> negligible risk, subject to the operator's review of every criterion rated <i>gap</i> or <i>manual</i>.</p>
+
+<h2>7. Risk mitigation (Art 11)</h2>
+${table(["Plot", "Trigger", "Action", "Reason", "Reviewer", "When"], art11)}
+
+<h2>8. Files in this pack (keep 5 years, Art 12(5))</h2>
+${table(["File", "SHA-256"], files.map((f) => `<tr><td>${esc(f.filename)}</td><td><code>${esc(f.sha256)}</code></td></tr>`))}
+
+<h2>9. Statement and signature (Annex II)</h2>
+<p>To be completed by the operator in the EU Information System: "By submitting this due diligence statement the operator confirms that due diligence in accordance with Regulation (EU) 2023/1115 was carried out and that no or only a negligible risk was found that the relevant products do not comply with Article 3, point (a) or (b), of that Regulation." <small>(Annex II wording: check against EUR-Lex before filing.)</small></p>
+<div class="sign"><div>Name and function of the operator's signatory</div><div>Date and place</div></div>
+</body></html>
+`;
 }
 
 // ---------- the pack ----------
@@ -202,6 +272,8 @@ export async function buildPack({ plots, results, lot, cooperative, whisp, profi
     { id: "art11", title: "Art 11 mitigation log", subtitle: `${log.length} reviewer decision(s)`, filename: "art11-mitigation-log.json", mime: "application/json", content: art11Text },
   ];
   for (const d of docs) d.sha256 = await sha256(d.content);
+  const reportText = buildReportHtml({ lotCheck, lotPlots, res, dds, rows, log, cooperative, country, whisp, files: docs, now });
+  docs.push({ id: "report", title: "Due diligence report (readable, printable)", subtitle: "Arts 9-11 in one document · print to PDF · operator signs", filename: `due-diligence-report-${String(lot.id).replace(/[^A-Za-z0-9_-]/g, "_")}.html`, mime: "text/html", content: reportText, sha256: await sha256(reportText) });
 
   const keepUntil = new Date(Date.now() + 5 * 365.25 * 86400000).toISOString().slice(0, 10);
   const retention = {

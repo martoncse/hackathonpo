@@ -12,6 +12,9 @@
 //   POST /api/lots             { lots, plots? } -> segregation / taint check
 //   POST /api/export           { lot, plots? } -> importer pack (422 if blocked)
 //   POST /api/find-plots       -> searches Whisp for real demo plots (one-time setup)
+//   GET  /api/deliveries       -> purchases recorded in the app (receipts typed in or read from a photo)
+//   POST /api/deliveries       { plot_id, date, season, kg, receipt, source? } -> records one purchase, re-runs the rules
+//   DELETE /api/deliveries     -> removes the recorded purchases (demo reset)
 //   POST /api/extract          { imageBase64, mediaType } -> live Claude extraction of a receipt / land document
 import http from "node:http";
 import fs from "node:fs/promises";
@@ -25,7 +28,8 @@ import { extractDocument, friendlyExtractError, ExtractError } from "./extract.j
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(here, "public");
 const SHARED_DIR = path.join(here, "shared");
-const DATA_DIR = path.join(here, "data");
+// EUDR_DATA_DIR / EUDR_WHISP_CACHE: used by the end-to-end test to keep its files out of the repo.
+const DATA_DIR = process.env.EUDR_DATA_DIR ? path.resolve(process.env.EUDR_DATA_DIR) : path.join(here, "data");
 // Country profile. No EUDR_PROFILE = the original Colombian demo, unchanged.
 // EUDR_PROFILE=cocoa-ci loads profiles/cocoa-ci/{profile.json, sample-farms.json, whisp-cache.json}.
 const DEFAULT_PROFILE = { id: "", name: "Colombia: coffee and cocoa", country_iso2: "CO", whisp_national_codes: ["co"], rules: {}, story: true };
@@ -37,7 +41,8 @@ const profile = PROFILE_DIR
   : DEFAULT_PROFILE;
 applyRuleOverrides(profile.rules);
 const FARMS_FILE = path.join(PROFILE_DIR || PUBLIC_DIR, "sample-farms.json");
-const CACHE_FILE = path.join(PROFILE_DIR || PUBLIC_DIR, "whisp-cache.json");
+const CACHE_FILE = process.env.EUDR_WHISP_CACHE ? path.resolve(process.env.EUDR_WHISP_CACHE) : path.join(PROFILE_DIR || PUBLIC_DIR, "whisp-cache.json");
+const DELIVERIES_FILE = path.join(DATA_DIR, PROFILE_ID ? `deliveries-${PROFILE_ID}.json` : "deliveries.json");
 const DECISIONS_FILE = path.join(DATA_DIR, PROFILE_ID ? `decisions-${PROFILE_ID}.json` : "decisions.json");
 const PORT = Number(process.env.PORT) || 5174;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
@@ -103,8 +108,43 @@ function friendly(error) {
   return map[error?.code] || error?.message || "Unknown error";
 }
 
+// The sample farms plus the purchases recorded in the app (kept apart, so the sample file stays clean).
+async function farmsDoc() {
+  const doc = (await readJsonFile(FARMS_FILE)) || { farms: [] };
+  const recorded = (await readJsonFile(DELIVERIES_FILE)) || [];
+  const farms = (doc.farms || []).map((f) => {
+    const extra = recorded.filter((d) => d.plot_id === f.id).map(({ plot_id, ...d }) => d);
+    return extra.length ? { ...f, deliveries: [...(f.deliveries || []), ...extra] } : f;
+  });
+  return { ...doc, farms };
+}
+
 async function demoFarms() {
-  return (await readJsonFile(FARMS_FILE))?.farms || [];
+  return (await farmsDoc()).farms;
+}
+
+const SEASON_RE = /^[0-9]{4}(-[0-9A-Za-z]{1,4})?$/;
+
+async function handleAddDelivery(req, res) {
+  const b = await readJsonBody(req);
+  const farms = await demoFarms();
+  const plot = farms.find((f) => f.id === b.plot_id);
+  if (!plot) return sendJson(res, 400, { error: "Pick the plot (or producer) this purchase came from." });
+  const kg = Number(b.kg);
+  if (!(kg > 0 && kg <= 100000)) return sendJson(res, 400, { error: "Weight must be a number of kg between 0 and 100,000." });
+  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(b.date || "")) || Number.isNaN(Date.parse(b.date))) return sendJson(res, 400, { error: "Date must be yyyy-mm-dd." });
+  if (!SEASON_RE.test(String(b.season || ""))) return sendJson(res, 400, { error: "Season must look like 2025-26 or 2026-A." });
+  const receipt = String(b.receipt || "").trim().slice(0, 40);
+  if (!receipt) return sendJson(res, 400, { error: "The receipt number is required: it links the purchase to the paper record." });
+  if (farms.some((f) => (f.deliveries || []).some((d) => d.receipt === receipt))) return sendJson(res, 409, { error: `Receipt ${receipt} is already recorded.` });
+  const unit = plot.deliveries?.[0]?.unit || (String(plot.crop).toLowerCase() === "coffee" ? "kg pergamino seco" : "kg");
+  const entry = { plot_id: plot.id, date: b.date, season: b.season, kg, unit, receipt, source: b.source === "photo" ? "photo, fields accepted by a person" : "typed in", recorded_at: new Date().toISOString() };
+  const recorded = (await readJsonFile(DELIVERIES_FILE)) || [];
+  recorded.push(entry);
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(DELIVERIES_FILE, JSON.stringify(recorded, null, 2));
+  const plots = await demoFarms();
+  return sendJson(res, 201, { delivery: entry, result: (await currentResults(plots)).find((r) => r.id === plot.id) });
 }
 
 function whispMeta(fc, checkedAt) {
@@ -165,11 +205,12 @@ async function handleLots(req, res) {
 
 async function handleExport(req, res) {
   const body = await readJsonBody(req);
-  const farmsDoc = await readJsonFile(FARMS_FILE);
-  const plots = body.plots?.length ? body.plots : farmsDoc?.farms || [];
+  if (!Array.isArray(body.lot?.plot_ids)) return sendJson(res, 400, { error: "Send a lot: { id, market, plot_ids: [...] }" });
+  const doc = await farmsDoc();
+  const plots = body.plots?.length ? body.plots : doc.farms;
   const saved = await savedResult(plots);
   const results = saved?.results || classify(plots, null, decisions);
-  const pack = await buildPack({ plots, results, lot: body.lot, cooperative: farmsDoc?.cooperative, whisp: saved?.whisp, profile });
+  const pack = await buildPack({ plots, results, lot: body.lot, cooperative: doc.cooperative, whisp: saved?.whisp, profile });
   return sendJson(res, pack.blocking.length ? 422 : 200, pack);
 }
 
@@ -178,7 +219,7 @@ async function handleExtract(req, res) {
     const { imageBase64, mediaType } = await readJsonBody(req, MAX_IMAGE_BODY_BYTES);
     if (typeof imageBase64 !== "string" || !imageBase64) throw new ExtractError(400, "No image was sent.");
     if (!IMAGE_TYPES.has(mediaType)) throw new ExtractError(400, "Use a JPEG, PNG, WebP or GIF image.");
-    const result = await extractDocument(imageBase64, mediaType);
+    const result = await extractDocument(imageBase64, mediaType, profile.country_iso2);
     return sendJson(res, 200, { source: "live", extracted_at: new Date().toISOString(), ...result });
   } catch (error) {
     if (error instanceof WhispError) return sendJson(res, 413, { error: "Image too large. Use a smaller photo." });
@@ -264,10 +305,17 @@ async function route(req, res) {
       return sendJson(res, 200, { ok: false, error: friendly(error) });
     }
   }
-  if (pathname === "/api/farms" && req.method === "GET") return sendJson(res, 200, { ...((await readJsonFile(FARMS_FILE)) || { farms: [] }), profile });
+  if (pathname === "/api/farms" && req.method === "GET") return sendJson(res, 200, { ...(await farmsDoc()), profile });
+  if (pathname === "/api/deliveries" && req.method === "GET") return sendJson(res, 200, { deliveries: (await readJsonFile(DELIVERIES_FILE)) || [] });
+  if (pathname === "/api/deliveries" && req.method === "POST") return handleAddDelivery(req, res);
+  if (pathname === "/api/deliveries" && req.method === "DELETE") {
+    await fs.rm(DELIVERIES_FILE, { force: true });
+    return sendJson(res, 200, { deliveries: [] });
+  }
   if (pathname === "/api/risk" && req.method === "POST") return handleRisk(req, res);
   if (pathname === "/api/risk/saved" && req.method === "GET") {
-    return sendJson(res, 200, (await savedResult(await demoFarms())) || { source: "none", results: [] });
+    const plots = await demoFarms();
+    return sendJson(res, 200, (await savedResult(plots)) || { source: "none", results: classify(plots, null, decisions) });
   }
   if (pathname === "/api/review" && req.method === "GET") return sendJson(res, 200, { decisions });
   if (pathname === "/api/review" && req.method === "POST") return handleReview(req, res);
