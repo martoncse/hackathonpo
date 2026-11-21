@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Presko Heat Advisory</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: division coordinator sees the forecast and every school; principal sees one recommendation and acts on it. */
+:root {
+  --bg: #f4f6f5; --surface: #ffffff; --sunk: #edf1ef; --ink: #121c19; --muted: #66756f; --line: #dbe2df;
+  --accent: #0e6c64; --accent-ink: #ffffff;
+  --rec-bg: #e3f1ee; --rec-line: #9fcfc6;
+  --full: #2e8b57; --morning: #c98a10; --partial: #d4602a; --adm: #b3261e; --afternoon: #6a55b8;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1412; --surface: #151f1c; --sunk: #1b2724; --ink: #e4ede9; --muted: #95a8a2; --line: #26332f;
+  --accent: #4fb3a7; --accent-ink: #062320; --rec-bg: #12302b; --rec-line: #2f6b62;
+  --full: #4fbf86; --morning: #efb547; --partial: #f08a55; --adm: #ef6a60; --afternoon: #a493ea; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1412; --surface: #151f1c; --sunk: #1b2724; --ink: #e4ede9; --muted: #95a8a2; --line: #26332f;
+  --accent: #4fb3a7; --accent-ink: #062320; --rec-bg: #12302b; --rec-line: #2f6b62;
+  --full: #4fbf86; --morning: #efb547; --partial: #f08a55; --adm: #ef6a60; --afternoon: #a493ea; color-scheme: dark }
+
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--body); margin: 0 }
+.wrap { max-width: 880px; margin: 0 auto; padding-block: 16px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 12px }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.muted { color: var(--muted) }
+button, select, input, textarea { font: inherit; color: var(--ink) }
+button { border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 7px 12px; cursor: pointer }
+button:hover:not(:disabled) { border-color: var(--accent) }
+button:disabled { opacity: .55; cursor: default }
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600 }
+select, input[type=number] { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px }
+textarea, input[type=text] { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px }
+textarea { resize: vertical; min-height: 72px }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0 }
+h2 { margin: 0; font-size: 15px; font-weight: 700 }
+h3 { margin: 0; font-size: 14px }
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px }
+.sec-head .sub { font-size: 12px; color: var(--muted) }
+
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px }
+.brand { font-weight: 700; font-size: 16px }
+.who { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; font-size: 13px }
+
+.field { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px }
+.field label { font-weight: 600 }
+.cat { font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--sunk) }
+.c3, .c4 { color: var(--adm) } .c2 { color: var(--morning) }
+.reading { display: inline-flex; align-items: baseline; gap: 8px }
+.reading b { font: 700 22px var(--mono) }
+
+.sumline { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px }
+.ok { color: var(--full); font-weight: 600 }
+table { border-collapse: collapse; width: 100% }
+th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: 11px; font-weight: 600; color: var(--muted) }
+.scroll { max-height: 60vh; overflow: auto }
+.badge { display: inline-block; font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 99px; color: #fff; white-space: nowrap }
+.b-full { background: var(--full) } .b-morning { background: var(--morning) } .b-afternoon { background: var(--afternoon) } .b-partial { background: var(--partial) } .b-adm { background: var(--adm) }
+.hours svg { display: block; width: 100%; height: auto }
+.src2 { font-size: 12px; color: var(--muted) }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chips button { padding: 4px 10px; font-size: 13px }
+.out { white-space: pre-wrap; font: 12px/1.5 var(--mono); background: var(--sunk); border-radius: 8px; padding: 10px 12px }
+.reason { color: var(--muted); font-size: 12px }
+.warn { color: var(--morning); font-weight: 600 }
+.why { font-size: 13px; display: grid; gap: 4px } .why b { font-family: var(--mono) }
+.band { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px }
+.foot { font-size: 12px; color: var(--muted) }
+.foot a { color: var(--accent) }
+
+/* rule explainer */
+.rule summary { cursor: pointer }
+.rule td, .rule th { padding: 5px 6px }
+.rule input[type=number] { width: 64px }
+.rule input[type=time] { border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; background: var(--surface) }
+.steps { display: grid; gap: 14px; counter-reset: step }
+.step { display: grid; gap: 6px; padding-left: 34px; position: relative }
+.step::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 12px; display: grid; place-items: center }
+.step p { margin: 0; color: var(--muted); font-size: 13px }
+.pts-pos { color: var(--adm); font-weight: 600 } .pts-neg { color: var(--full); font-weight: 600 }
+.example { background: var(--sunk); border-radius: 8px; padding: 10px 12px; font-size: 13px; display: grid; gap: 4px }
+
+/* login */
+.login { max-width: 420px; width: 100%; margin: 8vh auto 0; display: grid; gap: 14px; padding: 24px }
+.login h1 { margin: 0; font-size: 22px; font-weight: 700 }
+.login input[type=email] { width: 100%; font: 15px var(--body); padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface) }
+.login button[type=submit] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 10px; font-weight: 600 }
+.login .err { color: var(--adm); font-size: 13px; min-height: 1em }
+.demo { display: grid; gap: 6px }
+.demo button { text-align: left; display: flex; justify-content: space-between; gap: 8px }
+.demo button span { color: var(--muted); font: 12px var(--mono) }
+
+/* principal: recommendation panel */
+.rec { background: var(--rec-bg); border: 1px solid var(--rec-line); border-left: 6px solid var(--accent); border-radius: 12px; padding: 16px 18px; display: grid; gap: 12px }
+.rec .label { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent) }
+.rec .plan { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px }
+.rec .plan .badge { font-size: 17px; padding: 6px 16px }
+.rec .times { font: 600 14px var(--mono) }
+.rec .summary { font-size: 14px }
+.rec .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.rec .actions .primary { padding: 10px 22px; font-size: 15px }
+.status { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px }
+.ovr summary { cursor: pointer; color: var(--muted); font-size: 13px }
+.ovr form { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px } .ovr input { flex: 1; min-width: 200px }
+.err { color: var(--adm); font-size: 13px }
+
+/* building records */
+.bl { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line) }
+.bl:first-child { border-top: 0; padding-top: 4px }
+.bl-head { display: flex; gap: 10px; align-items: center }
+.kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 4px 16px; font-size: 13px }
+.kv div span { color: var(--muted) }
+.req { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px }
+.req-item { font-size: 13px; background: var(--sunk); border-radius: 8px; padding: 8px 10px }
+
+/* popups */
+dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 0; width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px) }
+dialog::backdrop { background: rgba(8, 14, 12, .55) }
+.dlg { display: grid; gap: 12px; padding: 18px }
+.dlg-head { display: flex; align-items: center; gap: 10px }
+.dlg-head .x { margin-left: auto; border: 0; background: transparent; font-size: 18px; padding: 2px 8px }
+.phone { background: var(--sunk); border-radius: 18px; padding: 14px 12px; display: grid; gap: 8px }
+.phone .meta { text-align: center; font-size: 11px; color: var(--muted) }
+.bubble { background: var(--surface); border: 1px solid var(--line); border-radius: 14px 14px 14px 4px; padding: 10px 12px; white-space: pre-wrap; font-size: 13px; max-width: 92% }
+.bubble.me { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); border-radius: 14px 14px 4px 14px; justify-self: end }
+.reply { display: flex; gap: 6px } .reply input { flex: 1 }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 13px; box-shadow: 0 6px 24px rgba(0,0,0,.2); z-index: 10 }
+/* coordinator: communications list, sub-pages, school dashboard */
+.navlist { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+.navrow { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 12px 14px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: var(--surface); text-align: left; width: 100%; min-height: 56px }
+.navrow:first-child { border-top: 0 }
+.navrow:hover { background: var(--sunk) }
+.navrow .t { font-weight: 600 } .navrow .d { font-size: 12px; color: var(--muted) }
+.navrow .st { font-size: 12px; color: var(--muted); white-space: nowrap } .navrow .chev { color: var(--muted); font-size: 18px }
+.back { justify-self: start; border: 0; background: transparent; color: var(--accent); font-weight: 600; padding: 6px 0 }
+.back:hover { text-decoration: underline }
+.page-head { display: grid; gap: 4px }
+.page-head h1 { margin: 0; font-size: 20px }
+.scroll thead th { position: sticky; top: 0; background: var(--surface); z-index: 1 }
+td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums }
+.schoollink { border: 0; background: transparent; padding: 0; color: var(--ink); font-weight: 600; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px }
+.schoollink:hover { color: var(--accent); text-decoration-color: var(--accent) }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 2px }
+.kpi .v { font: 700 26px var(--mono) } .kpi .l { font-size: 13px; font-weight: 600 } .kpi .s { font-size: 12px; color: var(--muted) }
+.strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(12px, 1fr)); gap: 3px }
+.strip i { height: 22px; border-radius: 3px; display: block }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted) }
+.note { font-size: 12px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 8px }
+.empty { text-align: center; padding: 22px 12px; color: var(--muted); display: grid; gap: 10px; justify-items: center }
+.basis { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px }
+.rec .actions .secondary { padding: 10px 18px; font-size: 15px; background: var(--surface); border: 1px solid var(--accent); color: var(--accent); font-weight: 600 }
+.ovr-panel { background: var(--surface); border: 1px solid var(--rec-line); border-radius: 10px; padding: 12px; display: grid; gap: 8px }
+.ovr-panel form { display: flex; gap: 6px; flex-wrap: wrap } .ovr-panel input { flex: 1; min-width: 200px }
+@media (pointer: coarse) { button, select { min-height: 44px } }
+@media (max-width: 640px) { .who { margin-left: 0 } .navrow { grid-template-columns: 1fr auto } .navrow .st { grid-column: 1 } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <form class="card login" id="login" novalidate>
+    <h1>Presko Heat Advisory</h1>
+    <div class="muted" style="font-size:13px">Schools Division of Iloilo City · classroom heat-risk decisions under DepEd Order No. 37, s. 2022</div>
+    <label for="email" style="font-weight:600">DepEd email address</label>
+    <input id="email" type="email" autocomplete="username" list="accounts" placeholder="name@deped.gov.ph" required>
+    <datalist id="accounts"></datalist>
+    <button type="submit">Sign in</button>
+    <div class="err" id="err" role="alert"></div>
+    <div class="demo" id="demo"></div>
+    <div class="foot">Demonstration sign-in. No password required.</div>
+  </form>
+
+  <header class="card top" id="topbar" hidden>
+    <div class="brand">Presko Heat Advisory <span class="muted" style="font-weight:500" id="brandSub"></span></div>
+    <label class="muted" style="font-size:12px;display:inline-flex;gap:6px;align-items:center">Demo scenario <select id="scenario"><option value="open">Live forecast · tomorrow</option><option value="hot">Hot day · hot-season profile</option><option value="nov3">Replay · 3 Nov 2026 (PAGASA 43 °C)</option></select></label>
+    <span class="who"><span class="muted mono" id="whoEmail"></span><button id="signout">Sign out</button></span>
+  </header>
+
+  <!-- ===== Division coordinator ===== -->
+  <div id="sdo" hidden style="display:grid;gap:12px">
+  <div id="sdoHome" style="display:grid;gap:12px">
+    <section class="card" style="display:grid;gap:12px">
+      <div class="sec-head"><h2>Heat Index Forecast</h2><span class="sub" id="fcDay"></span></div>
+      <div class="src2" id="srcNote"></div>
+      <div class="hours" id="hours"></div>
+      <div class="field">
+        <span class="reading"><span class="muted">Morning 06:00–11:00</span><b id="hiAM"></b><span id="catAM" class="cat"></span></span>
+        <span class="reading"><span class="muted">Afternoon 12:00–17:00</span><b id="hiPM"></b><span id="catPM" class="cat"></span></span>
+      </div>
+      <div class="field"><span class="muted">DepEd 4H tier</span><b id="tierVal" style="font-size:18px"></b><span class="muted" id="tierAct" style="font-size:13px"></span></div>
+    </section>
+
+    <details class="card rule" id="ruleCard"><summary id="ruleSummary"></summary><div id="ruleBody" style="margin-top:12px;display:grid;gap:14px"></div></details>
+
+    <section class="card" style="display:grid;gap:12px">
+      <div class="sec-head"><h2>Division School Status</h2><span class="sub">Tomorrow's recommendations and principals' responses · select a school to open its dashboard</span></div>
+      <div class="sumline" id="sum"></div>
+      <div class="chips" id="filters" role="group" aria-label="Filter schools"></div>
+      <div class="scroll"><table id="list"></table></div>
+    </section>
+
+    <section class="card" style="display:grid;gap:12px">
+      <div class="sec-head"><h2>Communications</h2><span class="sub">Reminders, briefings and reports for tomorrow's advisory</span></div>
+      <div class="navlist" id="commsNav"></div>
+    </section>
+
+    <section class="card" style="display:grid;gap:10px" id="reqCard"></section>
+  </div>
+  <div id="sdoPage" hidden style="display:grid;gap:12px"></div>
+  </div>
+
+  <!-- ===== Principal ===== -->
+  <div id="head" hidden style="display:grid;gap:12px">
+    <section class="card field"><h2 id="schoolName"></h2><span class="muted">Morning</span><b class="mono" id="hiRoAM"></b><span class="muted">Afternoon</span><b class="mono" id="hiRoPM"></b><span class="muted" id="cutoffRo"></span><button id="openSms" style="margin-left:auto">View SMS alert</button></section>
+    <section class="rec" id="decide"></section>
+    <section class="card" style="display:grid;gap:10px" id="reasons"></section>
+    <section class="card" style="display:grid;gap:10px" id="readingsCard"></section>
+    <section class="card" style="display:grid;gap:10px" id="records"></section>
+  </div>
+
+  <div class="foot" id="sources" hidden>Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> hourly forecast · Heat-index categories: <a href="https://mb.com.ph/2026/03/24/feeling-the-heat-heres-what-the-heat-index-means" target="_blank" rel="noopener">PAGASA</a> · Schools: <a href="https://data.humdata.org/dataset/hotosm_phl_education_facilities" target="_blank" rel="noopener">OpenStreetMap/HDX</a> · Building records: <a href="https://support.lis.deped.gov.ph/support/Manuals/NSBI-2022-2023-User-Guide.pdf" target="_blank" rel="noopener">NSBI</a> format, illustrative values · Decision authority: DepEd Order No. 37, s. 2022</div>
+</div>
+
+<!-- SMS alert as received on the principal's phone (demo) -->
+<dialog id="smsDlg" aria-labelledby="smsTitle"><div class="dlg">
+  <div class="dlg-head"><h3 id="smsTitle">SMS alert · received on your phone</h3><button class="x" data-close aria-label="Close">×</button></div>
+  <div class="phone" id="phone"></div>
+  <div class="foot">Demo preview. In production this SMS is sent to the principal's registered mobile number at 16:00 and is not shown on the website.</div>
+</div></dialog>
+
+<!-- Parent broadcast -->
+<dialog id="parentDlg" aria-labelledby="pTitle"><div class="dlg">
+  <div class="dlg-head"><h3 id="pTitle">Notify parents and guardians</h3><button class="x" data-close aria-label="Close">×</button></div>
+  <div class="muted" style="font-size:13px" id="pIntro"></div>
+  <div class="chips" id="pLang"></div>
+  <label for="pText" style="font-weight:600;font-size:13px">Message (you can edit before sending)</label>
+  <textarea id="pText" rows="6"></textarea>
+  <div class="muted" style="font-size:12px" id="pCount"></div>
+  <div class="chips" style="justify-content:flex-end"><button data-close>Cancel</button><button class="primary" id="pSend">Confirm and broadcast</button></div>
+</div></dialog>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script type="module">
+import { makeDivision, planDivisionSafety, planSchoolSafety, correctionsFrom, modelBuildings, check, pagasaCategory, SLOTS, windowsFromHourly, FEATURE_KEYS } from "./engine.js";
+import { LIMITS, DEPED_4H, tier4H, CHECKPOINTS, fillSolar, shiftToPeak, heatIndex, indoorHour } from "./model/safety-model.js";
+import { FORECAST_SNAPSHOT, DEMO_CLOSURE, REPLAY_NOV3 } from "./hourly-data.js";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const MODE = { full: "Full-day classes", morning: "Morning session only", afternoon: "Afternoon session only", partial: "Partial in-person + ADM", adm: "Alternative Delivery Mode" };
+const MODE_SHORT = { full: "Full day", morning: "Morning only", afternoon: "Afternoon only", partial: "Partial + ADM", adm: "ADM (no in-person)" };
+const MCOL = { full: "var(--full)", morning: "var(--morning)", afternoon: "var(--afternoon)", partial: "var(--partial)", adm: "var(--adm)" };
+const BCOL = { green: "var(--full)", amber: "var(--morning)", red: "var(--adm)" };
+const TIER_COL = { hayo: "var(--full)", hinay: "var(--morning)", hinga: "var(--partial)", hinto: "var(--adm)" };
+const hh = (h) => `${String(h).padStart(2, "0")}:00`;
+const SLOT_LABEL = Object.fromEntries(Object.values(SLOTS).map((s) => [s.id, s.label]));
+const catIdx = (hi) => (hi >= 52 ? 4 : hi >= 42 ? 3 : hi >= 33 ? 2 : 1);
+const SMS_CODES = { "1": "confirm", "2": "full", "3": "adm" };
+const LANGS = [["en", "English"], ["tl", "Filipino"], ["hil", "Hiligaynon"]];
+const now = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+const signed = (n) => (n > 0 ? `+${n}` : `${n}`);
+const ptsCls = (n) => (n > 0 ? "pts-pos" : n < 0 ? "pts-neg" : "");
+
+const state = {
+  hi: { am: 30, pm: 34 }, scenario: "open", hourly: [], day: "", live: false, forecastDays: FORECAST_SNAPSHOT.days,
+  schools: makeDivision(), school: null, lang: "en", filter: "all",
+  decisions: {},  // schoolId -> { choice, reason, via, at }
+  sent: {},       // schoolId -> { at, lang, text, recipients }
+  smsThread: {},  // schoolId -> [{me, text}]
+  requests: [],   // { id, school, text, at, status }
+  comms: {},      // kind -> { at, label, n }
+  rule: { version: 1, approvedBy: null, approvedAt: null, cutoff: "17:00" },
+  dayHours: [],   // hourly weather for tomorrow: [{h, t, rh, sw}]
+  forecastHI: null, // PAGASA forecast heat index when known (replay), else the peak of the hourly data
+  readings: {},   // schoolId -> { buildingId: [{h, t}] } indoor readings at 08:00 / 12:00 / 14:00
+};
+const ruleLabel = () => `v2.${state.rule.version}`;
+
+// ---------- plans: Safety Model v2.1 ----------
+const correctionsFor = (s) => (state.readings[s.id] ? correctionsFrom(s, state.dayHours, state.readings[s.id]) : undefined);
+function divisionPlan() {
+  const corrections = {}; for (const s of state.schools) { const c = correctionsFor(s); if (c) corrections[s.id] = c; }
+  return planDivisionSafety(state.schools, state.dayHours, { forecastHI: state.forecastHI ?? undefined, corrections });
+}
+const tierNow = () => tier4H(state.forecastHI ?? Math.max(...state.hourly.map((x) => x.hi)));
+
+// ---------- plans: principal decision > recommendation ----------
+function withMode(s, p, mode) {
+  if (mode === "adm") return { ...p, mode, slotsUsed: [], assignments: p.assignments.map((a) => ({ ...a, room: null, slot: "adm" })) };
+  if (mode === "full") return { ...p, mode, slotsUsed: s.doubleShift ? ["am", "pm"] : ["full"] };
+  if (mode === "afternoon") return { ...p, mode, slotsUsed: ["afternoon"] };
+  return { ...p, mode: "morning", slotsUsed: ["morning"] };
+}
+function effective(s, p) {
+  const d = state.decisions[s.id];
+  if (!d || d.choice === "confirm") return p;
+  return withMode(s, p, d.choice);
+}
+
+// ---------- messages ----------
+function times(p, lang) {
+  const or = { en: "or", tl: "o", hil: "ukon" }[lang], and = { en: "and", tl: "at", hil: "kag" }[lang];
+  if (p.slotsUsed.length === 2 && p.mode !== "full") return `${SLOT_LABEL[p.slotsUsed[0]]} ${or} ${SLOT_LABEL[p.slotsUsed[1]]}`;
+  return p.slotsUsed.map((x) => SLOT_LABEL[x]).join(` ${and} `);
+}
+function parentMessage(s, p, lang) {
+  const t = times(p, lang), am = state.hi.am, pm = state.hi.pm;
+  const adm = p.assignments.filter((a) => a.slot === "adm").map((a) => s.sections.find((x) => x.id === a.section).name);
+  const list = adm.slice(0, 6).join(", ") + (adm.length > 6 ? ` +${adm.length - 6}` : "");
+  const T = {
+    en: { head: `${s.name}: heat index tomorrow ${am}°C morning, ${pm}°C afternoon.`, full: `Classes run as normal, ${t}. Please send your child with water.`, morning: `Morning classes only, ${t}. Home by 11:00. Bring water.`, afternoon: `Afternoon classes only, ${t}. No morning classes. Bring water.`, partial: `Most sections half day, ${t}. Modules at home: ${list}.`, adm: `No in-person classes. Modules at home (ADM).`, sign: "– Principal" },
+    tl: { head: `${s.name}: Heat index bukas ${am}°C sa umaga, ${pm}°C sa hapon.`, full: `Normal ang klase, ${t}. Magdala ng tubig.`, morning: `Pang-umaga lamang ang klase, ${t}. Uuwi bago mag-11:00. Magdala ng tubig.`, afternoon: `Panghapon lamang ang klase, ${t}. Walang klase sa umaga. Magdala ng tubig.`, partial: `Kalahating araw ang karamihan ng seksyon, ${t}. Modules sa bahay: ${list}.`, adm: `Walang face-to-face na klase. Modules sa bahay (ADM).`, sign: "– Punong-guro" },
+    hil: { head: `${s.name}: Heat index buwas ${am}°C sa aga, ${pm}°C sa hapon.`, full: `Normal ang klase, ${t}. Magdala sang tubig.`, morning: `Sa aga lang ang klase, ${t}. Mapauli antes mag-11:00. Magdala sang tubig.`, afternoon: `Sa hapon lang ang klase, ${t}. Wala sing klase sa aga. Magdala sang tubig.`, partial: `Tunga lang sang adlaw ang kalabanan nga seksyon, ${t}. Modules sa balay: ${list}.`, adm: `Wala sing face-to-face nga klase. Modules sa balay (ADM).`, sign: "– Punong-manunudlo" },
+  }[lang];
+  return `${T.head} ${T[p.mode]}\n${T.sign}`;
+}
+function headSms(s, p) {
+  return `PRESKO · ${s.name}\nTomorrow: DepEd 4H ${tierNow().label.toUpperCase()}, heat index up to ${Math.round(p.safety.peakHI)}°C\nRecommended: ${MODE[p.mode].toUpperCase()}${p.slotsUsed.length ? ` (${times(p, "en")})` : ""}\nReply 1 Confirm · 2 Full day · 3 ADM\nPlease reply by ${state.rule.cutoff}.`;
+}
+// ---------- hourly strip ----------
+function hoursSvg() {
+  const hrs = state.hourly; if (!hrs.length) return "";
+  const W = 600, H = 92, bw = W / 12, max = Math.max(56, ...hrs.map((x) => x.hi)), min = 20;
+  const y = (v) => 70 - ((v - min) / (max - min)) * 62;
+  const col = (v) => (v >= 52 ? "var(--adm)" : v >= 42 ? "var(--partial)" : v >= 33 ? "var(--morning)" : "var(--full)");
+  const bars = hrs.map((x, i) => `<rect x="${i * bw + 4}" y="${y(x.hi)}" width="${bw - 8}" height="${70 - y(x.hi)}" rx="3" fill="${col(x.hi)}"><title>${x.h}:00 · ${x.hi}°C</title></rect><text x="${i * bw + bw / 2}" y="${y(x.hi) - 3}" text-anchor="middle" font-size="10" fill="var(--ink)" font-family="var(--mono)">${Math.round(x.hi)}</text><text x="${i * bw + bw / 2}" y="86" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="var(--mono)">${String(x.h).padStart(2, "0")}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Hourly heat index, 06:00 to 17:00"><rect x="0" y="0" width="${bw * 5}" height="74" fill="var(--sunk)" rx="4"/><rect x="${bw * 6}" y="0" width="${bw * 5}" height="74" fill="var(--sunk)" rx="4"/>${bars}</svg>`;
+}
+
+// ---------- coordinator: Safety Model v2.1 explained ----------
+const OFFSET_ROWS = [
+  ["Metal roof, no ceiling", "+2.6", "Measured (Accra classrooms)"], ["Ceiling under metal roof", "−0.1", "Measured (Accra classrooms)"],
+  ["Makeshift / tent", "+3.6", "Assumption"], ["Top floor under the roof", "+0.8", "Assumption"], ["Faces west (after 13:00)", "+1.6", "Assumption"],
+  ["Poor / cross ventilation", "+0.8 / −0.6", "Assumption"], ["Shade trees", "−0.8", "Assumption"], ["Learners (per 40)", "+1.0", "Assumption"],
+];
+function renderRule(byId) {
+  const r = state.rule, t = tierNow();
+  $("ruleSummary").innerHTML = `<b>Safety Model ${ruleLabel()} · How decisions are made</b> ${r.approvedBy ? `<span class="muted">approved ${r.approvedAt} · cut-off ${r.cutoff}</span>` : `<span class="warn">pending approval</span>`}`;
+  const over = Object.entries(state.decisions).filter(([, d]) => d.choice !== "confirm");
+  const byType = {};
+  for (const [id] of over) for (const b of state.schools[+id].buildings) byType[b.nsbi.type] = (byType[b.nsbi.type] || 0) + 1;
+  const withReadings = Object.values(state.readings).reduce((n, o) => n + Object.values(o).filter((a) => a.length).length, 0);
+  const closed = state.schools.find((s) => byId[s.id].mode === "adm");
+  const ex = closed ? byId[closed.id].safety : null;
+  const exSession = ex ? ex.sessions.morning : null;
+  const lim = (k, step = 1) => `<input type="number" step="${step}" data-lim="${k}" value="${LIMITS[k]}" aria-label="${k}">`;
+  $("ruleBody").innerHTML = `
+    <p class="muted" style="margin:0;font-size:13px">For every classroom building, Presko estimates how hot it will be inside tomorrow, hour by hour, and uses a room only while it stays under a heat-stress limit set for children. Two hard stops come first. Each closure records the building, hour and estimate behind it, so principals have the documented, site-specific reason EO 130 asks for.</p>
+    <div class="steps">
+      <div class="step"><h3>DepEd 4H tier</h3><p>From the forecast heat index (DepEd Memorandum 064, s. 2026). Tomorrow: <b style="color:${TIER_COL[t.key]}">${t.label}</b>, ${esc(t.action.toLowerCase())}.</p>
+        <table><tbody>${DEPED_4H.map((x) => `<tr${x.key === t.key ? ' style="background:var(--sunk)"' : ""}><td><b style="color:${TIER_COL[x.key]}">${x.label}</b></td><td class="mono">${x.min === -Infinity ? `below ${x.max + 0.01}` : x.max === Infinity ? `${x.min} and above` : `${x.min}–${Math.floor(x.max)}`} °C</td><td>${esc(x.action)}</td></tr>`).join("")}</tbody></table></div>
+      <div class="step"><h3>Hard stops</h3><p>No school at all if the forecast heat index reaches the day limit (PAGASA "extreme danger"). A session is cancelled if the heat index while pupils walk to or from school, with sun, reaches the commute limit.</p>
+        <table><tbody><tr><td>Day limit (heat index)</td><td>${lim("dayVetoHI")} °C</td></tr><tr><td>Commute limit (heat index with sun)</td><td>${lim("commuteVetoHI")} °C</td></tr></tbody></table></div>
+      <div class="step"><h3>Heat inside each classroom</h3><p>Outdoor temperature plus what the building and the class add, hour by hour. Fans help only below 35 °C. On a Hinto day, buildings with no indoor readings get a +1 °C safety margin.</p>
+        <table><thead><tr><th>Building feature</th><th>At full sun</th><th>Basis</th></tr></thead><tbody>${OFFSET_ROWS.map(([a, b, c]) => `<tr><td>${a}</td><td class="mono">${b} °C</td><td class="muted">${c}</td></tr>`).join("")}</tbody></table></div>
+      <div class="step"><h3>Learning from indoor readings</h3><p>Principals enter the 08:00, 12:00 and 14:00 readings that Memo 064 asks for. Each building's estimate is corrected by its average gap from the readings, so outdated records fix themselves. ${withReadings ? `<b>${withReadings} building${withReadings === 1 ? "" : "s"}</b> currently ha${withReadings === 1 ? "s" : "ve"} readings.` : "No readings entered yet."}</p></div>
+      <div class="step"><h3>Limits for children</h3><p>Heat stress is measured as WBGT, which accounts for humidity. A room is out for a session if any hour reaches the unsafe limit; between the two limits, classes run with water and rest breaks.</p>
+        <table><tbody><tr><td>Caution from (WBGT)</td><td>${lim("classCautionWBGT", 0.5)}</td></tr><tr><td>Unsafe from (WBGT)</td><td>${lim("classUnsafeWBGT", 0.5)}</td></tr></tbody></table>
+        <p>Japan's Ministry of the Environment stops children's activity at 31; ISO 7243 puts light work at about 30. Moving this limit by 1 roughly doubles or halves closures.</p></div>
+      <div class="step"><h3>School plan</h3><p>Full day if enough rooms are safe all day; otherwise the session with more safe rooms; sections that still do not fit move to Alternative Delivery Mode. An independent check confirms no section is left out and no room is double-booked.</p></div>
+    </div>
+    ${exSession ? `<div class="example"><b>Example of a recorded reason · ${esc(closed.name)} (closed)</b>${exSession.evidence.map((e) => `<div>${esc(e)}</div>`).join("")}</div>` : ""}
+    <div class="field"><label for="cutoff">Reply cut-off for principals</label><input id="cutoff" type="time" value="${r.cutoff}"></div>
+    <div class="chips"><button id="approve" aria-pressed="${!!r.approvedBy}">${r.approvedBy ? "Model approved" : `Approve Safety Model ${ruleLabel()}`}</button></div>
+    ${over.length ? `<div><h3>Overrides by building type</h3><div class="muted" style="font-size:13px">${Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${esc(t)} ${n}`).join(" · ")}</div></div>` : ""}`;
+  $("cutoff").addEventListener("change", (e) => { r.cutoff = e.target.value || "17:00"; render(); });
+  $("ruleBody").querySelectorAll("[data-lim]").forEach((el) => el.addEventListener("change", () => {
+    const v = +el.value; if (!Number.isFinite(v)) return;
+    LIMITS[el.dataset.lim] = v; r.version += 1; r.approvedBy = null; r.approvedAt = null; state.decisions = {}; state.sent = {}; render();
+  }));
+  $("approve").addEventListener("click", () => { if (r.approvedBy) return; r.approvedBy = state.user.email; r.approvedAt = `${new Date().toISOString().slice(0, 10)} ${now()}`; render(); });
+}
+
+function rowsFor(byId) {
+  return state.schools.map((s) => {
+    const p = byId[s.id], d = state.decisions[s.id];
+    const st = !d ? "pending" : d.choice === "confirm" ? "confirm" : "override";
+    return { s, p, d, st, ep: effective(s, p) };
+  });
+}
+
+function renderSdo(div, byId, conflicts) {
+  renderRule(byId);
+  $("scenario").value = state.scenario;
+  $("fcDay").textContent = state.scenario === "hot" ? "Demo hot-season day" : state.scenario === "nov3" ? "Replay of 3 Nov 2026" : state.day ? `Tomorrow, ${state.day}` : "";
+  $("srcNote").textContent = {
+    open: `Computed automatically from the Open-Meteo hourly forecast for Iloilo City (${state.live ? "live" : `snapshot ${FORECAST_SNAPSHOT.fetchedAt.slice(11, 16)} UTC`}). In use, the PAGASA forecast sets the tier; no manual entry.`,
+    hot: "Demo: illustrative hot-season hourly temperature and humidity, run through the same model.",
+    nov3: "Real Open-Meteo hours for Iloilo City on 3 Nov 2026, adjusted to PAGASA's 43 °C forecast. That day 65 Iloilo City schools closed for heat.",
+  }[state.scenario];
+  const t = tierNow(); $("tierVal").textContent = t.label; $("tierVal").style.color = TIER_COL[t.key]; $("tierAct").textContent = t.action;
+  $("hiAM").textContent = `${state.hi.am}°C`; $("hiPM").textContent = `${state.hi.pm}°C`;
+  for (const w of ["AM", "PM"]) { const v = state.hi[w.toLowerCase()]; $(`cat${w}`).textContent = pagasaCategory(v); $(`cat${w}`).className = `cat c${catIdx(v)}`; }
+  $("hours").innerHTML = hoursSvg();
+  const rows = rowsFor(byId);
+  const tally = { full: 0, morning: 0, afternoon: 0, partial: 0, adm: 0 }; rows.forEach((r) => tally[r.ep.mode]++);
+  const n = { all: rows.length, pending: 0, override: 0, confirm: 0 }; rows.forEach((r) => n[r.st]++);
+  $("sum").innerHTML = Object.keys(tally).map((m) => `<span><i class="dot" style="background:${MCOL[m]}"></i>${MODE_SHORT[m]} <b class="mono">${tally[m]}</b></span>`).join("") +
+    `<span class="${conflicts ? "" : "ok"}">${conflicts} scheduling conflicts</span>${state.rule.approvedBy ? "" : `<span class="warn">Model pending approval</span>`}`;
+  $("filters").innerHTML = [["all", `All schools <span class="mono">${n.all}</span>`], ["pending", `Awaiting reply <span class="mono">${n.pending}</span>`], ["confirm", `Confirmed <span class="mono">${n.confirm}</span>`], ["override", `Principal overrides <span class="mono">${n.override}</span>`]].map(([k, l]) => `<button data-f="${k}" aria-pressed="${state.filter === k}">${l}</button>`).join("");
+  $("filters").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { state.filter = b.dataset.f; render(); }));
+  const order = { pending: 0, override: 1, confirm: 2 };
+  const shown = rows.filter((r) => state.filter === "all" || r.st === state.filter).sort((a, b) => order[a.st] - order[b.st] || a.s.name.localeCompare(b.s.name));
+  $("list").innerHTML = `<thead><tr><th>School</th><th>Plan</th><th>Principal response</th><th>Parents</th></tr></thead><tbody>` + (shown.length ? shown.map(({ s, p, d, st, ep }) => {
+    const plan = `<span class="badge b-${ep.mode}">${MODE_SHORT[ep.mode]}</span>${ep.mode !== p.mode ? ` <span class="reason">recommended ${MODE_SHORT[p.mode]}</span>` : ""}`;
+    const head = st === "pending" ? `<span class="muted">Awaiting reply</span>` : st === "confirm" ? `<span class="ok">Confirmed</span> <span class="reason">${d.at}${d.via === "sms" ? " · SMS" : ""}</span>` : `Override${d.via === "sms" ? " (SMS)" : ""}<div class="reason">${esc(d.reason || "")}</div>`;
+    const par = state.sent[s.id] ? `<span class="ok">Notified</span> <span class="reason">${state.sent[s.id].at}</span>` : `<span class="muted">—</span>`;
+    return `<tr><td><button class="schoollink" data-school="${s.id}">${esc(s.name)}</button></td><td>${plan}</td><td>${head}</td><td>${par}</td></tr>`;
+  }).join("") : `<tr><td colspan="4"><div class="empty">No schools match this filter.<button data-f-clear>Show all schools</button></div></td></tr>`) + "</tbody>";
+  $("list").querySelectorAll("[data-school]").forEach((b) => b.addEventListener("click", () => go(`#/school/${b.dataset.school}`)));
+  $("list").querySelector("[data-f-clear]")?.addEventListener("click", () => { state.filter = "all"; render(); });
+
+  // communications: each opens its own page
+  const pend = n.pending, last = (k) => (state.comms[k] ? `${state.comms[k].label} ${state.comms[k].at}` : "Not sent");
+  $("commsNav").innerHTML = [
+    ["reminders", "Principal reminders", `SMS to principals who have not replied by the ${state.rule.cutoff} cut-off`, pend ? `${pend} awaiting reply` : "All replied"],
+    ["mayor", "Mayor's briefing", "Summary of school arrangements for the City Mayor's Office", last("mayor")],
+    ["region", "Regional Office report", "Status report to DepEd Regional Office VI", last("region")],
+  ].map(([k, t, d, st]) => `<button class="navrow" data-comms="${k}"><span><div class="t">${t}</div><div class="d">${d}</div></span><span class="st">${st}</span><span class="chev" aria-hidden="true">›</span></button>`).join("");
+  $("commsNav").querySelectorAll("[data-comms]").forEach((b) => b.addEventListener("click", () => go(`#/comms/${b.dataset.comms}`)));
+
+  const reqs = state.requests;
+  $("reqCard").innerHTML = `<div class="sec-head"><h2>Building Record Change Requests</h2><span class="sub">${reqs.filter((q) => q.status === "pending").length} pending review</span></div>` +
+    (reqs.length ? reqs.map((q) => `<div class="req-item"><b>${esc(state.schools[+q.school].name)}</b> <span class="reason">${q.at}</span><div>${esc(q.text)}</div><div class="chips" style="margin-top:6px">${q.status === "pending" ? `<button data-rv="${q.id}">Mark as reviewed</button>` : `<span class="ok">Reviewed</span>`}</div></div>`).join("") : `<div class="muted" style="font-size:13px">No requests yet. Principals submit corrections (for example a newly installed fan or ceiling) from their building records.</div>`);
+  $("reqCard").querySelectorAll("[data-rv]").forEach((b) => b.addEventListener("click", () => { state.requests.find((q) => q.id === b.dataset.rv).status = "reviewed"; render(); }));
+}
+
+// ---------- coordinator: routing between overview, communications pages and school dashboards ----------
+function go(hash) { if (location.hash !== hash) location.hash = hash; else render(); window.scrollTo(0, 0); }
+window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); });
+const route = () => { const m = location.hash.match(/^#\/(comms|school)\/([\w-]+)$/); return m ? { kind: m[1], id: m[2] } : { kind: "home" }; };
+const backBtn = `<button class="back" data-back>‹ Back to overview</button>`;
+function wireBack() { $("sdoPage").querySelectorAll("[data-back]").forEach((b) => b.addEventListener("click", () => go("#/"))); }
+async function copyText(btn, text) { try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; } catch { btn.textContent = "Copy failed"; } setTimeout(() => (btn.textContent = "Copy text"), 1500); }
+
+function renderComms(kind, byId) {
+  const rows = rowsFor(byId), pend = rows.filter((r) => r.st === "pending");
+  const sent = state.comms[kind];
+  if (kind === "reminders") {
+    const draft = state.reminderDraft ?? `PRESKO reminder: please reply 1, 2 or 3 to confirm tomorrow's class arrangement before ${state.rule.cutoff}. Reply 1 Confirm · 2 Full day · 3 ADM.`;
+    $("sdoPage").innerHTML = `${backBtn}<div class="page-head"><h1>Principal reminders</h1><div class="muted">SMS to principals who have not yet replied to tomorrow's advisory.</div></div>
+      ${!pend.length ? `<section class="card empty"><b style="color:var(--ink)">All ${rows.length} principals have replied.</b>No reminders are needed for tomorrow.<button data-back>Back to overview</button></section>` : `
+      <section class="card" style="display:grid;gap:10px"><div class="sec-head"><h2>Recipients</h2><span class="sub">${pend.length} principals awaiting reply</span></div>
+        <div class="scroll" style="max-height:240px"><table><thead><tr><th>School</th><th>Recommended plan</th></tr></thead><tbody>${pend.map((r) => `<tr><td>${esc(r.s.name)}</td><td><span class="badge b-${r.p.mode}">${MODE_SHORT[r.p.mode]}</span></td></tr>`).join("")}</tbody></table></div></section>
+      <section class="card" style="display:grid;gap:10px"><label for="remText"><h2>Message</h2></label><textarea id="remText" rows="3">${esc(draft)}</textarea>
+        <div class="chips" style="align-items:center"><button class="primary" id="remSend">Send reminder to ${pend.length} principals</button>${sent ? `<span class="ok">Last sent ${sent.at} to ${sent.n} principals</span>` : ""}</div></section>`}`;
+    wireBack();
+    $("remText")?.addEventListener("input", (e) => (state.reminderDraft = e.target.value));
+    $("remSend")?.addEventListener("click", () => { state.comms.reminders = { at: now(), n: pend.length, label: "Sent" }; toast(`Reminder sent to ${pend.length} principals.`); render(); });
+    return;
+  }
+  const isMayor = kind === "mayor";
+  const text = reportText(kind);
+  $("sdoPage").innerHTML = `${backBtn}<div class="page-head"><h1>${isMayor ? "Mayor's briefing" : "Regional Office report"}</h1><div class="muted">${isMayor ? "Summary of tomorrow's school arrangements for the City Mayor's Office. Updates as principals reply." : "Status report for DepEd Regional Office VI. Updates as principals reply."}</div></div>
+    <section class="card" style="display:grid;gap:10px"><div class="sec-head"><h2>Preview</h2><span class="sub">as of ${now()}</span></div><div class="out" id="docText">${esc(text)}</div>
+      <div class="chips" style="align-items:center"><button class="primary" id="docSend">${isMayor ? "Mark as sent to Mayor's Office" : "Mark as submitted to Region"}</button><button id="docCopy">Copy text</button>${sent ? `<span class="ok">${sent.label} ${sent.at}</span>` : ""}</div></section>`;
+  wireBack();
+  $("docCopy").addEventListener("click", (e) => copyText(e.currentTarget, text));
+  $("docSend").addEventListener("click", () => { state.comms[kind] = { at: now(), label: isMayor ? "Sent" : "Submitted" }; render(); });
+}
+
+// ---------- per-school dashboard (season history is simulated for the demo) ----------
+function rand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const SEASON = (() => { // weekdays 2 Mar – 29 May 2026, modelled heat index peaking late April
+  const out = [], d = new Date(Date.UTC(2026, 2, 2)), end = Date.UTC(2026, 4, 29), r = rand(42);
+  while (d.getTime() <= end) {
+    const wd = d.getUTCDay();
+    if (wd > 0 && wd < 6) { const t = out.length, peak = Math.exp(-((t - 38) ** 2) / (2 * 14 ** 2)), noise = r() - 0.5;
+      const pm = Math.round((35 + 11 * peak + 4 * noise) * 10) / 10; out.push({ date: d.toISOString().slice(0, 10), am: Math.round((pm - 6 - Math.abs(noise) * 2) * 10) / 10, pm }); }
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
+})();
+// Each season day as hourly weather: the hot-season profile scaled to that day's forecast peak.
+const seasonCache = new Map();
+const seasonHours = (day) => { if (!seasonCache.has(day.date)) seasonCache.set(day.date, shiftToPeak(fillSolar(DEMO_CLOSURE), day.pm)); return seasonCache.get(day.date); };
+const OVR_REASONS = ["Water supply interrupted in the barangay", "Quarterly examinations scheduled", "Power outage; fans not working", "Classrooms used as evacuation centre", "Ceiling fans repaired in Building A", "Parents' transport arrangements"];
+const histCache = {};
+function schoolHistory(s) {
+  if (histCache[s.id]) return histCache[s.id];
+  const r = rand(5000 + +s.id * 131), reliability = 0.6 + r() * 0.38;
+  return (histCache[s.id] = SEASON.map((day) => {
+    const rec = planSchoolSafety(s, seasonHours(day), { forecastHI: day.pm }).mode;
+    const advisory = rec !== "full" || day.pm >= 42;
+    let resp = null, mode = rec, reason = "";
+    if (advisory) {
+      const x = r(); resp = x < reliability ? "ontime" : x < reliability + (1 - reliability) * 0.7 ? "late" : "none";
+      if (resp !== "none" && r() < 0.1) { mode = rec === "full" ? "adm" : rec === "adm" || rec === "partial" ? "morning" : r() < 0.5 ? "full" : "adm"; reason = OVR_REASONS[Math.floor(r() * OVR_REASONS.length)]; }
+    }
+    return { ...day, rec, mode, advisory, resp, reason };
+  }));
+}
+const HEAT_TRAITS = { roof_no_ceiling: "exposed metal roof, no ceiling", makeshift: "temporary structure", upper_floor: "top-floor rooms under the roof", poor_ventilation: "poor airflow", west_facing: "faces the afternoon sun", ceiling_or_insulated: "ceiling installed", shade_trees: "shaded by trees", cross_ventilation: "windows on both sides", aircon: "air-conditioned" };
+const traits = (b) => FEATURE_KEYS.filter((k) => b.features[k]).map((k) => HEAT_TRAITS[k]);
+function usable(p, b) { const room = p.rooms.find((x) => x.building === b.id); return room ? { am: room.amOK, pm: room.pmOK } : { am: true, pm: true }; }
+// EO 130: documented, site-specific reasons for any session the model rules out.
+function reasonsBlock(p) {
+  if (!p.safety || p.mode === "full") return "";
+  const a = p.safety, lines = new Set();
+  for (const k of p.mode === "adm" ? ["morning", "afternoon"] : p.mode === "morning" ? ["afternoon"] : p.mode === "afternoon" ? ["morning"] : ["fullDay"]) a.sessions[k].evidence.forEach((e) => lines.add(`${k === "fullDay" ? "Full day" : k[0].toUpperCase() + k.slice(1)}: ${e}`));
+  if (!lines.size) return "";
+  return `<div class="ovr-panel" style="gap:4px"><b style="font-size:13px">Recorded reasons (EO 130)</b>${[...lines].slice(0, 6).map((l) => `<div style="font-size:13px">${esc(l)}</div>`).join("")}</div>`;
+}
+const usableText = (u) => (u.am && u.pm ? "safe all day" : u.am ? "safe in the morning only" : u.pm ? "safe in the afternoon only" : "too hot for classes");
+
+function renderSchoolDash(id, byId) {
+  const s = state.schools.find((x) => x.id === id);
+  if (!s) { $("sdoPage").innerHTML = `${backBtn}<section class="card empty">This school could not be found.<button data-back>Back to overview</button></section>`; wireBack(); return; }
+  const h = schoolHistory(s), p = byId[s.id], d = state.decisions[s.id], ep = effective(s, p);
+  const cnt = { full: 0, half: 0, adm: 0 }; h.forEach((x) => cnt[x.mode === "full" ? "full" : x.mode === "adm" ? "adm" : "half"]++);
+  const adv = h.filter((x) => x.advisory), onTime = adv.filter((x) => x.resp === "ontime").length, late = adv.filter((x) => x.resp === "late").length, none = adv.filter((x) => x.resp === "none").length;
+  const overs = h.filter((x) => x.reason);
+  const rate = adv.length ? Math.round((onTime / adv.length) * 100) : null;
+  const fmt = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  const reqs = state.requests.filter((q) => q.school === s.id);
+  $("sdoPage").innerHTML = `${backBtn}
+    <div class="page-head"><h1>${esc(s.name)}</h1><div class="muted">${s.kind[0].toUpperCase() + s.kind.slice(1)} · ${s.sections.length} sections · ${learnersOf(s).toLocaleString()} learners · ${s.buildings.reduce((t, b) => t + b.rooms, 0)} classrooms${s.doubleShift ? " · double shift" : ""}</div></div>
+    <section class="card field"><span class="muted">Tomorrow</span><span class="badge b-${ep.mode}">${MODE[ep.mode]}</span>${ep.mode !== p.mode ? `<span class="reason">recommended ${MODE_SHORT[p.mode]}</span>` : ""}<span>${!d ? `<span class="warn">Awaiting principal's reply</span>` : d.choice === "confirm" ? `<span class="ok">Confirmed by principal at ${d.at}</span>` : `Overridden by principal: ${esc(d.reason)}`}</span>${state.sent[s.id] ? `<span class="ok">Parents notified ${state.sent[s.id].at}</span>` : ""}</section>
+    <div class="kpis">
+      <div class="kpi"><span class="l">Full-day classes</span><span class="v">${cnt.full}</span><span class="s">days this season</span></div>
+      <div class="kpi"><span class="l">Half-day sessions</span><span class="v">${cnt.half}</span><span class="s">morning, afternoon or partial</span></div>
+      <div class="kpi"><span class="l">No in-person classes</span><span class="v">${cnt.adm}</span><span class="s">days on ADM</span></div>
+      <div class="kpi"><span class="l">On-time response rate</span><span class="v">${rate === null ? "—" : `${rate}%`}</span><span class="s">${onTime} of ${adv.length} advisories answered by cut-off</span></div>
+      <div class="kpi"><span class="l">Principal overrides</span><span class="v">${overs.length}</span><span class="s">of ${adv.length} advisories</span></div>
+    </div>
+    <section class="card" style="display:grid;gap:10px"><div class="sec-head"><h2>Season at a glance</h2><span class="sub">${fmt(SEASON[0].date)} – ${fmt(SEASON[SEASON.length - 1].date)} 2026 · ${SEASON.length} school days</span></div>
+      <div class="strip">${h.map((x) => `<i style="background:${MCOL[x.mode]}" title="${fmt(x.date)}: ${MODE[x.mode]}${x.reason ? ` (override: ${esc(x.reason)})` : ""}"></i>`).join("")}</div>
+      <div class="legend">${["full", "morning", "afternoon", "partial", "adm"].map((m) => `<span><i class="dot" style="background:${MCOL[m]}"></i>${MODE_SHORT[m]}</span>`).join("")}</div>
+      <div class="note">Demo data: season history is simulated by running Safety Model v2.1 over a modelled 2026 hot season. Principal responses are simulated. In use, this fills from recorded decisions.</div></section>
+    <section class="card" style="display:grid;gap:10px"><div class="sec-head"><h2>Principal responses</h2><span class="sub">${adv.length} advisories issued</span></div>
+      <table><thead><tr><th>Response</th><th class="num">Advisories</th></tr></thead><tbody><tr><td>Replied by cut-off</td><td class="num">${onTime}</td></tr><tr><td>Replied late</td><td class="num">${late}</td></tr><tr><td>No reply (recommendation applied)</td><td class="num">${none}</td></tr></tbody></table>
+      <h3 style="margin-top:6px">Overrides</h3>
+      ${overs.length ? `<table><thead><tr><th>Date</th><th>Recommended</th><th>Principal chose</th><th>Reason</th></tr></thead><tbody>${overs.map((x) => `<tr><td class="mono">${fmt(x.date)}</td><td>${MODE_SHORT[x.rec]}</td><td>${MODE_SHORT[x.mode]}</td><td>${esc(x.reason)}</td></tr>`).join("")}</tbody></table>` : `<div class="muted" style="font-size:13px">No overrides this season. The principal accepted every recommendation.</div>`}</section>
+    <section class="card" style="display:grid;gap:10px"><div class="sec-head"><h2>Building report</h2><span class="sub">NSBI records and heat checklist · tomorrow at ${state.hi.am}°C / ${state.hi.pm}°C</span></div>
+      <div class="scroll"><table><thead><tr><th>Building</th><th>Type</th><th class="num">Storeys</th><th class="num">Classrooms</th><th>Condition</th><th>Heat-related features</th><th>Tomorrow</th></tr></thead><tbody>${s.buildings.map((b) => `<tr><td><b>${esc(b.name)}</b><div class="reason mono">NSBI ${esc(b.nsbi.buildingNo)} · built ${b.nsbi.yearBuilt}</div></td><td>${esc(b.nsbi.type)}<div class="reason">${esc(b.nsbi.cls)}</div></td><td class="num">${b.nsbi.storeys}</td><td class="num">${b.rooms}</td><td>${esc(b.nsbi.condition)}</td><td>${esc(traits(b).join(", ") || "none recorded")}</td><td>${usableText(usable(p, b))}</td></tr>`).join("")}</tbody></table></div>
+      ${reqs.length ? `<h3>Change requests from the principal</h3>${reqs.map((q) => `<div class="req-item"><span class="reason">${q.at} · ${q.status === "pending" ? "Pending review" : "Reviewed"}</span><div>${esc(q.text)}</div></div>`).join("")}` : ""}</section>`;
+  wireBack();
+}
+
+function reportText(kind) {
+  const div = divisionPlan();
+  const byId = Object.fromEntries(div.plans.map((p) => [p.school, p]));
+  const rows = rowsFor(byId);
+  const tally = { full: 0, morning: 0, afternoon: 0, partial: 0, adm: 0 }; rows.forEach((r) => tally[r.ep.mode]++);
+  const day = state.day || "tomorrow";
+  const counts = Object.keys(tally).map((m) => `${MODE[m]}: ${tally[m]}`).join("\n");
+  if (kind === "remind") {
+    const pend = rows.filter((r) => r.st === "pending");
+    return `To ${pend.length} principals (no reply yet):\n${pend.map((r) => `- ${r.s.name}`).join("\n")}\n\nSMS: PRESKO reminder. Please reply 1, 2 or 3 to confirm tomorrow's class arrangement before ${state.rule.cutoff}.`;
+  }
+  if (kind === "mayor") {
+    const closing = rows.filter((r) => r.ep.mode !== "full");
+    return `Briefing for the City Mayor · ${day}\nDepEd 4H tier: ${tierNow().label}. Heat index: ${state.hi.am}°C morning (${pagasaCategory(state.hi.am)}), ${state.hi.pm}°C afternoon (${pagasaCategory(state.hi.pm)})\n\n${counts}\n\nSchools not on a full day (${closing.length}):\n${closing.map((r) => `- ${r.s.name}: ${MODE[r.ep.mode]}`).join("\n")}\n\nAll other schools hold classes as normal. A targeted order covering only these schools is sufficient.`;
+  }
+  return `SDO Iloilo City · Report to DepEd Regional Office VI · ${day} · as of ${now()}\nSchools: ${rows.length}\nConfirmed by principals: ${rows.filter((r) => r.st === "confirm").length} · overrides: ${rows.filter((r) => r.st === "override").length} · awaiting reply: ${rows.filter((r) => r.st === "pending").length}\nParents notified: ${Object.keys(state.sent).length} schools\n\n${counts}\n\nDepEd 4H tier: ${tierNow().label}\nSafety Model ${ruleLabel()}${state.rule.approvedBy ? ` approved ${state.rule.approvedAt}` : " (pending approval)"}`;
+}
+
+// ---------- principal ----------
+function decide(s, choice, reason, via) {
+  state.decisions[s.id] = { choice, reason: reason || "", via, at: now() };
+  delete state.sent[s.id];
+}
+const current = () => state.schools.find((x) => x.id === state.school);
+const currentPlan = () => { const s = current(); return planSchoolSafety(s, state.dayHours, { forecastHI: state.forecastHI ?? undefined, corrections: correctionsFor(s) }); };
+const learners = (s) => s.sections.reduce((t, x) => t + x.learners, 0);
+const learnersOf = learners;
+
+function renderSms() {
+  const s = current(), p = currentPlan(), thread = state.smsThread[s.id] || [];
+  $("phone").innerHTML = `<div class="meta">PRESKO · today 16:00</div><div class="bubble">${esc(headSms(s, p))}</div>${thread.map((m) => `<div class="bubble ${m.me ? "me" : ""}">${esc(m.text)}</div>`).join("")}
+    <form class="reply" id="smsForm"><input id="smsIn" type="text" inputmode="numeric" maxlength="1" placeholder="Reply 1, 2 or 3" aria-label="SMS reply"><button type="submit">Send</button></form>`;
+  $("smsForm").addEventListener("submit", (e) => {
+    e.preventDefault(); const v = $("smsIn").value.trim(); const choice = SMS_CODES[v];
+    const t = (state.smsThread[s.id] ??= []); t.push({ me: true, text: v || "?" });
+    if (!choice) t.push({ me: false, text: "Please reply 1, 2 or 3." });
+    else { decide(s, choice, choice === "confirm" ? "" : "via SMS", "sms"); t.push({ me: false, text: `Recorded: ${choice === "confirm" ? `Confirmed (${MODE[p.mode]})` : MODE[choice]}. Open Presko to notify parents.` }); }
+    renderSms(); render(); $("smsIn").focus();
+  });
+}
+
+function openParentDialog() {
+  const s = current(), ep = effective(s, currentPlan());
+  state.draft = { lang: state.lang, text: parentMessage(s, ep, state.lang), edited: false };
+  fillParentDialog();
+  $("parentDlg").showModal();
+  $("pText").focus();
+}
+function fillParentDialog() {
+  const s = current(), ep = effective(s, currentPlan()), dr = state.draft;
+  $("pIntro").innerHTML = `Plan: <b>${MODE[ep.mode]}</b>. Review the message below, edit it if needed, then confirm to send it by SMS to every registered parent or guardian.`;
+  $("pLang").innerHTML = LANGS.map(([k, l]) => `<button data-l="${k}" aria-pressed="${dr.lang === k}">${l}</button>`).join("") + (dr.lang === "hil" ? `<span class="muted" style="font-size:12px;align-self:center">Machine draft: check wording</span>` : "");
+  $("pText").value = dr.text;
+  $("pCount").textContent = `Recipients: parents/guardians of ${learners(s).toLocaleString()} learners in ${s.sections.length} sections · ${dr.text.length} characters`;
+  $("pLang").querySelectorAll("[data-l]").forEach((b) => b.addEventListener("click", () => {
+    if (dr.edited && !confirm("Switching language replaces your edits with the template. Continue?")) return;
+    dr.lang = b.dataset.l; state.lang = dr.lang; dr.text = parentMessage(s, ep, dr.lang); dr.edited = false; fillParentDialog();
+  }));
+}
+$("pText").addEventListener("input", () => { state.draft.text = $("pText").value; state.draft.edited = true; $("pCount").textContent = $("pCount").textContent.replace(/\d+ characters$/, `${state.draft.text.length} characters`); });
+$("pSend").addEventListener("click", () => {
+  const s = current(), text = $("pText").value.trim(); if (!text) { $("pText").focus(); return; }
+  state.sent[s.id] = { at: now(), lang: state.draft.lang, text, recipients: learners(s) };
+  $("parentDlg").close(); render(); toast(`Message broadcast to parents/guardians of ${learners(s).toLocaleString()} learners.`);
+});
+
+function renderHead(byId) {
+  const s = current();
+  const p = byId[s.id], ep = effective(s, p), d = state.decisions[s.id], sent = state.sent[s.id];
+  $("schoolName").textContent = s.name;
+  $("hiRoAM").textContent = `${state.hi.am}°C`; $("hiRoPM").textContent = `${state.hi.pm}°C`; $("cutoffRo").textContent = `Reply by ${state.rule.cutoff}`;
+
+  // recommendation
+  const isOverride = d && d.choice !== "confirm";
+  const hasSlots = ep.slotsUsed.length > 0;
+  const showOvr = state.ovrOpen || isOverride;
+  $("decide").innerHTML = `
+    <div class="label">Recommended plan for tomorrow</div>
+    <div class="plan"><span class="badge b-${p.mode}">${MODE[p.mode]}</span>${hasSlots && !isOverride ? `<span class="times">${esc(times(p, "en"))}</span>` : ""}</div>
+    ${reasonsBlock(p)}
+    <div class="status">
+      ${d ? `<span class="ok">${d.choice === "confirm" ? "Confirmed" : `Overridden to ${MODE[d.choice]}`} at ${d.at}${d.via === "sms" ? " via SMS" : ""}</span>` : `<span class="warn">Awaiting your decision</span>`}
+      ${sent ? `<span class="ok">Parents notified at ${sent.at} (${sent.recipients.toLocaleString()} learners)</span>` : d ? `<span class="warn">Parents not yet notified</span>` : ""}
+    </div>
+    <div class="actions">
+      ${!d ? `<button class="primary" id="confirm">Confirm recommendation</button>` : !sent ? `<button class="primary" id="notify">Notify parents</button>` : `<button id="notify">Send another message</button>`}
+      <button class="secondary" id="ovrToggle" aria-expanded="${showOvr}" aria-controls="ovrPanel">${d ? "Change plan" : "Choose a different plan"}</button>
+    </div>
+    <div class="ovr-panel" id="ovrPanel" ${showOvr ? "" : "hidden"}>
+      <label for="ovrMode" style="font-weight:600">Use a different plan for tomorrow</label>
+      <form id="ovrForm"><select id="ovrMode">${["full", "morning", "afternoon", "adm"].filter((m) => m !== p.mode).map((m) => `<option value="${m}" ${isOverride && d.choice === m ? "selected" : ""}>${MODE[m]}</option>`).join("")}</select><input id="ovrReason" type="text" placeholder="Reason, e.g. water supply interrupted" value="${isOverride ? esc(d.reason) : ""}" aria-label="Reason for the change (required)"><button type="submit">Apply this plan</button></form>
+      <div class="muted" style="font-size:12px">Your reason is shared with the Division Coordinator.</div>
+      <div class="err" id="ovrErr"></div></div>`;
+  $("confirm")?.addEventListener("click", () => { state.ovrOpen = false; decide(s, "confirm", "", "web"); render(); openParentDialog(); });
+  $("notify")?.addEventListener("click", openParentDialog);
+  $("ovrToggle").addEventListener("click", () => { state.ovrOpen = !showOvr; render(); if (state.ovrOpen) $("ovrMode").focus(); });
+  $("ovrForm").addEventListener("submit", (e) => {
+    e.preventDefault(); const reason = $("ovrReason").value.trim(); const mode = $("ovrMode").value;
+    if (!MODE[mode] || mode === p.mode) { $("ovrErr").textContent = "Pick a plan different from the recommendation."; return; }
+    if (!reason) { $("ovrErr").textContent = "Add a short reason for the change."; $("ovrReason").focus(); return; }
+    decide(s, mode, reason, "web"); render(); openParentDialog();
+  });
+
+  // basis: plain-language bullets from the model's forecast and building checks
+  const a = p.safety, t = a.tier, peak = state.hourly.reduce((x, y) => (!x || y.hi > x.hi ? y : x), null);
+  const commute = Math.max(a.sessions.morning.worstCommute, a.sessions.afternoon.worstCommute);
+  const unsafeFrom = (id) => { const hs = ["morning", "afternoon"].flatMap((k) => a.sessions[k].buildings.find((b) => b.id === id).unsafeHours); return hs.length ? Math.min(...hs) : null; };
+  const bullets = [
+    `DepEd 4H tier <b>${t.label}</b>: heat index up to ${Math.round(a.peakHI)}°C${peak ? `, hottest around ${hh(peak.h)}` : ""}.${a.dayVeto ? " <b>Extreme danger: no school.</b>" : ""}`,
+    `Walking to and from school: heat index up to about ${Math.round(commute)}°C in the sun${commute >= LIMITS.commuteVetoHI ? ". <b>Too hot for pupils to walk.</b>" : ` (limit ${LIMITS.commuteVetoHI}°C).`}`,
+    ...s.buildings.map((b) => {
+      const tr = traits(b), fb = a.sessions.fullDay.buildings.find((x) => x.id === b.id), from = unsafeFrom(b.id);
+      return `${esc(b.name)} (${b.rooms} classroom${b.rooms === 1 ? "" : "s"})${tr.length ? `: ${esc(tr.join(", "))}` : ""}. About ${Math.round(fb.peakT)}°C inside at the hottest${from !== null ? `; over the safe limit from ${hh(from)}` : ""}${fb.learned ? " (adjusted by your readings)" : ""}. <b>${usableText(usable(p, b))[0].toUpperCase() + usableText(usable(p, b)).slice(1)}</b>.`;
+    }),
+  ];
+  $("reasons").innerHTML = `<div class="sec-head"><h2>Basis for Recommendation</h2><span class="sub">Tomorrow's forecast and your buildings</span></div>
+    <ul class="basis">${bullets.map((x) => `<li>${x}</li>`).join("")}</ul>`;
+
+  // indoor readings (DepEd Memo 064 checkpoints) → learned corrections
+  const mine = state.readings[s.id] || {};
+  const corr = correctionsFor(s) || {};
+  const mb = modelBuildings(s);
+  const expected = (b, h) => { const w = state.dayHours.find((x) => x.h === h); return w ? indoorHour(w, b).t : null; };
+  $("readingsCard").innerHTML = `<div class="sec-head"><h2>Indoor Temperature Readings</h2><span class="sub">DepEd Memo 064 checkpoints · 08:00, 12:00, 14:00</span></div>
+    <div class="muted" style="font-size:13px">Enter today's classroom thermometer readings. Presko compares them with what it expected for each building and adjusts tomorrow's estimate, so the recommendation reflects how your rooms really behave.</div>
+    <form id="rdForm" style="display:grid;gap:10px">
+      <div class="scroll"><table><thead><tr><th>Building</th>${CHECKPOINTS.map((h) => `<th class="num">${hh(h)}</th>`).join("")}<th>Learned adjustment</th></tr></thead><tbody>${mb.map((b) => `<tr><td><b>${esc(b.name)}</b></td>${CHECKPOINTS.map((h) => { const v = (mine[b.id] || []).find((r) => r.h === h)?.t; const e = expected(b, h); return `<td class="num"><input type="number" step="0.1" min="15" max="55" inputmode="decimal" data-rd="${b.id}" data-h="${h}" value="${v ?? ""}" placeholder="${e === null ? "" : e.toFixed(1)}" aria-label="${esc(b.name)} reading at ${hh(h)} in °C" style="width:72px;text-align:right"></td>`; }).join("")}<td>${corr[b.id] ? `<span class="mono">${corr[b.id].corr > 0 ? "+" : ""}${corr[b.id].corr.toFixed(1)}°C</span> <span class="reason">from ${corr[b.id].n} reading${corr[b.id].n === 1 ? "" : "s"}</span>` : `<span class="muted">No readings yet</span>`}</td></tr>`).join("")}</tbody></table></div>
+      <div class="chips" style="align-items:center"><button type="submit">Save readings</button><span class="muted" style="font-size:12px">Placeholders show the temperature Presko expected in °C.</span></div>
+    </form>`;
+  $("rdForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const next = {};
+    $("rdForm").querySelectorAll("[data-rd]").forEach((el) => { const v = parseFloat(el.value); if (Number.isFinite(v)) (next[el.dataset.rd] ??= []).push({ h: +el.dataset.h, t: v }); });
+    const before = p.mode;
+    state.readings[s.id] = next;
+    const after = currentPlan().mode;
+    if (after !== before) { delete state.decisions[s.id]; delete state.sent[s.id]; }
+    render(); toast(after !== before ? `Readings saved. Recommendation updated to ${MODE[after]}.` : "Readings saved. Recommendation unchanged.");
+  });
+
+  // building records (read-only) + change request
+  const myReqs = state.requests.filter((q) => q.school === s.id);
+  const yn = (v) => (v ? "Yes" : "No");
+  $("records").innerHTML = `<div class="sec-head"><h2>School Building Records</h2><span class="sub">As held by the Division (NSBI and heat checklist)</span></div>
+    <div>${s.buildings.map((b) => { const c = b.features; return `<div class="bl"><div class="bl-head"><b>${esc(b.name)}</b><span class="muted mono">NSBI ${esc(b.nsbi.buildingNo)}</span></div>
+      <div class="kv">
+        <div><span>Type</span> ${esc(b.nsbi.type)}</div><div><span>Storeys</span> ${b.nsbi.storeys}</div><div><span>Classrooms</span> ${b.rooms}</div><div><span>Year built</span> ${b.nsbi.yearBuilt}</div>
+        <div><span>Classification</span> ${esc(b.nsbi.cls)}</div><div><span>Condition</span> ${esc(b.nsbi.condition)}</div>
+        <div><span>Ceiling / insulation</span> ${c.roof_no_ceiling ? "No (exposed roof)" : c.ceiling_or_insulated ? "Yes" : "Not recorded"}</div>
+        <div><span>Windows</span> ${c.cross_ventilation ? "Both sides" : c.poor_ventilation ? "Poor / one side" : "One side"}</div>
+        <div><span>Faces west</span> ${yn(c.west_facing)}</div><div><span>Afternoon shade</span> ${yn(c.shade_trees)}</div><div><span>Air-conditioned</span> ${yn(c.aircon)}</div>
+      </div></div>`; }).join("")}</div>
+    <form class="req" id="reqForm"><label for="reqText" style="font-weight:600">Request a correction to these records</label>
+      <textarea id="reqText" placeholder="Describe the change, e.g. 'Building B: two ceiling fans installed in each classroom, March 2026.'"></textarea>
+      <div class="chips"><button type="submit">Send request to Division Coordinator</button></div>
+      ${myReqs.map((q) => `<div class="req-item"><span class="reason">${q.at} · ${q.status === "pending" ? "Sent · pending review" : "Reviewed by Division"}</span><div>${esc(q.text)}</div></div>`).join("")}
+    </form>`;
+  $("reqForm").addEventListener("submit", (e) => {
+    e.preventDefault(); const text = $("reqText").value.trim(); if (!text) { $("reqText").focus(); return; }
+    state.requests.push({ id: String(Date.now()), school: s.id, text, at: now(), status: "pending" }); render(); toast("Request sent to the Division Coordinator.");
+  });
+}
+
+// ---------- render ----------
+function render() {
+  if (!state.dayHours.length) return;
+  const div = divisionPlan();
+  let conflicts = 0; div.plans.forEach((p, i) => (conflicts += check(state.schools[i], p).length));
+  const byId = Object.fromEntries(div.plans.map((p) => [p.school, p]));
+  const u = state.user;
+  $("login").hidden = !!u; $("topbar").hidden = !u; $("sources").hidden = !u;
+  $("sdo").hidden = !u || u.role !== "sdo"; $("head").hidden = !u || u.role !== "head";
+  if (!u) return;
+  $("whoEmail").textContent = u.email;
+  $("brandSub").textContent = u.role === "sdo" ? "· Division Coordinator, SDO Iloilo City" : "· Principal";
+  $("scenario").value = state.scenario;
+  if (u.role === "head") { renderHead(byId); return; }
+  const rt = route();
+  $("sdoHome").hidden = rt.kind !== "home"; $("sdoPage").hidden = rt.kind === "home";
+  if (rt.kind === "home") renderSdo(div, byId, conflicts);
+  else if (rt.kind === "comms" && ["reminders", "mayor", "region"].includes(rt.id)) renderComms(rt.id, byId);
+  else if (rt.kind === "school") renderSchoolDash(rt.id, byId);
+  else go("#/");
+}
+let toastT;
+function toast(msg) { $("toast").textContent = msg; $("toast").hidden = false; clearTimeout(toastT); toastT = setTimeout(() => ($("toast").hidden = true), 3200); }
+
+// ---------- forecast: always from hourly data ----------
+function setWindows(am, pm) { if (am !== state.hi.am || pm !== state.hi.pm || state.lastDay !== state.day) { state.lastDay = state.day; state.decisions = {}; state.sent = {}; state.smsThread = {}; } state.hi = { am, pm }; }
+function loadScenario() {
+  let hrs; state.forecastHI = null;
+  if (state.scenario === "hot") { state.day = "demo hot-season day"; hrs = DEMO_CLOSURE; }
+  else if (state.scenario === "nov3") { state.day = "2026-11-03"; hrs = REPLAY_NOV3.hours; state.forecastHI = REPLAY_NOV3.forecastHI; }
+  else { const days = state.forecastDays; state.day = Object.keys(days).sort()[1] || Object.keys(days)[0]; hrs = days[state.day]; }
+  state.dayHours = fillSolar(hrs);
+  const w = windowsFromHourly(state.dayHours);
+  state.hourly = w.hourly; setWindows(w.am, w.pm); render();
+}
+$("scenario").addEventListener("change", (e) => { state.scenario = e.target.value; loadScenario(); });
+fetch("https://api.open-meteo.com/v1/forecast?latitude=10.72&longitude=122.56&hourly=temperature_2m,relative_humidity_2m,shortwave_radiation&timezone=Asia%2FManila&forecast_days=3")
+  .then((r) => (r.ok ? r.json() : Promise.reject()))
+  .then((d) => {
+    const days = {};
+    d.hourly.time.forEach((t, i) => { const [day, hh] = t.split("T"); const h = +hh.slice(0, 2); if (h >= 6 && h <= 17) (days[day] ??= []).push({ h, t: d.hourly.temperature_2m[i], rh: d.hourly.relative_humidity_2m[i], sw: d.hourly.shortwave_radiation[i] }); });
+    state.forecastDays = days; state.live = true;
+    if (state.scenario === "open") loadScenario();
+  }).catch(() => {});
+
+
+// ---------- popups ----------
+document.querySelectorAll("dialog").forEach((dlg) => {
+  dlg.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => dlg.close()));
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+});
+$("openSms").addEventListener("click", () => { renderSms(); $("smsDlg").showModal(); });
+
+// ---------- sign-in: the account decides the view ----------
+const slug = (name) => name.toLowerCase().replace(/elementary school/, "es").replace(/national high school/, "nhs").replace(/integrated school/, "is").replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "");
+const SDO_EMAIL = "sdo.iloilocity@deped.gov.ph";
+const ACCOUNTS = new Map([[SDO_EMAIL, { role: "sdo" }]]);
+for (const s of state.schools) ACCOUNTS.set(`head.${slug(s.name)}@deped.gov.ph`, { role: "head", school: s.id });
+$("accounts").innerHTML = [...ACCOUNTS.keys()].map((e) => `<option value="${e}">`).join("");
+const pandac = state.schools.find((s) => /pandac/i.test(s.name)) || state.schools[0];
+const other = state.schools.find((s) => /iloilo central/i.test(s.name)) || state.schools[1];
+const DEMO = [[SDO_EMAIL, "Division Coordinator"], [`head.${slug(pandac.name)}@deped.gov.ph`, `Principal · ${pandac.name}`], [`head.${slug(other.name)}@deped.gov.ph`, `Principal · ${other.name}`]];
+$("demo").innerHTML = DEMO.map(([e, l]) => `<button type="button" data-email="${e}">${esc(l)}<span>${esc(e)}</span></button>`).join("");
+$("demo").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { $("email").value = b.dataset.email; signIn(); }));
+function signIn() {
+  const email = $("email").value.trim().toLowerCase(); const acc = ACCOUNTS.get(email);
+  if (!acc) { $("err").textContent = email ? "No Presko account is registered to this email." : "Enter your DepEd email address."; return; }
+  $("err").textContent = ""; state.user = { email, ...acc }; if (acc.role === "head") state.school = acc.school; if (location.hash) window.history.replaceState(null, "", location.pathname); render();
+  // Demo: the principal arrives from the SMS alert, so show it on sign-in.
+  if (acc.role === "head") { renderSms(); $("smsDlg").showModal(); }
+}
+$("login").addEventListener("submit", (e) => { e.preventDefault(); signIn(); });
+$("signout").addEventListener("click", () => { state.user = null; $("email").value = ""; render(); $("email").focus(); });
+state.user = null;
+loadScenario();
+</script>
+</body>
+</html>
