@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Presko Iloilo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: an operations desk. Controls on top, division map + summary left, one school's plan right, evidence below. */
+:root {
+  --bg: #f3f6f4; --surface: #ffffff; --sunk: #e9eeeb; --ink: #13201c; --muted: #5a6a65; --line: #d9e1dd;
+  --accent: #0e6c64; --accent-ink: #ffffff;
+  --full: #2e8b57; --morning: #c98a10; --partial: #d4602a; --adm: #b3261e;
+  --green: #2e8b57; --amber: #c98a10; --red: #b3261e;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1513; --surface: #16201e; --sunk: #1d2926; --ink: #e5eeeb; --muted: #9aaca6; --line: #263430;
+  --accent: #4fb3a7; --accent-ink: #062320;
+  --full: #4fbf86; --morning: #efb547; --partial: #f08a55; --adm: #ef6a60;
+  --green: #4fbf86; --amber: #efb547; --red: #ef6a60; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1513; --surface: #16201e; --sunk: #1d2926; --ink: #e5eeeb; --muted: #9aaca6; --line: #263430;
+  --accent: #4fb3a7; --accent-ink: #062320;
+  --full: #4fbf86; --morning: #efb547; --partial: #f08a55; --adm: #ef6a60;
+  --green: #4fbf86; --amber: #efb547; --red: #ef6a60; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; line-height: 1.15 }
+h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -0.01em }
+h2 { font-size: 20px; font-weight: 600 }
+h3 { font-size: 16px; font-weight: 600 }
+.eyebrow { font: 600 11px/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.muted { color: var(--muted) }
+.small { font-size: 13px }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0 }
+header.top { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: end; justify-content: space-between }
+header.top p { margin: 4px 0 0; max-width: 62ch }
+.tag-ill { display: inline-block; font: 600 11px/1 var(--body); letter-spacing: .04em; padding: 5px 8px; border-radius: 99px; background: var(--sunk); color: var(--muted) }
+
+/* controls */
+.controls { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: center }
+.readout { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap }
+.readout .hi { font: 800 clamp(40px, 7vw, 60px)/1 var(--display); font-variant-numeric: tabular-nums }
+.readout .cat { font: 600 16px var(--body) }
+input[type=range] { width: 100%; accent-color: var(--accent); margin-top: 10px }
+.scale { position: relative; height: 16px; font: 11px var(--mono); color: var(--muted) }
+.scale span { position: absolute; top: 0; white-space: nowrap; border-left: 1px solid var(--line); padding-left: 4px }
+@media (max-width: 520px) { .scale span:nth-child(2), .scale span:nth-child(4) { font-size: 0; } .scale span:nth-child(2)::after { content: "33"; font-size: 11px } .scale span:nth-child(4)::after { content: "52"; font-size: 11px } }
+.presets { display: flex; flex-wrap: wrap; gap: 8px }
+button { font: 500 14px var(--body); border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 12px; cursor: pointer }
+button:hover { border-color: var(--accent) }
+button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent) }
+.replay { margin: 12px 0 0; font-size: 14px }
+
+/* summary */
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px }
+.stat { border-radius: 10px; padding: 10px 12px; background: var(--sunk); display: grid; gap: 2px }
+.stat b { font: 800 28px/1 var(--display); font-variant-numeric: tabular-nums }
+.stat span { font-size: 12px; color: var(--muted) }
+.stat i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: 1px }
+.kpis { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; font-size: 14px }
+.ok { color: var(--green); font-weight: 600 }
+.bad { color: var(--red); font-weight: 600 }
+
+.main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 18px; align-items: start }
+.map svg { width: 100%; height: auto; display: block; touch-action: manipulation }
+.map .dot { cursor: pointer; stroke: var(--surface); stroke-width: 1.5 }
+.map .dot:hover { stroke: var(--ink) }
+.map .sel { fill: none; stroke: var(--ink); stroke-width: 2 }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); margin-top: 8px }
+.legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: -1px }
+
+/* school panel */
+.plan-badge { display: inline-flex; align-items: center; gap: 6px; font: 600 13px var(--body); padding: 5px 10px; border-radius: 99px; color: #fff }
+.rec { border-left: 4px solid var(--accent); background: var(--sunk); padding: 10px 12px; border-radius: 0 8px 8px 0; margin: 12px 0 }
+.bldg { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; display: grid; gap: 8px }
+.bldg-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap }
+.band { font: 600 12px var(--body); padding: 3px 9px; border-radius: 99px; color: #fff }
+.band.green { background: var(--green) } .band.amber { background: var(--amber) } .band.red { background: var(--red) }
+textarea { width: 100%; min-height: 56px; font: 14px/1.4 var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; resize: vertical }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: 12px var(--body); padding: 3px 8px; border-radius: 6px; background: var(--sunk); color: var(--ink) }
+.chip.plus { box-shadow: inset 3px 0 0 var(--red) } .chip.minus { box-shadow: inset 3px 0 0 var(--green) }
+.src { font-size: 11px; font-weight: 600; letter-spacing: .03em; color: var(--muted) }
+.src.ai { color: var(--accent) }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap }
+details summary { cursor: pointer; font-weight: 600; margin-top: 12px }
+.tbl-wrap { overflow-x: auto; margin-top: 8px }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-weight: 600; color: var(--muted); font-size: 12px }
+td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums }
+tbody tr.clickable { cursor: pointer } tbody tr.clickable:hover { background: var(--sunk) }
+tbody tr.current { background: var(--sunk) }
+.pill { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px }
+.sms { white-space: pre-wrap; background: var(--bg); border: 1px dashed var(--line); border-radius: 8px; padding: 10px; font-size: 14px; margin-top: 8px; min-height: 60px }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px }
+.sources li { margin-bottom: 4px }
+a { color: var(--accent) }
+
+@media (max-width: 900px) { .main, .controls, .two { grid-template-columns: minmax(0, 1fr) } .summary { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+@media (prefers-reduced-motion: no-preference) { .map .dot { transition: fill .35s ease } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Schools Division of Iloilo City · DRRM desk</div>
+      <h1>Presko: tomorrow's school plan in the heat</h1>
+      <p class="muted">Set tomorrow's PAGASA heat-index forecast. Presko proposes, for each school, a full day, a morning-only shift, or alternative delivery for some sections. The school head decides (DepEd Order 37, s. 2022).</p>
+    </div>
+    <span class="tag-ill">Real school locations · illustrative building data</span>
+  </header>
+
+  <section class="card controls" aria-label="Heat forecast">
+    <div>
+      <div class="eyebrow">Heat index forecast for tomorrow</div>
+      <div class="readout"><span class="hi mono" id="hiOut">44°C</span><span class="cat" id="catOut">Danger</span></div>
+      <input type="range" id="hi" min="30" max="56" step="0.5" value="44" aria-label="Heat index forecast in degrees Celsius">
+      <div class="scale" aria-hidden="true"><span style="left:0">30</span><span style="left:11.5%">33 extreme caution</span><span style="left:46.2%">42 danger</span><span style="left:84.6%">52 extreme danger</span></div>
+    </div>
+    <div>
+      <div class="presets" role="group" aria-label="Scenarios">
+        <button id="p-normal" data-hi="34">Normal April day · 34°C</button>
+        <button id="p-danger" data-hi="44">Danger · 44°C</button>
+        <button id="p-extreme" data-hi="52">Extreme danger · 52°C</button>
+        <button id="p-replay" class="primary" data-hi="39.4" data-replay="1">Replay 30 April 2024</button>
+      </div>
+      <p class="replay" id="replayText" hidden></p>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Division summary">
+    <div class="summary" id="summary"></div>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <div class="main">
+    <section class="card map" aria-label="Map of schools">
+      <div class="row" style="justify-content:space-between"><h2>Iloilo City</h2><span class="small muted" id="mapNote"></span></div>
+      <div id="mapBox"></div>
+      <div class="legend">
+        <span><i style="background:var(--full)"></i>Full day</span>
+        <span><i style="background:var(--morning)"></i>Morning shift 06:00–11:00</span>
+        <span><i style="background:var(--partial)"></i>Morning + some sections on modules</span>
+        <span><i style="background:var(--adm)"></i>Alternative delivery</span>
+      </div>
+    </section>
+    <section class="card" id="panel" aria-live="polite"></section>
+  </div>
+
+  <section class="card" aria-label="All schools">
+    <div class="row" style="justify-content:space-between"><h2>All schools</h2><span class="small muted">Click a row to open the school</span></div>
+    <div class="tbl-wrap"><table id="list"></table></div>
+  </section>
+
+  <div class="two">
+    <section class="card">
+      <h2>How the rule works</h2>
+      <p class="small muted">Claude only reads building notes into the features below. The points and bands are fixed and visible. Nothing estimates a room temperature.</p>
+      <div class="tbl-wrap"><table id="ruleHi"></table></div>
+      <div class="tbl-wrap"><table id="ruleFeat"></table></div>
+      <div class="tbl-wrap"><table id="ruleBand"></table></div>
+      <p class="small muted">Planner: if every section fits its usual shift in green rooms, the school runs a full day. Otherwise sections move to green and amber rooms in the morning (one 06:00–11:00 slot, or two 2.5-hour slots). Sections that still don't fit go to alternative delivery. A separate checker then re-reads every assignment.</p>
+    </section>
+    <section class="card">
+      <h2>What's real, what isn't</h2>
+      <ul class="small sources">
+        <li><b>Real:</b> 70 public schools mapped in OpenStreetMap inside Iloilo City (HOT export on <a href="https://data.humdata.org/dataset/hotosm_phl_education_facilities" target="_blank" rel="noopener">HDX</a>). OpenStreetMap may miss some schools.</li>
+        <li><b>Real:</b> Iloilo's daily "feels-like" maximum in April 2024 from the <a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener">Open-Meteo archive</a>. It is a proxy and runs lower than PAGASA's heat index. On the day, the coordinator types PAGASA's forecast.</li>
+        <li><b>Real:</b> PAGASA heat-index categories: caution 27–32°C, extreme caution 33–41°C, danger 42–51°C, extreme danger 52°C and above (<a href="https://mb.com.ph/2026/03/24/feeling-the-heat-heres-what-the-heat-index-means" target="_blank" rel="noopener">Manila Bulletin</a>).</li>
+        <li><b>Real:</b> DepEd suspended in-person classes in all public schools on 29–30 April 2024 (<a href="https://www.rappler.com/philippines/department-education-suspends-in-person-classes-extreme-heat-april-29-30-2024/" target="_blank" rel="noopener">Rappler</a>). By 25 April, 7,188 of 47,678 public schools had already suspended in-person classes (<a href="https://mb.com.ph/2024/4/25/dep-ed-face-to-face-classes-suspended-in-7-188-schools" target="_blank" rel="noopener">Manila Bulletin</a>).</li>
+        <li><b>Real:</b> heatwaves disrupted schooling for 171 million students in 2024 (<a href="https://www.unicef.org/press-releases/nearly-quarter-billion-childrens-schooling-was-disrupted-climate-crises-2024-unicef" target="_blank" rel="noopener">UNICEF</a>).</li>
+        <li><b>Illustrative:</b> building notes, room counts, sections, shifts and learner numbers. The division fills in its own.</li>
+        <li><b>Morning-only is not free:</b> it cuts in-person time to 5 hours or less, and alternative delivery assumes modules or a connection at home.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+import { makeDivision, planDivision, planSchool, check, pagasaCategory, band, buildingPoints, keywordFeatures, FEATURES, FEATURE_KEYS, HI_POINTS, BAND_RULE, SLOTS, ILOILO_HEAT_2024 } from "./engine.js";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (n) => Math.round(n).toLocaleString("en");
+const MODE = {
+  full: { label: "Full day", color: "var(--full)" },
+  morning: { label: "Morning shift", color: "var(--morning)" },
+  partial: { label: "Morning + modules", color: "var(--partial)" },
+  adm: { label: "Alternative delivery", color: "var(--adm)" },
+};
+const SLOT_LABEL = Object.fromEntries(Object.values(SLOTS).map((s) => [s.id, s.label]));
+
+const state = { hi: 44, schools: makeDivision(), selected: null, replay: false, lang: "en", hil: {}, busy: {} };
+let sample = null;
+const samplePromise = window.claude?.use ? window.claude.use("sample").catch(() => null) : Promise.resolve(null);
+samplePromise.then((s) => { sample = s; renderPanel(); });
+
+// ---------- map ----------
+const lats = state.schools.map((s) => s.lat), lons = state.schools.map((s) => s.lon);
+const minLat = Math.min(...lats) - 0.004, maxLat = Math.max(...lats) + 0.004, minLon = Math.min(...lons) - 0.004, maxLon = Math.max(...lons) + 0.004;
+const kx = Math.cos((10.72 * Math.PI) / 180);
+const W = 640, H = Math.round((W * (maxLat - minLat)) / ((maxLon - minLon) * kx));
+const px = (lon) => ((lon - minLon) / (maxLon - minLon)) * W;
+const py = (lat) => H - ((lat - minLat) / (maxLat - minLat)) * H;
+const kmPx = W / ((maxLon - minLon) * kx * 111.32);
+
+function renderMap(div) {
+  const byId = Object.fromEntries(div.plans.map((p) => [p.school, p]));
+  const dots = state.schools.map((s) => {
+    const p = byId[s.id];
+    return `<circle class="dot" data-id="${s.id}" cx="${px(s.lon).toFixed(1)}" cy="${py(s.lat).toFixed(1)}" r="7" fill="${MODE[p.mode].color}"><title>${esc(s.name)}: ${MODE[p.mode].label}</title></circle>`;
+  }).join("");
+  const sel = state.selected ? state.schools.find((s) => s.id === state.selected) : null;
+  const ring = sel ? `<circle class="sel" cx="${px(sel.lon).toFixed(1)}" cy="${py(sel.lat).toFixed(1)}" r="12"/>` : "";
+  $("mapBox").innerHTML = `<svg viewBox="-10 -10 ${W + 20} ${H + 20}" role="img" aria-label="Schools of Iloilo City coloured by tomorrow's plan">
+    <rect x="-10" y="-10" width="${W + 20}" height="${H + 20}" fill="var(--sunk)" rx="8"/>
+    ${dots}${ring}
+    <g font-family="var(--mono)" font-size="11" fill="var(--muted)">
+      <line x1="${W - kmPx - 10}" y1="${H - 6}" x2="${W - 10}" y2="${H - 6}" stroke="var(--muted)" stroke-width="2"/>
+      <text x="${W - kmPx / 2 - 10}" y="${H - 12}" text-anchor="middle">1 km</text>
+      <text x="6" y="12">N ↑</text>
+    </g></svg>`;
+  $("mapNote").textContent = "Positions from OpenStreetMap";
+  $("mapBox").querySelectorAll(".dot").forEach((d) => d.addEventListener("click", () => select(d.dataset.id)));
+}
+
+// ---------- summary ----------
+function renderSummary(div, problems) {
+  const t = div.tally;
+  $("summary").innerHTML = ["full", "morning", "partial", "adm"].map((m) =>
+    `<div class="stat"><b>${t[m]}</b><span><i style="background:${MODE[m].color}"></i>${MODE[m].label}</span></div>`).join("");
+  const pct = div.normalLH ? Math.round((100 * div.keptLH) / div.normalLH) : 0;
+  $("kpis").innerHTML = `
+    <span><b class="mono">${pct}%</b> of normal in-person learner-hours kept, against 0% if every school suspends</span>
+    <span><b class="mono">${fmt(div.admSections)}</b> of ${fmt(div.sections)} sections on modules</span>
+    <span class="${problems === 0 ? "ok" : "bad"}">${problems === 0 ? "✓ 0 conflicts" : `✕ ${problems} conflicts`}</span>
+    <span class="muted small">checked independently: no room double-booked, no class in a red room, no amber room after 11:00, every section placed once</span>`;
+}
+
+function renderReplay() {
+  const el = $("replayText");
+  if (!state.replay) { el.hidden = true; return; }
+  const d29 = ILOILO_HEAT_2024.days["2024-04-29"], d30 = ILOILO_HEAT_2024.days["2024-04-30"];
+  const a = planDivision(state.schools, d30);
+  const pct = Math.round((100 * a.keptLH) / a.normalLH);
+  el.hidden = false;
+  el.innerHTML = `<b>29–30 April 2024:</b> DepEd suspended in-person classes in every public school. Iloilo's heat those days (proxy): ${d29}°C and ${d30}°C. At ${d30}°C Presko would have kept <b>${a.tally.full}</b> schools on a full day and <b>${a.tally.morning + a.tally.partial}</b> on a morning shift, or <b>${pct}%</b> of in-person learner-hours instead of 0%. <span class="muted">Computed from illustrative building data.</span>`;
+}
+
+// ---------- list ----------
+function renderList(div) {
+  const order = { adm: 0, partial: 1, morning: 2, full: 3 };
+  const rows = div.plans.map((p) => ({ p, s: state.schools[+p.school] })).sort((a, b) => order[a.p.mode] - order[b.p.mode] || a.s.name.localeCompare(b.s.name));
+  $("list").innerHTML = `<thead><tr><th>School</th><th>Plan</th><th class="num">Sections</th><th class="num">On modules</th><th class="num">Rooms G/A/R</th></tr></thead><tbody>` +
+    rows.map(({ p, s }) => `<tr class="clickable ${s.id === state.selected ? "current" : ""}" data-id="${s.id}"><td>${esc(s.name)}</td><td><span class="pill" style="background:${MODE[p.mode].color}"></span>${MODE[p.mode].label}</td><td class="num">${s.sections.length}</td><td class="num">${p.admCount}</td><td class="num">${p.counts.green}/${p.counts.amber}/${p.counts.red}</td></tr>`).join("") + "</tbody>";
+  $("list").querySelectorAll("tr.clickable").forEach((tr) => tr.addEventListener("click", () => { select(tr.dataset.id); $("panel").scrollIntoView({ behavior: "smooth", block: "start" }); }));
+}
+
+// ---------- school panel ----------
+function message(s, p, lang) {
+  const cat = pagasaCategory(state.hi);
+  const two = p.slotsUsed.length === 2 && p.mode !== "full";
+  const times = two
+    ? (lang === "tl" ? `sa dalawang grupo (${SLOT_LABEL[p.slotsUsed[0]]} o ${SLOT_LABEL[p.slotsUsed[1]]}; ite-text ng paaralan ang oras ng bawat seksyon)` : `in two groups (${SLOT_LABEL[p.slotsUsed[0]]} or ${SLOT_LABEL[p.slotsUsed[1]]}; the school will text each section's time)`)
+    : p.slotsUsed.map((x) => SLOT_LABEL[x]).join(lang === "tl" ? " at " : " and ");
+  const admNames = p.assignments.filter((a) => a.slot === "adm").map((a) => s.sections.find((x) => x.id === a.section).name);
+  const list = admNames.slice(0, 6).join(", ") + (admNames.length > 6 ? ` and ${admNames.length - 6} more` : "");
+  if (lang === "tl") {
+    const body = { full: `Normal ang klase bukas (${times}). Magdala ng tubig; puwede ang magaan na damit.`,
+      morning: `Pang-umaga lamang ang face-to-face na klase bukas, ${times}. Uuwi ang mga mag-aaral bago mag-11:00. Magdala ng tubig; puwede ang magaan na damit.`,
+      partial: `Pang-umaga lamang ang klase ng karamihan ng seksyon bukas, ${times}. Modules sa bahay ang mga seksyong ito: ${list.replace(/ and (\d+) more$/, " at $1 pa")}. Magdala ng tubig.`,
+      adm: `Walang face-to-face na klase bukas. Modules sa bahay ang lahat ng seksyon (Alternative Delivery Mode).` }[p.mode];
+    return `ABISO, ${s.name}: Heat index bukas: ${state.hi}°C (${cat}). ${body} Kukumpirmahin ng punong-guro ang planong ito bago mag-5 PM.`;
+  }
+  const body = { full: `Classes run as normal tomorrow (${times}). Bring water; light clothes are allowed.`,
+    morning: `In-person classes tomorrow are morning only, ${times}. Learners go home by 11:00. Bring water; light clothes are allowed.`,
+    partial: `Most sections have morning classes only tomorrow, ${times}. These sections use modules at home: ${list}. Bring water; light clothes are allowed.`,
+    adm: `No in-person classes tomorrow. All sections use modules at home (Alternative Delivery Mode).` }[p.mode];
+  return `PRESKO advisory, ${s.name}: tomorrow's heat index forecast is ${state.hi}°C (${cat}). ${body} The school head confirms this plan by 5 PM.`;
+}
+
+function renderPanel() {
+  const s = state.schools.find((x) => x.id === state.selected);
+  if (!s) { $("panel").innerHTML = `<h2>Pick a school</h2><p class="muted">Click a dot on the map or a row in the list.</p>`; return; }
+  const p = planSchool(s, state.hi);
+  const problems = check(s, p);
+  const m = MODE[p.mode];
+  const roomsByBldg = {};
+  p.rooms.forEach((r) => (roomsByBldg[r.building] ??= []).push(r));
+  const bldgs = s.buildings.map((b) => {
+    const bd = band(state.hi, b.features);
+    const tags = FEATURE_KEYS.filter((k) => b.features[k]).map((k) => `<span class="chip ${FEATURES[k].points > 0 ? "plus" : "minus"}">${esc(FEATURES[k].label)} ${FEATURES[k].points > 0 ? "+" : ""}${FEATURES[k].points}</span>`).join("") || `<span class="chip">no features found</span>`;
+    const srcLabel = b.source === "claude" ? `<span class="src ai">Read by Claude just now</span>` : b.source === "keywords" ? `<span class="src">Keyword fallback (no AI)</span>` : `<span class="src">Read once, cached</span>`;
+    const evidence = b.evidence ? `<div class="small muted">Evidence: ${esc(b.evidence)}</div>` : "";
+    return `<div class="bldg">
+      <div class="bldg-head"><h3>${esc(b.name)} · ${b.rooms} room${b.rooms === 1 ? "" : "s"}</h3><span class="band ${bd.band}">${bd.band} · ${bd.total} pts</span></div>
+      <textarea id="note-${b.id}" aria-label="Building note for ${esc(b.name)}">${esc(b.note)}</textarea>
+      <div class="row"><button data-reread="${b.id}" ${state.busy[b.id] ? "disabled" : ""}>${state.busy[b.id] ? "Reading…" : sample ? "Re-read note with Claude" : "Re-read note"}</button>${srcLabel}</div>
+      <div class="chips">${tags}</div>${evidence}
+      <div class="small muted">Heat index ${state.hi}°C adds ${bd.total - buildingPoints(b.features)} pts; building adds ${buildingPoints(b.features)} pts.</div>
+    </div>`;
+  }).join("");
+  const secRows = p.assignments.map((a) => {
+    const sec = s.sections.find((x) => x.id === a.section);
+    const room = p.rooms.find((r) => r.id === a.room);
+    return `<tr><td>${esc(sec.name)}</td><td class="num">${sec.learners}</td><td>${a.slot === "adm" ? `<b>Modules at home</b>` : esc(room.name)}</td><td class="mono">${a.slot === "adm" ? "–" : SLOT_LABEL[a.slot]}</td></tr>`;
+  }).join("");
+  const msg = state.lang === "hil" ? (state.hil[`${s.id}|${state.hi}|${p.mode}`] || "") : message(s, p, state.lang);
+  const hilBtn = sample ? `<button data-lang="hil" aria-pressed="${state.lang === "hil"}">Hiligaynon (AI draft)</button>` : "";
+  $("panel").innerHTML = `
+    <div class="eyebrow">${s.kind === "secondary" ? "Secondary school" : s.kind === "integrated" ? "Integrated school" : "Elementary school"} · ${s.doubleShift ? "double shift" : "single shift"} · ${s.sections.length} sections</div>
+    <h2 style="margin-top:4px">${esc(s.name)}</h2>
+    <div class="row" style="margin-top:8px"><span class="plan-badge" style="background:${m.color}">${m.label}</span><span class="${problems.length ? "bad" : "ok"} small">${problems.length ? `✕ ${problems.length} conflicts` : "✓ 0 conflicts"}</span></div>
+    <div class="rec"><b>Recommendation for the school head.</b> ${esc(p.why)} The school head decides and can override.</div>
+    <p class="small muted" style="margin:0">Rooms tomorrow: <b>${p.counts.green}</b> green, <b>${p.counts.amber}</b> amber, <b>${p.counts.red}</b> red. In-person learner-hours: <b class="mono">${fmt(p.keptLH)}</b> of ${fmt(p.normalLH)}.</p>
+    ${bldgs}
+    <details><summary>Section plan (${p.assignments.length} sections)</summary><div class="tbl-wrap"><table><thead><tr><th>Section</th><th class="num">Learners</th><th>Room</th><th>Time</th></tr></thead><tbody>${secRows}</tbody></table></div></details>
+    <h3 style="margin-top:16px">Message to parents</h3>
+    <div class="tabs" role="group" aria-label="Language">
+      <button data-lang="en" aria-pressed="${state.lang === "en"}">English</button>
+      <button data-lang="tl" aria-pressed="${state.lang === "tl"}">Filipino</button>${hilBtn}
+      <button id="copyMsg">Copy</button>
+    </div>
+    <div class="sms" id="sms">${esc(msg || (state.busy.hil ? "Drafting in Hiligaynon…" : "Press Hiligaynon to draft."))}</div>
+    <div class="small muted">${state.lang === "hil" ? "AI draft: check with a native speaker before sending." : state.lang === "tl" ? "Template: check wording with the school before sending." : "Template filled from the plan."} SMS and the school's Facebook group.</div>`;
+
+  $("panel").querySelectorAll("[data-reread]").forEach((b) => b.addEventListener("click", () => reread(s, b.dataset.reread)));
+  $("panel").querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => setLang(s, p, b.dataset.lang)));
+  $("copyMsg").addEventListener("click", async () => {
+    const text = $("sms").textContent;
+    try { await navigator.clipboard.writeText(text); $("copyMsg").textContent = "Copied"; }
+    catch { const r = document.createRange(); r.selectNodeContents($("sms")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); $("copyMsg").textContent = "Selected"; }
+    setTimeout(() => { const c = $("copyMsg"); if (c) c.textContent = "Copy"; }, 1500);
+  });
+}
+
+async function reread(s, bid) {
+  const b = s.buildings.find((x) => x.id === bid);
+  b.note = $(`note-${bid}`).value.trim();
+  b.evidence = "";
+  if (!sample) { b.features = keywordFeatures(b.note); b.source = "keywords"; return renderAll(); }
+  state.busy[bid] = true; renderPanel();
+  try {
+    const prompt = `You read short notes about school buildings in the Philippines and say which physical features are present. Do not guess temperatures.
+Note: """${b.note}"""
+Reply with only a JSON object with these boolean keys: ${FEATURE_KEYS.join(", ")}; plus "evidence": a short string quoting the words that support each true key.
+Meanings: roof_no_ceiling = metal/GI/tin roof without a ceiling; ceiling_or_insulated = has a ceiling or roof insulation; makeshift = tent, plywood, temporary or makeshift room; upper_floor = rooms on an upper/top floor under the roof; poor_ventilation = windows on one side, small or no windows, no fans; west_facing = rooms face west; shade_trees = trees shade the building; cross_ventilation = windows on both sides; aircon = air-conditioned.
+Example: {"roof_no_ceiling":true,"ceiling_or_insulated":false,"makeshift":false,"upper_floor":false,"poor_ventilation":false,"west_facing":false,"shade_trees":false,"cross_ventilation":true,"aircon":false,"evidence":"'GI roof, no ceiling'; 'windows on both sides'"}`;
+    const out = await sample.json(prompt, { modelTier: "quick" });
+    const f = {};
+    for (const k of FEATURE_KEYS) f[k] = out?.[k] === true;
+    if (f.roof_no_ceiling) f.ceiling_or_insulated = false;
+    b.features = f; b.source = "claude"; b.evidence = typeof out?.evidence === "string" ? out.evidence.slice(0, 300) : "";
+  } catch (e) {
+    b.features = keywordFeatures(b.note); b.source = "keywords";
+    if (e?.code === "not_granted") sample = null;
+  }
+  state.busy[bid] = false;
+  renderAll();
+}
+
+async function setLang(s, p, lang) {
+  state.lang = lang;
+  if (lang !== "hil") return renderPanel();
+  const key = `${s.id}|${state.hi}|${p.mode}`;
+  if (state.hil[key] || !sample) return renderPanel();
+  state.busy.hil = true; renderPanel();
+  try {
+    const r = await sample(`Translate this school SMS into Hiligaynon (Ilonggo) for parents in Iloilo City. Keep times, numbers, school and section names exactly. Plain text only, no preamble.\n\n${message(s, p, "en")}`, { modelTier: "quick" });
+    state.hil[key] = r.text.trim();
+  } catch { state.lang = "en"; }
+  state.busy.hil = false; renderPanel();
+}
+
+function select(id) { state.selected = id; renderAll(); }
+
+function renderAll() {
+  const div = planDivision(state.schools, state.hi);
+  let problems = 0;
+  div.plans.forEach((p, i) => (problems += check(state.schools[i], p).length));
+  $("hiOut").textContent = `${state.hi}°C`;
+  $("catOut").textContent = pagasaCategory(state.hi);
+  $("hi").value = state.hi;
+  document.querySelectorAll(".presets button").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.hi === state.hi && (!!b.dataset.replay) === state.replay)));
+  renderSummary(div, problems);
+  renderReplay();
+  renderMap(div);
+  renderList(div);
+  renderPanel();
+}
+
+// ---------- rule tables ----------
+$("ruleHi").innerHTML = `<thead><tr><th>Heat index tomorrow</th><th class="num">Points</th></tr></thead><tbody>${HI_POINTS.map((r) => `<tr><td>${r.label}</td><td class="num">${r.points > 0 ? "+" : ""}${r.points}</td></tr>`).join("")}</tbody>`;
+$("ruleFeat").innerHTML = `<thead><tr><th>Building feature (read from the note)</th><th class="num">Points</th></tr></thead><tbody>${FEATURE_KEYS.map((k) => `<tr><td>${FEATURES[k].label}</td><td class="num">${FEATURES[k].points > 0 ? "+" : ""}${FEATURES[k].points}</td></tr>`).join("")}</tbody>`;
+$("ruleBand").innerHTML = `<thead><tr><th>Total</th><th>Band</th></tr></thead><tbody>${BAND_RULE.map((r) => `<tr><td>${r.text}</td><td><span class="band ${r.band}">${r.band}</span></td></tr>`).join("")}</tbody>`;
+
+// ---------- controls ----------
+$("hi").addEventListener("input", (e) => { state.hi = +e.target.value; state.replay = false; renderAll(); });
+document.querySelectorAll(".presets button").forEach((b) => b.addEventListener("click", () => { state.hi = +b.dataset.hi; state.replay = !!b.dataset.replay; state.lang = state.lang === "hil" ? "en" : state.lang; renderAll(); }));
+
+// open on a school that shows the planner at work
+const first = planDivision(state.schools, state.hi).plans.find((p) => p.mode === "partial") || planDivision(state.schools, state.hi).plans[0];
+state.selected = first.school;
+renderAll();
+</script>
+
+</body>
+</html>
