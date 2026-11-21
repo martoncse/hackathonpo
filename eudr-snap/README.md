@@ -4,6 +4,20 @@ The red pin is a real FAO Whisp result, not a hard-coded one. Five cooperative f
 
 **Live demo:** https://eudr-snap.vercel.app (Colombian profile; 3D story at `/`, record → review → pack at `/classic.html`). No API keys are set there: "Read photo" says so, and typing a receipt in still works. Recorded purchases and decisions live in the function's `/tmp`: temporary, and each running copy has its own. Press **Reset demo** before a pitch. A Whisp key pasted there sits in server memory, so other visitors could use it until the instance restarts. Redeploy: `vercel deploy --prod` in `eudr-snap/`.
 
+## The product: a Shipment Evidence Passport
+
+**Each EU shipment gets one signed passport that the cooperative owns, and any buyer, bank or inspector can check it in a browser.** The passport (`passport-<id>.json`) pins every file of the importer pack by SHA-256: the GeoJSON, DDS data, Art 9/10/11 files, the report and the retention index. It also carries the receipts, the Whisp result, the volume check for each plot and the named reviewer decisions. The cooperative signs it with its own key (ECDSA P-256), and a short fingerprint like `92B7-8729-5091-F452` identifies that key. Why that's the moat, and the sources behind it: `../reports/MOAT-ANALYSIS.md` §9. The pitch: `PITCH.md`.
+
+- **Tamper-evident.** If someone changes one kilo in the DDS file, the verify page marks that file **CHANGED**. If someone edits the passport, the signature fails. If someone deletes or edits a reviewer decision, the hash chain breaks.
+- **History builds up.** Each passport links to the cooperative's previous one (`history.sequence`, `previous_passport_sha256`), so the record grows season by season, and importers must keep it for 5 years (Art 4(3)).
+- **Buyer-neutral.** Any importer the cooperative sells to checks the same passport, so the cooperative isn't locked in to one trader.
+- **Where it's issued:** step 3 of the classic view, for each lot sent to a buyer, and by `POST /api/export`. **Where it's checked:** `/verify.html`. Drop in the passport and any pack files. The check runs in the browser with the same `shared/passport.js`, and nothing is uploaded. `/verify.html?id=<id>` fetches the passport from this server. The buyer view (`/buyer.html`) links to it.
+- **API:** `GET /api/passport/key` gives the public key and fingerprint, `GET /api/passports` gives the history, and `GET /api/passports/:id` gives one passport. Tests: `test/passport.test.js` (forgery cases) and `test/e2e-server.test.js`.
+- **Prototype limits:**
+  - The signing key sits on the EUDR-Snap server (`data/passport-key[-<profile>].json`, or `EUDR_PASSPORT_KEY` as a private JWK). In production it belongs to the cooperative, on its own device or in a key service.
+  - On Vercel, `/tmp` is temporary, so without `EUDR_PASSPORT_KEY` the key and the history reset when an instance restarts. Passport files still verify on their own, because the public key travels inside them.
+  - A valid passport proves who recorded what, and when. It is **not** a compliance certificate: the operator still files the DDS and remains responsible.
+
 ## Run it
 
 ```powershell
@@ -75,7 +89,7 @@ The importer files the due diligence statement and carries the liability; the co
 - **Importer, `/buyer.html#<private token>`:** sees supplier, volume, plots and the checks; the browser recomputes every file's SHA-256 against the recorded one; downloads the files. After filing in the EU Information System, the importer enters the reference and verification numbers and gets a **downstream handoff note**: since Reg. 2025/2650, processors and traders after the first placer keep that reference number instead of filing their own.
 - **Cooperative, step 4 · Lots and buyers:** the register of which receipts went to which buyer, and whether each buyer has filed.
 
-The link is the only access control: anyone with it can open that lot. **Reset demo** clears purchases, decisions and lots. `test/e2e-lots.test.js` runs this whole path.
+Each lot also gets its signed **Shipment Evidence Passport** (see the top of this README). It is stored with the lot, and the buyer view links to `/verify.html` for it. The link is the only access control: anyone with it can open that lot. **Reset demo** clears purchases, decisions and lots. `test/e2e-lots.test.js` runs this whole path.
 
 ## Stage fallback
 

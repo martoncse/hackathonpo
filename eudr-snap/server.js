@@ -153,7 +153,7 @@ async function issuePassportNow(args) {
 
 function friendly(error) {
   const map = {
-    auth_missing_api_key: "No Whisp API key set. Paste one in the key panel.",
+    auth_missing_api_key: HOSTED ? "No Whisp API key on this server. Set WHISP_API_KEY in the Vercel project settings and redeploy (a key pasted in the panel only lasts for one serverless instance)." : "No Whisp API key set. Paste one in the key panel.",
     auth_invalid_api_key: "Whisp rejected the API key. Check you copied it from your Whisp account page.",
     auth_rate_limit_exceeded: "Whisp rate limit hit (30 requests/min). Wait a minute.",
     analysis_too_many_concurrent: "Whisp is already running 2 jobs for this key. Wait for them to finish.",
@@ -397,7 +397,7 @@ async function handleRisk(req, res) {
   const plots = Array.isArray(body.plots) && body.plots.length ? body.plots : await demoFarms();
   if (!plots.length) return sendJson(res, 400, { error: "No plots to check." });
   try {
-    const fc = await analysePlots(plots, whispKey, { maxWaitMs: 60_000, nationalCodes: profile.whisp_national_codes });
+    const fc = await analysePlots(plots, whispKey, { maxWaitMs: HOSTED ? 40_000 : 60_000, nationalCodes: profile.whisp_national_codes });
     const checkedAt = new Date().toISOString();
     const result = { source: "live", checked_at: checkedAt, whisp: whispMeta(fc, checkedAt), results: classify(plots, fc, decisions), raw: fc };
     // Only the default demo batch refreshes the stage backup.

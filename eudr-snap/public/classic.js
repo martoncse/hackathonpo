@@ -351,7 +351,7 @@ $("make-pack").onclick = async () => {
   msg("pack-msg", `Lot ${lotId} for ${lot.buyer.name}: ${lot.plot_ids.length} plot(s), ${lot.receipts.length} receipt(s), ${Number(lot.kg).toLocaleString("en")} ${lot.kg_unit}.${left.length ? ` Left out: ${left.map((f) => f.farm + " (" + (results.get(f.id)?.card_blocked_by ? "shares a card with " + results.get(f.id).card_blocked_by.join(", ") : LABELS[statusOf(f.id)] || "not cleared") + ")").join(", ")}.` : ""}`, true);
   const pp = lot.passport;
   $("docs").innerHTML =
-    (pp ? `<div class="passport"><b>Shipment Evidence Passport ${esc(pp.id)}</b> · #${esc(pp.sequence)} in your cooperative's history · signing key <code>${esc(pp.key_fingerprint)}</code><br><a href="${esc(pp.verify_url)}" target="_blank" rel="noopener">Open the buyer's check →</a> <small>Any buyer, bank or inspector can check the signature and every file in their browser.</small></div>` : "") +
+    (pp ? `<div class="passport"><b>Shipment Evidence Passport ${esc(pp.id)}</b> · #${esc(pp.sequence)} in your cooperative's history · signing key <code>${esc(pp.key_fingerprint)}</code><br><a href="${esc(pp.verify_url + "#lot=" + lot.share_path.split("#")[1])}" target="_blank" rel="noopener">Open the buyer's check →</a> <small>Any buyer, bank or inspector can check the signature and every file in their browser.</small></div>` : "") +
     res.body.documents
       .map((d) => {
         const url = URL.createObjectURL(new Blob([d.content], { type: d.mime }));

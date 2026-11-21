@@ -9,6 +9,7 @@ let passport = null;
 let extraFiles = [];
 let published = null; // { key_fingerprint, cooperative } served by this EUDR-Snap instance
 let registry = null; // { sequence, latest_sequence } when the passport was fetched by id
+let original = null; // the untouched passport, while a tamper test is shown
 
 async function readFiles(list) {
   const read = await Promise.all([...list].map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) })));
@@ -19,6 +20,7 @@ async function readFiles(list) {
     } catch {}
     if (parsed?.payload?.format === PASSPORT_FORMAT) {
       passport = parsed;
+      original = null;
       registry = null;
     } else extraFiles = [...extraFiles.filter((x) => x.name !== f.name), f];
   }
@@ -46,6 +48,7 @@ async function render() {
   $("status").textContent = "";
   $("out").innerHTML = `
     <div class="verdict ${verdict[0]}">${verdict[1]}</div>
+    <div class="row">${original ? '<button id="restore" class="secondary">Restore the original</button><span class="hint">Showing a copy with 6,000 kg added to the goods, as if someone inflated the shipment after signing.</span>' : '<button id="tamper" class="secondary">Try to tamper: add 6,000 kg</button><span class="hint">Changes one number in a copy and re-checks it. Nothing is saved.</span>'}</div>
     <div class="card">
       <b>Checks</b>
       <ul class="checks">
@@ -80,6 +83,17 @@ async function render() {
       ${v.extraFiles?.length ? `<p class="hint">Not part of this passport: ${v.extraFiles.map(esc).join(", ")}</p>` : ""}
     </div>
     <p class="hint">${esc(p.notice)}</p>`;
+  if ($("tamper")) $("tamper").onclick = () => {
+    original = passport;
+    passport = structuredClone(passport);
+    for (const g of passport.payload.shipment.goods) g.estimated_kg_from_receipts = Number(g.estimated_kg_from_receipts || 0) + 6000;
+    render();
+  };
+  if ($("restore")) $("restore").onclick = () => {
+    passport = original;
+    original = null;
+    render();
+  };
 }
 
 const drop = $("drop");
@@ -103,6 +117,12 @@ drop.ondrop = (e) => (e.preventDefault(), drop.classList.remove("over"), readFil
     if (!r.ok) return ($("status").textContent = body.error);
     passport = body.passport;
     registry = { sequence: body.sequence, latest_sequence: body.latest_sequence };
+    // Opened from the buyer's private lot link: fetch the pack files the buyer received too.
+    const lotToken = new URLSearchParams(location.hash.slice(1)).get("lot");
+    if (lotToken) {
+      const share = await (await fetch(`/api/share/${encodeURIComponent(lotToken)}`)).json().catch(() => ({}));
+      extraFiles = (share.documents || []).filter((d) => d.id !== "passport").map((d) => ({ name: d.filename, bytes: new TextEncoder().encode(d.content) }));
+    }
     render();
   } catch {
     $("status").textContent = "Could not reach this server. Drop the passport file instead.";

@@ -124,7 +124,7 @@
       const checked = risks.filter(Boolean).length;
       $("checks").innerHTML = [
         `<li><span class="${checked === risks.length ? "ok" : "warn"}">${checked}/${risks.length} plots</span> checked with FAO Whisp${art9.plots[0]?.deforestationFree?.checkedAt ? " (" + esc(art9.plots[0].deforestationFree.checkedAt.slice(0, 10)) + ")" : ""}: ${esc([...new Set(risks.map((x) => x || "not checked"))].join(", "))} risk</li>`,
-        ...(lot.passport ? [`<li><span class="ok">Signed by your supplier</span>: Shipment Evidence Passport ${esc(lot.passport.id)} (#${esc(lot.passport.sequence)} in their history), key <code>${esc(lot.passport.key_fingerprint)}</code>. <a href="${esc(lot.passport.verify_url)}" target="_blank" rel="noopener">Verify it →</a></li>`] : []),
+        ...(lot.passport ? [`<li><span class="ok">Signed by your supplier</span>: Shipment Evidence Passport ${esc(lot.passport.id)} (#${esc(lot.passport.sequence)} in their history), key <code>${esc(lot.passport.key_fingerprint)}</code>. <a href="${esc(lot.passport.verify_url)}#lot=${encodeURIComponent(token)}" target="_blank" rel="noopener">Verify it →</a></li>`] : []),
         `<li><span class="ok">Segregated lot</span>: every input comes from a cleared plot; no mass balance</li>`,
         `<li><span class="ok">Volume checked</span>: kg sold compared with the plots' measured area; any flag needs a written reviewer decision (${art11.length} logged in the Art 11 file with name and time)</li>`,
         `<li><span class="${open.length ? "warn" : "ok"}">${open.length} of ${art10.criteria.length} Art 10 criteria open</span>${open.length ? ": " + esc(open.map((c) => c.criterion.replace("10(2)", "")).join(" ")) + ". You complete these and draw the conclusion." : ""}</li>`,
