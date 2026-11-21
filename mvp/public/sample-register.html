@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sample register (synthetic)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root { --paper: #fbf8ef; --ink: #1e2a4a; --rule: #b9c6d8; --margin: #d98a8a; }
+    body { margin: 0; background: #e9e6dd; font-family: Georgia, serif; color: #333; }
+    .page {
+      max-width: 1000px; margin: 24px auto; padding: 28px 28px 40px 56px; background: var(--paper);
+      box-shadow: 0 2px 12px rgba(0,0,0,.15); position: relative;
+    }
+    .page::before { content: ""; position: absolute; top: 0; bottom: 0; left: 40px; border-left: 2px solid var(--margin); }
+    h1 { font-size: 1.2rem; margin: 0 0 2px; letter-spacing: .02em; }
+    .sub { margin: 0 0 4px; font-size: .9rem; }
+    .synthetic { display: inline-block; margin: 6px 0 14px; padding: 2px 8px; border: 2px solid #b3261e; color: #b3261e; font-weight: bold; font-size: .8rem; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: .78rem; text-align: left; border-bottom: 2px solid #555; padding: 4px 6px; }
+    td { border-bottom: 1px solid var(--rule); padding: 2px 6px; height: 38px;
+         font-family: "Caveat", "Segoe Print", "Comic Sans MS", cursive; font-size: 1.45rem; color: var(--ink); }
+    td.blank { color: transparent; }
+    @media print { body { background: #fff; } .page { box-shadow: none; margin: 0; } .noprint { display: none; } }
+    .noprint { max-width: 1000px; margin: 12px auto 0; font: 14px system-ui, sans-serif; padding: 0 16px; }
+  </style>
+</head>
+<body>
+  <p class="noprint">Print this page or show it on a screen, photograph it, then upload the photo in CatatSekali. All names are invented.</p>
+  <div class="page">
+    <h1>BUKU REGISTER HARIAN PASIEN</h1>
+    <p class="sub">Puskesmas: <em>Contoh (sample)</em> · Bulan: November</p>
+    <span class="synthetic">DATA FIKTIF · SYNTHETIC DATA · NOT A REAL PATIENT RECORD</span>
+    <table>
+      <thead>
+        <tr><th>No</th><th>Tgl</th><th>Nama</th><th>No. Kartu JKN</th><th>L/P</th><th>Umur</th><th>Alamat (desa)</th><th>Jenis kunjungan</th><th>Diagnosa / tindakan</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>03/11</td><td>Ani S.</td><td>0009990000001</td><td>P</td><td>2 th</td><td>Sukamaju</td><td>Sakit</td><td>Diare</td></tr>
+        <tr><td>2</td><td>03/11</td><td>Budi H.</td><td>0009990000002</td><td>L</td><td>34 th</td><td>Sukamaju</td><td>Sakit</td><td>ISPA</td></tr>
+        <tr><td>3</td><td>04/11</td><td>Siti R.</td><td class="blank">-</td><td>P</td><td>26 th</td><td>Cibodas</td><td>ANC</td><td>K1</td></tr>
+        <tr><td>4</td><td>04/11</td><td>Dewi P.</td><td>0009990000004</td><td class="blank">-</td><td>4 bln</td><td>Cibodas</td><td>Imunisasi</td><td>DPT-HB-Hib 1</td></tr>
+        <tr><td>5</td><td>05/11</td><td>Rudi K.</td><td>0009990000005</td><td>L</td><td>3 th</td><td>Mekarsari</td><td>Sakit</td><td>Diare</td></tr>
+        <tr><td>6</td><td>05/11</td><td>Wati L.</td><td>0009990000006</td><td>P</td><td>61 th</td><td>Mekarsari</td><td>Sakit</td><td>Hipertensi</td></tr>
+        <tr><td>7</td><td>06/11</td><td>Joko T.</td><td>0009990000007</td><td>L</td><td class="blank">-</td><td>Sukamaju</td><td>Sakit</td><td>Diare</td></tr>
+        <tr><td>8</td><td>06/11</td><td>Nur A.</td><td>0009990000008</td><td>P</td><td>9 bln</td><td>Cibodas</td><td>Imunisasi</td><td>MR</td></tr>
+        <tr><td>9</td><td>07/11</td><td>Rina M.</td><td>0009990000009</td><td>P</td><td>29 th</td><td>Mekarsari</td><td>ANC</td><td>K4</td></tr>
+        <tr><td>10</td><td>07/11</td><td>Agus W.</td><td>0009990000010</td><td>L</td><td>7 th</td><td>Sukamaju</td><td>Sakit</td><td>Demam</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

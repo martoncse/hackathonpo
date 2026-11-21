@@ -1,0 +1,15 @@
+{
+  "note": "Synthetic data. These are the records extracted from sample-register.html. No real patients, card numbers or NIKs.",
+  "visits": [
+    { "row": 1, "date": "03/11", "name": "Ani S.", "bpjs_card_number": "0009990000001", "nik": null, "sex": "F", "age_years": 2, "village": "Sukamaju", "visit_type": "sick", "diagnosis": "diarrhoea", "vaccine": null, "anc_visit_number": null, "uncertain_fields": [] },
+    { "row": 2, "date": "03/11", "name": "Budi H.", "bpjs_card_number": "0009990000002", "nik": null, "sex": "M", "age_years": 34, "village": "Sukamaju", "visit_type": "sick", "diagnosis": "ari", "vaccine": null, "anc_visit_number": null, "uncertain_fields": [] },
+    { "row": 3, "date": "04/11", "name": "Siti R.", "bpjs_card_number": null, "nik": null, "sex": "F", "age_years": 26, "village": "Cibodas", "visit_type": "antenatal", "diagnosis": null, "vaccine": null, "anc_visit_number": 1, "uncertain_fields": ["bpjs_card_number"] },
+    { "row": 4, "date": "04/11", "name": "Dewi P.", "bpjs_card_number": "0009990000004", "nik": null, "sex": null, "age_years": 0.33, "village": "Cibodas", "visit_type": "immunisation", "diagnosis": null, "vaccine": "DPT-HB-Hib", "anc_visit_number": null, "uncertain_fields": ["sex"] },
+    { "row": 5, "date": "05/11", "name": "Rudi K.", "bpjs_card_number": "0009990000005", "nik": null, "sex": "M", "age_years": 3, "village": "Mekarsari", "visit_type": "sick", "diagnosis": "diarrhoea", "vaccine": null, "anc_visit_number": null, "uncertain_fields": [] },
+    { "row": 6, "date": "05/11", "name": "Wati L.", "bpjs_card_number": "0009990000006", "nik": null, "sex": "F", "age_years": 61, "village": "Mekarsari", "visit_type": "sick", "diagnosis": "hypertension", "vaccine": null, "anc_visit_number": null, "uncertain_fields": [] },
+    { "row": 7, "date": "06/11", "name": "Joko T.", "bpjs_card_number": "0009990000007", "nik": null, "sex": "M", "age_years": null, "village": "Sukamaju", "visit_type": "sick", "diagnosis": "diarrhoea", "vaccine": null, "anc_visit_number": null, "uncertain_fields": ["age_years"] },
+    { "row": 8, "date": "06/11", "name": "Nur A.", "bpjs_card_number": "0009990000008", "nik": null, "sex": "F", "age_years": 0.75, "village": "Cibodas", "visit_type": "immunisation", "diagnosis": null, "vaccine": "measles_rubella", "anc_visit_number": null, "uncertain_fields": [] },
+    { "row": 9, "date": "07/11", "name": "Rina M.", "bpjs_card_number": "0009990000009", "nik": null, "sex": "F", "age_years": 29, "village": "Mekarsari", "visit_type": "antenatal", "diagnosis": null, "vaccine": null, "anc_visit_number": 4, "uncertain_fields": [] },
+    { "row": 10, "date": "07/11", "name": "Agus W.", "bpjs_card_number": "0009990000010", "nik": null, "sex": "M", "age_years": 7, "village": "Sukamaju", "visit_type": "sick", "diagnosis": "fever", "vaccine": null, "anc_visit_number": null, "uncertain_fields": [] }
+  ]
+}

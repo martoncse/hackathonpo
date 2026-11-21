@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EUDR-Snap</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="classic.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>EUDR-Snap</h1>
+      <p class="sub">Cooperativa Cafetera del Sur · plot risk check with FAO Whisp</p>
+    </div>
+    <div class="countdown"><strong id="days">–</strong> days until EUDR applies (30 Dec 2026)</div>
+  </header>
+
+  <details id="key-panel" class="panel">
+    <summary>Whisp API key <span id="key-state" class="pill">not set</span></summary>
+    <p class="hint">Free key from your account page at <a href="https://whisp.openforis.org" target="_blank" rel="noopener">whisp.openforis.org</a>. It is sent only to this local server and kept in memory (gone on restart).</p>
+    <div class="row">
+      <input id="key-input" type="password" autocomplete="off" placeholder="Paste Whisp API key" />
+      <button id="save-key">Save key</button>
+      <button id="test-key" class="secondary">Test key</button>
+      <button id="clear-key" class="secondary">Forget key</button>
+    </div>
+    <p id="key-msg" class="msg"></p>
+    <hr />
+    <p class="hint">One-time setup: send ~130 candidate plots to Whisp and keep 4 that Whisp rates <b>low risk</b> (Huila) and 1 it rates <b>high risk</b> (Amazon deforestation arc). Farmer names are synthetic; coordinates and risk are real.</p>
+    <div class="row">
+      <button id="find-plots" class="secondary">Find real plots with Whisp</button>
+    </div>
+    <p id="find-msg" class="msg"></p>
+  </details>
+
+  <div id="unverified" class="banner hidden">These farm locations haven't been checked with Whisp yet. Set a key and press <b>Find real plots with Whisp</b> once before the pitch.</div>
+
+  <section class="toolbar">
+    <button id="check" class="primary">Check with FAO Whisp</button>
+    <span id="source" class="badge">Not checked</span>
+    <label class="toggle"><input type="checkbox" id="exclude" checked /> Exclude high-risk plots from shipment</label>
+  </section>
+
+  <main>
+    <div id="map"></div>
+    <div class="side">
+      <table>
+        <thead><tr><th>Farmer</th><th>Crop</th><th>ha</th><th>kg</th><th>Status</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="totals">
+        <div><span id="ok-kg">–</span><small>kg in shipment</small></div>
+        <div><span id="blocking">–</span><small>blocking errors</small></div>
+        <div><span id="excluded">–</span><small>plots excluded</small></div>
+      </div>
+      <p class="hint">Risk colours come from Whisp's <code>risk_pcrop</code> (perennial crops). The "&gt;4 ha needs a polygon" and "volume too high for the plot" checks are EUDR-Snap's own rules: Whisp sees land, not deliveries.</p>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="classic.js"></script>
+</body>
+</html>

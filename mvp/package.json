@@ -1,0 +1,17 @@
+{
+  "name": "catatsekali-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hackathon MVP: one photo of a community health centre register fills three monthly reports and flags mismatches.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "zod": "^4.6.7"
+  }
+}
