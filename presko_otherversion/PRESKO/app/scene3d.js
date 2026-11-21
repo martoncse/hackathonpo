@@ -4,10 +4,9 @@ import { projection } from "./scenes.js";
 const THREE_URL = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
 let loading = null;
 
-/** 3D on by default only where it helps: wide screens, WebGL, no data saver, no slow network, enough memory. */
+/** 3D on by default wherever WebGL works, except with data saver, a slow network or very little memory. */
 export function prefers3D() {
   const n = navigator.connection || {};
-  if (window.innerWidth < 700) return false;
   if (n.saveData) return false;
   if (/(^|-)2g|3g/.test(n.effectiveType || "")) return false;
   if (navigator.deviceMemory && navigator.deviceMemory <= 2) return false;
@@ -219,4 +218,61 @@ export function school3D(THREE, el, v) {
   }
   build(v);
   return { update: build, firstFrame: () => S.firstFrame, dispose: S.dispose };
+}
+
+/**
+ * Heat replay: one column per school on the city plate; height and colour follow the heat index.
+ * places = [{ id, name, lat, lon }], labels = [{ name, lat, lon }] (districts, drawn as HTML over the canvas).
+ * update(values, labelValues, colorOf, selected) re-tints and re-heights; returns nothing.
+ */
+export function heat3D(THREE, el, places, labels, { onSelect, onHover } = {}) {
+  const P = projection([...places, ...labels], 12);
+  const S = shell(THREE, el, { fitRadius: Math.hypot(P.W + 1.5, P.H + 1.5) / 2 });
+  S.scene.add(slab(THREE, P.W + 1.5, P.H + 1.5));
+  const divisions = Math.max(2, Math.round((P.W + 1.5) / P.kmPx));
+  const grid = new THREE.GridHelper(divisions * P.kmPx, divisions, new THREE.Color(css("--line")), new THREE.Color(css("--line")));
+  grid.material.transparent = true; grid.material.opacity = 0.5; grid.position.y = 0.002; S.scene.add(grid);
+  const ink = css("--ink"), edgeOp = isLight() ? 0.25 : 0.5, cx = P.W / 2, cz = P.H / 2;
+  const marks = new Map();
+  for (const p of places) {
+    const x = P.x(p.lon) - cx, z = P.y(p.lat) - cz;
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 1, 14), mat(THREE, css("--line-strong")));
+    col.position.set(x, 0.5, z); col.castShadow = true; col.userData.id = p.id; withEdges(THREE, col, ink, edgeOp); S.scene.add(col);
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(0.75, 28), new THREE.MeshBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.28, depthWrite: false }));
+    glow.rotation.x = -Math.PI / 2; glow.position.set(x, 0.004, z); S.scene.add(glow);
+    marks.set(String(p.id), { col, glow, x, z });
+  }
+  const sel = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.38, 32), new THREE.MeshBasicMaterial({ color: new THREE.Color(ink), side: THREE.DoubleSide }));
+  sel.rotation.x = -Math.PI / 2; sel.position.y = 0.006; sel.visible = false; S.scene.add(sel);
+  // District labels as HTML, re-projected every frame so they follow the camera.
+  const layer = document.createElement("div"); layer.className = "h3d-labels"; el.append(layer);
+  const tags = labels.map((l) => { const d = document.createElement("div"); d.className = "h3d-tag"; d.innerHTML = `<b></b><span class="mono"></span>`; d.firstChild.textContent = l.name; layer.append(d); return { d, v: new THREE.Vector3(P.x(l.lon) - cx, 0.3, P.y(l.lat) - cz) }; });
+  let alive = true;
+  const follow = () => { if (!alive) return; for (const t of tags) { const s = S.toScreen(t.v); t.d.style.transform = `translate(${s.x}px, ${s.y}px) translate(-50%, -100%)`; } requestAnimationFrame(follow); };
+  requestAnimationFrame(follow);
+  const H = (hi) => (hi == null ? 0.02 : Math.max(0.05, (hi - 22) * 0.16)); // 22 °C → flat, 46 °C → about 3.8 units
+  function update(values, labelValues, colorOf, selected) {
+    places.forEach((p, k) => {
+      const m = marks.get(String(p.id)), hi = values[k], c = new THREE.Color(colorOf(hi));
+      m.col.material.color = c; m.glow.material.color = c;
+      const h = H(hi);
+      S.tween(m.col.scale, "y", h, 180); S.tween(m.col.position, "y", h / 2, 180);
+    });
+    tags.forEach((t, k) => { const v = labelValues[k]; t.d.lastChild.textContent = v == null ? "" : `${v.toFixed(1)}°`; t.d.style.setProperty("--c", colorOf(v)); });
+    const s = selected != null && marks.get(String(selected));
+    sel.visible = !!s; if (s) sel.position.set(s.x, 0.006, s.z);
+  }
+  const pickables = [...marks.values()].map((m) => m.col);
+  S.canvas.addEventListener("pointerup", (e) => { if (!S.dragged) { const o = S.pick(e, pickables); if (o) onSelect?.(o.userData.id); } S.endDrag(); });
+  S.canvas.addEventListener("pointermove", (e) => {
+    const o = S.pick(e, pickables);
+    if (!o) return onHover?.(null);
+    const m = marks.get(String(o.userData.id));
+    onHover?.(o.userData.id, S.toScreen(new THREE.Vector3(m.x, m.col.scale.y + 0.2, m.z)));
+  });
+  return {
+    update, firstFrame: () => S.firstFrame,
+    dispose() { alive = false; S.dispose(); },
+    preset(name) { const p = PRESETS[name] || PRESETS.overview; S.tween(S.view, "theta", p.theta, 600); S.tween(S.view, "phi", p.phi, 600); S.tween(S.view, "r", S.baseR, 600); if (reduced()) S.place(); },
+  };
 }

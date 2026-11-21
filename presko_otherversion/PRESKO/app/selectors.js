@@ -5,6 +5,7 @@ import {
   band, levelInfo, cityOverlay, slotsFor, MODES, REPLAYS, ILOILO_HEAT, calibrate, HOME,
 } from "../engine.js";
 import { slug } from "./store.js";
+import { msgDate } from "./messages.js";
 
 export const LEVEL_TEXT = { HAYO: "HAYO <27°C", HINAY: "HINAY 27–32°C", HINGA: "HINGA 33–41°C", HINTO: "HINTO ≥42°C" };
 const realSlot = (a) => a.slot !== HOME && a.slot !== "none";
@@ -104,4 +105,82 @@ export function replayViewModel(id) {
 export function statusOf(store, date, schoolId) {
   const d = store.day(date), s = store.school(schoolId);
   return d.forecast ? decisionStatus(withDay(s, d), d.forecast.hi, { forDate: date }) : "none";
+}
+
+/** Setup progress for a school: which of the three parts the school has entered itself. */
+export function setupProgress(s) {
+  const parts = [["buildings", "buildings"], ["timetable", "timetable"], ["sections", "sections"]];
+  const entered = parts.filter(([k]) => typeof s.provenance?.[k] === "object");
+  return { done: entered.length, total: parts.length, missing: parts.filter(([k]) => typeof s.provenance?.[k] !== "object").map(([, l]) => l) };
+}
+
+/**
+ * "Updates" for the signed-in role, derived from the store (no push; honest in-app notifications).
+ * Returns [{ tone: "ok"|"warn"|"bad"|"", text, at }] where `at` is an ISO time or null.
+ */
+export function updatesFor(store) {
+  const role = store.role();
+  if (!role) return [];
+  const today = store.state.today, tmr = store.tomorrow();
+  const fT = store.day(today).forecast, fN = store.day(tmr).forecast;
+  const D = (iso) => msgDate(iso);
+  const out = [];
+  const push = (tone, text, at = null) => out.push({ tone, text, at });
+  if (role.kind === "coordinator" || role.kind === "sdo") {
+    const vm = viewModel(store, { date: tmr });
+    if (!fN) push("warn", role.kind === "coordinator" ? `Schools are waiting for the forecast for ${D(tmr)}. Publish by 16:00 so heads have an hour.` : `No forecast for ${D(tmr)} yet. Decisions arrive after the coordinator publishes.`);
+    else {
+      push("", `Forecast for ${D(tmr)}: ${fN.hi}°C ${fN.status}, published by ${fN.by}.`, fN.publishedAt);
+      const dc = vm.decisions || {};
+      if (role.kind === "sdo") push(dc["awaiting-sdo"] ? "warn" : "ok", dc["awaiting-sdo"] ? `${dc["awaiting-sdo"]} decision${dc["awaiting-sdo"] === 1 ? " awaits" : "s await"} you for ${D(tmr)}.` : `Nothing awaits you for ${D(tmr)} right now.`);
+      else {
+        if (dc.none) push("warn", `${dc.none} schools have no decision yet for ${D(tmr)}.`);
+        if (dc["awaiting-sdo"]) push("", `${dc["awaiting-sdo"]} awaiting the SDO approver.`);
+      }
+      if (dc.returned) push("", `${dc.returned} returned to the school head.`);
+    }
+    if (fT) {
+      const vt = viewModel(store, { date: today });
+      if (vt.withReadings) push("", `8:00 readings in from ${vt.withReadings} schools today.`);
+      const re = vt.decisions?.["stale-inputs"] ?? 0;
+      if (re) push("bad", `${re} school${re === 1 ? "" : "s"} must re-confirm today after the 8:00 readings.`);
+    }
+    return out;
+  }
+  const s = role.schoolId != null ? store.school(role.schoolId) : null;
+  if (!s) return out;
+  if (role.kind === "custodian") {
+    const p = setupProgress(s);
+    push(p.done === p.total ? "ok" : "warn", `Setup: ${p.done} of ${p.total} parts entered by the school${p.missing.length ? ` (still illustrative: ${p.missing.join(", ")})` : ""}.`);
+    return out;
+  }
+  if (role.kind === "teacher") {
+    if (!fT) push("warn", `No forecast was published for today (${D(today)}). Ask the coordinator; you can note readings on paper meanwhile.`);
+    else {
+      const n = Object.keys(store.day(today).readings[s.id] || {}).length;
+      push(n === s.buildings.length ? "ok" : "warn", `${n} of ${s.buildings.length} buildings read today.`);
+    }
+    return out;
+  }
+  // head
+  if (!fN) push("warn", `No forecast for ${D(tmr)} yet. Usually published by 16:00. Open this page again then.`);
+  else {
+    push("", `Forecast for ${D(tmr)}: ${fN.hi}°C ${fN.status}.`, fN.publishedAt);
+    const v = viewModel(store, { date: tmr }).schools.find((x) => x.id === s.id);
+    const d = v?.decision;
+    if (v.status === "none") push("warn", `Record the level for ${D(tmr)} before 17:00.`);
+    else if (v.status === "returned") push("bad", `The SDO returned your ${d.level} request: “${d.sdoNote}”${/[.!?]$/.test(d.sdoNote) ? "" : "."} Accept the rule level or revise it below.`, d.sdoAt);
+    else if (v.status === "awaiting-sdo") push("warn", `Your ${d.level} request is waiting for the SDO approver.`, d.at);
+    else if (v.status === "stale-forecast") push("bad", `The forecast changed after you recorded ${d.level}. Re-confirm below.`);
+    else if (v.status === "stale-inputs") push("bad", `${v.sentence}. Re-confirm below.`);
+    else if (v.status === "official") {
+      if (d.sdo === "approved") push("ok", `The SDO approved your ${d.level} request.`, d.sdoAt);
+      push(v.sent.some((x) => x.level === v.level) ? "ok" : "warn", v.sent.some((x) => x.level === v.level) ? `Official ${v.level} for ${D(tmr)}; parent message marked sent.` : `Official ${v.level} for ${D(tmr)}. Copy the message and send it to parents.`);
+    }
+  }
+  if (fT) {
+    const vt = viewModel(store, { date: today }).schools.find((x) => x.id === s.id);
+    if (vt.status === "stale-inputs" || (vt.status === "none" && vt.morning?.levelChange)) push("bad", `8:00 readings call for ${vt.morning?.levelChange?.to || vt.level} today. Re-confirm today's level.`);
+  }
+  return out;
 }

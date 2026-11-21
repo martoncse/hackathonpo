@@ -251,3 +251,98 @@ Order: P0-1 → P0-2 → P0-3 → P0-4 → P0-5. The demo still runs in about 1:
 - The DEMO tag (design §14 note 6) stays. Sign-in doesn't replace "demo, no sign-in" with a false claim: change the tag's `aria-label` to "Demo accounts, not a real sign-in".
 - The demo script in `#demo` and §11 of the plan: replace "Switch: Pandac head" with "Demo ⇄ Pandac head". The timing is unchanged.
 - Plan §2 says "There is no real login … role picker". Log an amendment: "Demo accounts with PIN; each account fixes one role and school; no free role picker outside demo mode."
+
+---
+
+## 5. Implementation log (round 2)
+
+Built by the customer-journey agent. Tests: `node --test engine.test.mjs engine.dated.test.mjs app/app.test.mjs` → **45 pass, 0 fail** (39 before, plus 6 new). Every module passes `node --check`; served with `serve.mjs` and walked in a browser at desktop width and at 375 px (no horizontal page scroll, no console errors).
+
+**Accounts.** `app/accounts.js` is the source of truth, so it wins over §1.1 where they differ: domain `presko-demo.test`, and these PINs:
+
+| Time | Account | Email | PIN | Lands on |
+|---|---|---|---|---|
+| 16:00 | Demo Coordinator (DRRM) | drrm@presko-demo.test | 1600 | `#admin` |
+| 16:30 | Demo Head (Pandac) | head.pandac@presko-demo.test | 1630 | `#school-pandac-elementary-school` |
+| 16:45 | Demo Approver (SDO) | sds@presko-demo.test | 1645 | `#admin-decisions-awaiting` |
+| 08:00 | Demo Teacher (Pandac) | teacher.pandac@presko-demo.test | 0800 | `…-morning` from 05:00 to 12:00, otherwise Today (read-only) |
+| Week 1 | Demo Custodian (Pandac) | custodian.pandac@presko-demo.test | 0700 | `…-setup` |
+| 16:30 | Demo Head (Jibao-an) | head.jibaoan@presko-demo.test | 1631 | `#school-jibao-an-elementary-school` |
+
+### P0: done
+- **P0-1 Sign-in.**
+  - The store has `signIn(email, pin, { remember })` and `signOut()`. `AuthError` carries one message that never names a field.
+  - `role` is `null` until sign-in, and `need()` throws "Sign in first.".
+  - The session (`presko:session`) lives apart from the data blob: localStorage when "Remember me" is ticked, sessionStorage otherwise. `save()` leaves `role` out, and an old blob's `role` is ignored.
+  - `setRole` is kept for tests only and is documented as such.
+  - The `#start` page has the email + PIN form, with a persistent `role="alert"`. On an error the PIN is cleared and the email kept.
+  - It also has the "Demo accounts" card. Its one-tap rows call the same `signIn`.
+- **P0-2 Route guard.**
+  - Every UI `setRole` call is gone, and so are the header role picker and "Switch:" button.
+  - `allowed(route, role)` decides each page:
+    - Signed out: the hash is kept in `presko:next`, and sign-in shows "Sign in to open X's page."
+    - Head on another school's link: a stop card ("This link is for Jibao-an Elementary School…"), with "Go to my school" and "Sign out and use another account". It is blocked, not read-only.
+    - School account on an admin page: "Not available for your role".
+    - Unknown school or page: "We can't find…".
+    - Coordinator or SDO on a school page: a read-only view with a banner. This is useful to the SDO and records nothing.
+  - After sign-in, `next` is honoured only when allowed. Otherwise the person lands on their own page, with a toast saying why.
+- **P0-3 Header.**
+  - Shows the account name, role and school, a DEMO tag (aria-label "Demo accounts, not a real sign-in") and the tomorrow chip.
+  - An initials button opens the account menu: email, "Signed in on this phone since …", and Sign out.
+  - Tabs depend on the role. The Decisions tab shows a badge with the number awaiting the SDO. On every width the tabs sit in row 2, which scrolls sideways on phones.
+  - "Demo ⇄ SDO / Pandac head" signs out and back in through `signIn`, and appears only when `DEMO_MODE` is on.
+  - `document.title` is `Presko · Pandac ES`, `Presko · Division` or `Presko · Sign in`.
+- **P0-4 Landing and names.**
+  - Landing follows the table above.
+  - The realistic names are gone from the code. Decisions carry the account name, and seeds are signed "Demo head (seed)".
+  - Demo reset keeps the person signed in, then signs in the demo coordinator through `signIn`.
+  - Sign-out and account switches clear the screen state (draft preview, SDO notes, filters, the chosen level).
+- **P0-5 Dated messages.** Every parent message header names its date in the message's language: "ADVISORY for Tue 24 Nov", "ABISO para sa Mar 24 Nob", "PAHIBALO para sa Mar 24 Nob". The date goes in the header rather than after "tomorrow", because one placement had to read correctly across all six templates and three languages.
+
+### P1: done
+- **1 Updates strip.**
+  - `selectors.updatesFor(store)`, labelled "In-app only. A pilot would also send SMS."
+  - Head: forecast published; returned by the SDO (with the note); approved; awaiting; re-confirm; 8:00 readings call for X; message marked sent.
+  - SDO: N awaiting.
+  - Coordinator: waiting for publish, N with no decision.
+  - Teacher: buildings read.
+  - Custodian: setup progress.
+  - No `lastSeen` yet (see deferred).
+- **2 Badges and hand-offs.** The Decisions badge, plus "Copy note for the SDO" and Share in the head's awaiting state (`messages.sdoNoteText`).
+- **3 Waiting states** with a time to come back, for the head, the teacher and the coordinator.
+- **4 First-run card** per account, with a "Got it" that is remembered on the device.
+- **5 Day summary.** Counts plus "Copy situation report" (`messages.sitrepText`).
+- **6 Chasing.**
+  - One line per school, each with Copy (`chaseLine`).
+  - The group reminder caps at 10 names, then "+N more".
+  - Sort order follows the clock.
+  - Regular HAYO days are left out ("no action needed").
+- **8 SDO note** labelled "Note (required to return, optional to approve)". Return is relabelled "Return to head".
+- **9 Share…** (`navigator.share`, only where it exists) next to the copy buttons for the parent message, the SDO note and the teacher's note to the head.
+- **10 "✓ Done for <date>. Next: 8:00 readings…"** once a channel is marked. Channel chips show `aria-pressed`.
+- **11 Regular days.** "Regular day: no change to classes…", and the message is labelled optional. Those schools are left out of Chase.
+- **12 Teacher save feedback**, in an `aria-live` line: "Saved 08:04 · 2 of 3 buildings read · not read: Building C".
+- **13 Setup progress** line.
+- **14 Re-read result**, for example "Building A: hot → cooler. Tomorrow's plan changes from 'Home-based' to 'Home-based · grounds to request F2F'…".
+- **15 Offline banner.**
+
+### Also fixed on the way
+- **Unstyled screens.** `index.html`'s stylesheet had been written for different markup, so most `ui.js` classes (`row`, `stack`, `chip-btn`, `button.primary`, `admin`, `stat-grid`, `status.*`, `banner.bad`, `tag`, `roles`) had no styles. A compatibility block was added. The 3-column admin grid now collapses under 1100 px, and the account menu, sign-in and demo-account list were added.
+- **Phone tabs.** Tabs were hidden on phones, because `.hdr nav.tabs` was `display:none` and nothing rendered into `#hdr2`. They now always render in row 2.
+- **Returned decision.**
+  - The head sees the SDO's note with its time, plus "Accept HINGA (rule level)" and "Revise with a new reason".
+  - The "isn't in force until the SDO approves it" line now shows only while the request is awaiting.
+- **Toasts** in `#sr-status` confirm sign-in, sign-out, publish, record (with what happens next), approve, return, mark sent, water, the timetable and re-read. Errors stay as persistent alerts.
+- **Teacher and custodian views.** The Morning check tells non-teachers who enters readings, instead of silently disabled inputs.
+- **Scroll.** The page scrolls to the top on navigation.
+- **Sign-in headline.** It uses the real school count instead of a hard-coded 69.
+
+### Deferred, and why
+- **P1-7 fair `late`.** It needs an engine and CSV column change (`lateExempt`) and a test of its own. It was left for an engine pass, so this pass stays in the app layer.
+- **`lastSeen` per account** (the "since you last opened" cut-off in the updates strip) and the **P2-3 "seen by head"** receipts. The strip shows current state instead.
+- **All of P2.** Bulletin source, draft pre-fill, full Setup editor, official page in the message, remembered language, SMS-length message, PIN lockout, Filipino UI and help links.
+- **Docs.** Older docs (`WEBAPP-PLAN.md` §2/§11 and earlier reviews) still mention the role picker, "Switch:" and the old names. They are history and were left unedited. The `#demo` page script is updated.
+
+### Unsure
+- **Wrong-school links are blocked, not read-only.** Coordinator and SDO accounts do get read-only school views.
+- **Signed-in on `#start`.** Someone already signed in who opens `#start` is sent to their landing page. Signing out is the only way back to the sign-in form.

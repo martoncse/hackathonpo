@@ -14,6 +14,17 @@ const BODY = {
 };
 const LEVEL_WORD = { HAYO: "regular classes", HINAY: "a shortened day", HINGA: "no face-to-face classes", HINTO: "no classes at all" };
 
+// Dates in messages: a forwarded "tomorrow" is wrong the next day, so every message names its day.
+const WD = { en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], tl: ["Lin", "Lun", "Mar", "Miy", "Huw", "Biy", "Sab"], hil: ["Dom", "Lun", "Mar", "Miy", "Huw", "Biy", "Sab"] };
+const MO = { en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], tl: ["Ene", "Peb", "Mar", "Abr", "May", "Hun", "Hul", "Ago", "Set", "Okt", "Nob", "Dis"], hil: ["Ene", "Peb", "Mar", "Abr", "May", "Hun", "Hul", "Ago", "Set", "Okt", "Nob", "Dis"] };
+const FOR = { en: "for", tl: "para sa", hil: "para sa" };
+/** "Tue 24 Nov" from an ISO date, in the message language (no locale data needed). */
+export function msgDate(iso, lang = "en") {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${WD[lang][dt.getDay()]} ${d} ${MO[lang][m - 1]}`;
+}
 const fmtTime = (iso) => { try { return new Date(iso).toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
 
 /** The parent message for a school view. `official` adds the verification line and the head's name. */
@@ -23,10 +34,11 @@ export function parentMessage(v, vm, lang, { official, schoolName }) {
   const key = v.planType === "splitPartial" && v.level === "HAYO" ? "hayoPartial" : v.planType;
   const src = { en: `Based on PAGASA's heat index forecast (${vm.hi}°C, ${vm.forecast?.status || "draft"})`, tl: `Batay sa heat index forecast ng PAGASA (${vm.hi}°C, ${vm.forecast?.status || "draft"})`, hil: `Base sa PAGASA heat index forecast (${vm.hi}°C, ${vm.forecast?.status || "draft"})` }[lang];
   const body = BODY[key][lang](t, n);
-  if (!official) return `DRAFT, NOT FOR SENDING · ${HEAD[lang]} · ${schoolName}: ${src}, ${body}`;
+  const head = vm.date ? `${HEAD[lang]} ${FOR[lang]} ${msgDate(vm.date, lang)}` : HEAD[lang];
+  if (!official) return `DRAFT, NOT FOR SENDING · ${head} · ${schoolName}: ${src}, ${body}`;
   const d = v.decision;
   const sign = `— ${d?.by || "School Head"}, ${schoolName}, SDO Iloilo City · decided ${fmtTime(d?.at)}. Verify only on the school's official page and SDO Iloilo City.`;
-  return `${HEAD[lang]} · ${schoolName}: ${src}, ${body} ${sign}`;
+  return `${head} · ${schoolName}: ${src}, ${body} ${sign}`;
 }
 
 /** Correction after a sent message: "was X, now Y". */
@@ -45,8 +57,23 @@ export function morningMessage(v, vm, lang, schoolName) {
 }
 
 /** Copyable staff notices. */
-export function chaseText(names, date) {
-  return `Presko reminder: please record tomorrow's 4H decision (${date}) before 17:00: ${names.join(", ")}. Open your school's Presko link, tap Record, then send the official message.`;
+export function chaseText(names, date, { max = 10 } = {}) {
+  const shown = names.slice(0, max), more = names.length - shown.length;
+  return `Presko reminder: please record the 4H decision for ${msgDate(date)} before 17:00: ${shown.join(", ")}${more > 0 ? ` +${more} more` : ""}. Open Presko, sign in, tap Record, then send the official message.`;
+}
+/** One school's chase line (copy into a direct message). */
+export function chaseLine(name, sentence, date) {
+  return `${name}: ${sentence} for ${msgDate(date)}. Please open Presko and record or re-confirm before 17:00.`;
+}
+/** Hand-off from the head to the SDO approver when the head asks for a less protective level. */
+export function sdoNoteText(schoolName, level, recommended, reason, date) {
+  return `${schoolName} asks to use ${level} instead of ${recommended} on ${msgDate(date)}${reason ? ` (reason: ${reason})` : ""}. Please review in Presko before 16:45.`;
+}
+/** End-of-day situation report from the division counts. */
+export function sitrepText(vm, { sentCount = 0 } = {}) {
+  const d = vm.decisions || {}, n = vm.schools.length;
+  const reconfirm = (d["stale-forecast"] ?? 0) + (d["stale-inputs"] ?? 0);
+  return `Presko situation report for ${msgDate(vm.date)}: PAGASA heat index ${vm.hi}°C (${vm.forecast?.status || "draft"}), division level ${vm.level}. Official decisions ${d.official ?? 0} of ${n}; awaiting SDO ${d["awaiting-sdo"] ?? 0}; returned ${d.returned ?? 0}; re-confirm ${reconfirm}; no decision ${d.none ?? 0}. Parent messages marked sent by ${sentCount} of ${n} schools. Rule conflicts: ${vm.conflicts}.`;
 }
 export function tellHeadText(schoolName, level) {
   return `To the school head of ${schoolName}: the 8:00 readings are in and call for ${level}. Please open Presko and re-confirm today's level before sending the morning update.`;

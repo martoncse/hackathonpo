@@ -1,6 +1,6 @@
 // Tiny static server for the Presko prototype (no dependencies).
 // Browsers block ES-module imports from file://, so open the page through this instead:
-//   node PRESKO/serve.mjs   ->   http://localhost:5180
+//   node PRESKO/serve.mjs   ->   http://localhost:5180 (opens the app)
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, dirname } from "node:path";
@@ -12,7 +12,8 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; ch
 
 createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url, "http://x").pathname);
-  const file = normalize(join(ROOT, path === "/" ? "index.html" : path));
+  if (path === "/" || path === "/app") { res.writeHead(302, { Location: "/app/" }).end(); return; }
+  const file = normalize(join(ROOT, path.endsWith("/") ? `${path}index.html` : path));
   if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
   try {
     const body = await readFile(file);
