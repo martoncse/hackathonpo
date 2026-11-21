@@ -125,9 +125,19 @@ async function passportKey() {
   return signingKey;
 }
 
-// Signs a passport for a pack that passed every check, chains it to the cooperative's previous one.
-function issuePassport(args) {
-  return serial(async () => {
+// Signs a passport for a pack that passed every check, chains it to the cooperative's previous one,
+// and puts it first in pack.documents. Call inside serial() (the ledger is read, then written).
+async function attachPassport(pack, args) {
+  const passport = await issuePassportNow(args);
+  const content = JSON.stringify(passport, null, 2);
+  const p = passport.payload;
+  pack.passport = { id: p.passport_id, key_fingerprint: p.issuer.key_fingerprint, sequence: p.history.sequence, verify_url: `/verify.html?id=${encodeURIComponent(p.passport_id)}` };
+  pack.documents.unshift({ id: "passport", title: "Shipment Evidence Passport (signed)", subtitle: `${p.passport_id} · signed by the cooperative · key ${p.issuer.key_fingerprint}`, filename: `passport-${p.passport_id}.json`, mime: "application/json", content, sha256: await sha256Hex(content) });
+  return pack.passport;
+}
+
+async function issuePassportNow(args) {
+  {
     const key = await passportKey();
     const ledger = (await readJsonFile(PASSPORTS_FILE)) || [];
     const prev = ledger.at(-1) || null;
@@ -138,7 +148,7 @@ function issuePassport(args) {
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.writeFile(PASSPORTS_FILE, JSON.stringify(ledger, null, 2));
     return passport;
-  });
+  }
 }
 
 function friendly(error) {
@@ -240,7 +250,7 @@ async function writeLots(lots) {
 }
 
 function lotSummary(l) {
-  return { id: l.id, buyer: l.buyer, plot_ids: l.plot_ids, receipts: l.receipts, kg: l.kg, kg_unit: l.kg_unit, created_at: l.created_at, status: l.status, filing: l.filing, left_out: l.left_out, share_path: `/buyer.html#${l.token}` };
+  return { id: l.id, buyer: l.buyer, plot_ids: l.plot_ids, receipts: l.receipts, kg: l.kg, kg_unit: l.kg_unit, created_at: l.created_at, status: l.status, filing: l.filing, left_out: l.left_out, passport: l.passport || null, share_path: `/buyer.html#${l.token}` };
 }
 
 // Picks the receipts of the season each plot was checked on, minus receipts already in a lot.
@@ -299,6 +309,8 @@ async function createLot(body, res) {
   const lot = { id, market: "EU", plot_ids: alloc.plot_ids, receipts: alloc.receipts, buyer: { name, email: email || null } };
   const pack = await buildPack({ plots, results, lot, cooperative: doc.cooperative, whisp: saved?.whisp, profile });
   if (pack.blocking.length) return sendJson(res, 422, { error: pack.blocking.join(" · "), blocking: pack.blocking });
+  // Already inside serial(): sign directly (a nested serial() would wait on itself).
+  const passport = await attachPassport(pack, { pack, lot, plots, results, cooperative: doc.cooperative, whisp: saved?.whisp });
   const dds = JSON.parse(pack.documents.find((d) => d.id === "dds").content);
   const kg = dds.commodities.reduce((s, c) => s + (Number(c.estimatedKgFromDeliveries) || 0), 0);
   const stored = {
@@ -311,6 +323,7 @@ async function createLot(body, res) {
     filing: null,
     left_out: [...eligible].filter((pid) => !alloc.plot_ids.includes(pid)),
     exhausted: alloc.exhausted,
+    passport,
     documents: pack.documents,
   };
   lots.push(stored);
@@ -437,10 +450,7 @@ async function handleExport(req, res) {
   const results = saved?.results || classify(plots, null, decisions);
   const pack = await buildPack({ plots, results, lot: body.lot, cooperative: doc.cooperative, whisp: saved?.whisp, profile });
   if (pack.blocking.length) return sendJson(res, 422, pack);
-  const passport = await issuePassport({ pack, lot: body.lot, plots, results, cooperative: doc.cooperative, whisp: saved?.whisp });
-  const content = JSON.stringify(passport, null, 2);
-  pack.passport = { id: passport.payload.passport_id, key_fingerprint: passport.payload.issuer.key_fingerprint, sequence: passport.payload.history.sequence, verify_url: `/verify.html?id=${encodeURIComponent(passport.payload.passport_id)}` };
-  pack.documents.unshift({ id: "passport", title: "Shipment Evidence Passport (signed)", subtitle: `${passport.payload.passport_id} · signed by the cooperative · key ${passport.payload.issuer.key_fingerprint}`, filename: `passport-${passport.payload.passport_id}.json`, mime: "application/json", content, sha256: await sha256Hex(content) });
+  await serial(() => attachPassport(pack, { pack, lot: body.lot, plots, results, cooperative: doc.cooperative, whisp: saved?.whisp }));
   return sendJson(res, 200, pack);
 }
 

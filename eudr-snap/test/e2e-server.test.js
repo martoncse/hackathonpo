@@ -79,7 +79,7 @@ test("Côte d'Ivoire: a recorded purchase flows into the rules, the review and t
   const pack = await api("POST", "/api/export", { lot: { id: "EU-CI-1", market: "EU", plot_ids: ["C1", "C2", "C3", "C4"] } });
   assert.equal(pack.status, 200);
   const docs = Object.fromEntries(pack.body.documents.map((d) => [d.id, d]));
-  assert.deepEqual(Object.keys(docs).sort(), ["art10", "art11", "art9", "dds", "geojson", "report", "retention"]);
+  assert.deepEqual(Object.keys(docs).sort(), ["art10", "art11", "art9", "dds", "geojson", "passport", "report", "retention"]);
 
   const geo = JSON.parse(docs.geojson.content);
   assert.equal(geo.features.length, 4);

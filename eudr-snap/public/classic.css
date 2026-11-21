@@ -89,3 +89,5 @@ tr.excluded td:last-child { text-decoration: none; }
 .status.sent { background: var(--amber); }
 .status.filed { background: var(--green); }
 @media (max-width: 800px) { main, .steps { grid-template-columns: 1fr; } #map { height: 360px; } }
+.passport { margin: 10px 0; padding: 12px 14px; border-radius: 10px; background: #eef7f0; border: 1px solid #a8dcb9; }
+.passport code { font-size: 13px; }
